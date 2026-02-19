@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import analyzeLeadRoute from "./routes/analyzeLead";
 import callOutcomeRoute from "./routes/callOutcome";
+import recalcRoute from "./routes/recalculate";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.get("/health", (_, res) => {
 
 app.use("/analyze-lead", analyzeLeadRoute);
 app.use("/call-outcome", callOutcomeRoute);
+app.use("/recalculate", recalcRoute);
 
 const PORT = process.env.PORT || 5000;
 

@@ -29,3 +29,14 @@ model CallOutcome {
   fundedAmount Float?
   createdAt    DateTime @default(now())
 }
+
+model PerformanceMetric {
+  id            String   @id @default(uuid())
+  category      String
+  key           String
+  successRate   Float
+  avgCommission Float
+  updatedAt     DateTime @updatedAt
+
+  @@unique([category, key], name: "category_key")
+}

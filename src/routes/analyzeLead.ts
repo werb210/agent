@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const result = scoreLead(lead);
+  const result = await scoreLead(lead);
 
   const saved = await prisma.leadAnalysis.create({
     data: {
