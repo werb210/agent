@@ -1,0 +1,31 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model LeadAnalysis {
+  id                    String   @id @default(uuid())
+  requestedAmount       Float
+  industry              String
+  creditScore           Int?
+  underwritingReadiness String?
+  fundingProbability    Float
+  expectedCommission    Float
+  riskLevel             String
+  recommendedAction     String
+  createdAt             DateTime @default(now())
+}
+
+model CallOutcome {
+  id           String   @id @default(uuid())
+  leadId       String
+  outcome      String
+  booked       Boolean
+  funded       Boolean?
+  fundedAmount Float?
+  createdAt    DateTime @default(now())
+}

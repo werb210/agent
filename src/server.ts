@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import analyzeLeadRoute from "./routes/analyzeLead";
+import callOutcomeRoute from "./routes/callOutcome";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.get("/health", (_, res) => {
 });
 
 app.use("/analyze-lead", analyzeLeadRoute);
+app.use("/call-outcome", callOutcomeRoute);
 
 const PORT = process.env.PORT || 5000;
 
