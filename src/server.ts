@@ -4,12 +4,16 @@ import dotenv from "dotenv";
 import analyzeLeadRoute from "./routes/analyzeLead";
 import callOutcomeRoute from "./routes/callOutcome";
 import recalcRoute from "./routes/recalculate";
+import startCampaignRoute from "./routes/startCampaign";
+import voiceHandlerRoute from "./routes/voiceHandler";
+import gatherResponseRoute from "./routes/gatherResponse";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_, res) => {
   res.json({ status: "AI Agent running" });
@@ -18,6 +22,9 @@ app.get("/health", (_, res) => {
 app.use("/analyze-lead", analyzeLeadRoute);
 app.use("/call-outcome", callOutcomeRoute);
 app.use("/recalculate", recalcRoute);
+app.use("/start-campaign", startCampaignRoute);
+app.use("/voice-handler", voiceHandlerRoute);
+app.use("/gather-response", gatherResponseRoute);
 
 const PORT = process.env.PORT || 5000;
 

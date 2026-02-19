@@ -40,3 +40,12 @@ model PerformanceMetric {
 
   @@unique([category, key], name: "category_key")
 }
+
+model CallQueue {
+  id        String   @id @default(uuid())
+  leadId    String
+  priority  Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
+
