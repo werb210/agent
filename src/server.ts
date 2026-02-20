@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+
 import analyzeLeadRoute from "./routes/analyzeLead";
 import callOutcomeRoute from "./routes/callOutcome";
 import recalcRoute from "./routes/recalculate";
@@ -16,6 +17,7 @@ import aiExecuteRoute from "./routes/aiExecute";
 dotenv.config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,6 +25,12 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/health", (_, res) => {
   res.json({ status: "AI Agent running" });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Core Business Routes
+|--------------------------------------------------------------------------
+*/
 
 app.use("/analyze-lead", analyzeLeadRoute);
 app.use("/call-outcome", callOutcomeRoute);
@@ -34,9 +42,22 @@ app.use("/speech-handler", speechHandlerRoute);
 app.use("/rank-deals", rankDealsRoute);
 app.use("/generate-memo", generateMemoRoute);
 app.use("/forecast", forecastRoute);
+
+/*
+|--------------------------------------------------------------------------
+| AI Secure Execute Route
+|--------------------------------------------------------------------------
+*/
+
 app.use("/ai", aiExecuteRoute);
 
-const PORT = process.env.PORT || 5000;
+/*
+|--------------------------------------------------------------------------
+| Start Server
+|--------------------------------------------------------------------------
+*/
+
+const PORT = 4000;
 
 app.listen(PORT, () => {
   console.log(`AI Agent running on port ${PORT}`);
