@@ -1,8 +1,20 @@
-import twilio from "twilio";
+import Twilio from "twilio";
 
-export const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+let client: ReturnType<typeof Twilio> | null = null;
 
-export const fromNumber = process.env.TWILIO_PHONE_NUMBER!;
+export function getTwilioClient() {
+  if (client) {
+    return client;
+  }
+
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials missing");
+  }
+
+  client = Twilio(sid, token);
+
+  return client;
+}
