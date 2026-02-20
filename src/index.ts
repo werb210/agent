@@ -1,24 +1,19 @@
 import express from "express";
 import dotenv from "dotenv";
-import rateLimit from "express-rate-limit";
 
 import { AgentRequest, AgentResponse } from "./types/agent";
 import { verifySignature, isFresh } from "./security/hmac";
 import { validatePermissions } from "./security/permissions";
+import { validateApiKey } from "./security/apiKeys";
 import { routeAgent } from "./router/agentRouter";
-import { logAgentEvent } from "./logging/logger";
+import { logger } from "./logging/logger";
+import { redisLimiter } from "./security/rateLimiter";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100
-});
-
-app.use(limiter);
+app.use(redisLimiter);
 
 app.post("/ai/execute", async (req, res) => {
   const start = Date.now();
@@ -37,7 +32,12 @@ app.post("/ai/execute", async (req, res) => {
 
     validatePermissions(payload.mode, payload.task);
 
-    const result = routeAgent(payload.task);
+    const tier = validateApiKey(payload.auth.apiKey);
+    if (tier === "PUBLIC" && payload.mode === "SERVER_INTERNAL") {
+      throw new Error("PUBLIC tier cannot access SERVER_INTERNAL mode");
+    }
+
+    const result = await routeAgent(payload.task, payload.data.payload);
 
     const response: AgentResponse = {
       requestId: payload.requestId,
@@ -56,12 +56,7 @@ app.post("/ai/execute", async (req, res) => {
       }
     };
 
-    logAgentEvent({
-      requestId: payload.requestId,
-      mode: payload.mode,
-      task: payload.task,
-      confidence: response.confidence
-    });
+    logger.info({ requestId: payload.requestId, task: payload.task });
 
     res.json(response);
   } catch (err: any) {

@@ -1,22 +1,38 @@
-export function routeAgent(task: string) {
+import { runAI } from "../brain/openaiClient";
+
+export async function routeAgent(task: string, payload: any) {
   switch (task) {
     case "chat":
-      return { content: "Chat response placeholder" };
-
-    case "intake":
-      return { structured: { status: "intake processed" } };
+      return {
+        content: await runAI(
+          "You are Maya, a booking agent. Never give legal or financial advice.",
+          payload
+        )
+      };
 
     case "memo":
-      return { content: "Underwriting memo placeholder" };
+      return {
+        content: await runAI(
+          "Generate structured underwriting memo.",
+          payload
+        )
+      };
 
     case "recommend":
-      return { lenders: [] };
+      return {
+        content: await runAI(
+          "Rank lenders based on deal structure. Return structured JSON.",
+          payload
+        )
+      };
 
     case "forecast":
-      return { projectedRevenue: 0 };
-
-    case "optimize":
-      return { strategy: "optimize" };
+      return {
+        content: await runAI(
+          "Forecast monthly revenue based on expected commissions.",
+          payload
+        )
+      };
 
     default:
       throw new Error("Invalid task");
