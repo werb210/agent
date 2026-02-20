@@ -47,10 +47,12 @@ Respond conversationally if no tool is needed.
           parameters: {
             type: "object",
             properties: {
-              date: { type: "string" },
-              time: { type: "string" }
+              startISO: {
+                type: "string",
+                description: "ISO-8601 datetime for requested meeting start time"
+              }
             },
-            required: ["date", "time"]
+            required: ["startISO"]
           }
         }
       }

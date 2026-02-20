@@ -2,8 +2,12 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { pool } from "../db";
 import { createChatCompletion } from "../services/openaiService";
-import { validateTime } from "../services/scheduler";
-import { createCalendarEvent } from "../services/calendarService";
+import {
+  enforceBusinessRules,
+  checkAvailability,
+  suggestNextAvailableSlot,
+  createCalendarEvent
+} from "../services/calendarService";
 import { sendSMS } from "../services/twilioService";
 import { appendMemory, getMemory } from "../services/memoryService";
 
@@ -50,11 +54,12 @@ export async function executeChat(message: string, incomingSessionId?: string): 
     const toolCall = msg.tool_calls[0];
 
     if (toolCall.function.name === "book_call") {
-      const args = JSON.parse(toolCall.function.arguments) as { date: string; time: string };
-      const validation = validateTime(args.date, args.time);
+      const args = JSON.parse(toolCall.function.arguments) as { startISO: string };
+      const validation = enforceBusinessRules(args.startISO);
 
-      if (!validation) {
-        const invalidReply = "That time is invalid. Please provide a future date and time.";
+      if (!validation.valid) {
+        const invalidReply =
+          "That time is outside business hours or invalid. Please choose a weekday between 9am and 5pm.";
         await appendMemory(sessionId, message, invalidReply);
 
         return {
@@ -64,14 +69,40 @@ export async function executeChat(message: string, incomingSessionId?: string): 
         };
       }
 
-      await createCalendarEvent(validation.startISO, validation.endISO);
+      const available = await checkAvailability(validation.startISO!, validation.endISO!);
 
-      if (incomingSessionId && /^\+?[1-9]\d{7,14}$/.test(incomingSessionId)) {
-        await sendSMS(incomingSessionId, `Confirmed: ${args.date} at ${args.time}`);
+      if (!available) {
+        const suggestion = await suggestNextAvailableSlot(validation.startISO!);
+
+        if (!suggestion) {
+          const unavailableReply = "That time is unavailable and no alternative slots were found today.";
+          await appendMemory(sessionId, message, unavailableReply);
+
+          return {
+            sessionId,
+            reply: unavailableReply,
+            confidence
+          };
+        }
+
+        const suggestedReply = `That time is booked. Next available slot is ${suggestion.startISO}. Would you like me to confirm it?`;
+        await appendMemory(sessionId, message, suggestedReply);
+
+        return {
+          sessionId,
+          reply: suggestedReply,
+          confidence
+        };
       }
 
-      const memo = `Booking for ${args.date} at ${args.time}`;
-      const bookingReply = `Your call has been scheduled for ${args.date} at ${args.time}.`;
+      await createCalendarEvent(validation.startISO!, validation.endISO!);
+
+      if (incomingSessionId && /^\+?[1-9]\d{7,14}$/.test(incomingSessionId)) {
+        await sendSMS(incomingSessionId, `Confirmed: ${validation.startISO}`);
+      }
+
+      const memo = `Booking for ${validation.startISO}`;
+      const bookingReply = `Your call has been scheduled for ${validation.startISO}.`;
 
       await pool.query(
         `UPDATE sessions
