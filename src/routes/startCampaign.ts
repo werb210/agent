@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../config/db";
-import { twilioClient, fromNumber } from "../config/twilio";
+import { getTwilioClient } from "../config/twilio";
 
 const router = Router();
 
@@ -18,10 +18,12 @@ router.post("/", async (req, res) => {
 
     if (!analysis) continue;
 
-    await twilioClient.calls.create({
+    const client = getTwilioClient();
+
+    await client.calls.create({
       url: `${process.env.PUBLIC_AGENT_URL}/voice-handler?leadId=${item.leadId}`,
       to: req.body.phoneNumber,
-      from: fromNumber
+      from: process.env.TWILIO_PHONE_NUMBER!
     });
 
     await (prisma as any).callQueue.update({
