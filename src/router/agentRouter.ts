@@ -3,11 +3,12 @@ import { getSession, updateSession } from "../memory/sessionStore";
 import { scoreDeal } from "../engine/scoringEngine";
 import { classifyTier } from "../engine/tierEngine";
 import { determineProduct } from "../engine/productEngine";
-import { matchLenders } from "../engine/lenderEngine";
+import { evaluateLenders } from "../engine/lenderMatrixEngine";
 import { notifyStaffIfHot, shouldEscalate } from "../engine/escalationEngine";
 import { pushToCRM } from "../engine/crmEngine";
-import { calculateApprovalProbability } from "../engine/probabilityEngine";
+import { simulateApprovalProbability } from "../engine/approvalEngine";
 import { generateDocumentChecklist } from "../engine/documentChecklist";
+import { generateCreditMemo } from "../engine/memoEngine";
 import { scheduleFollowUp } from "../engine/followupEngine";
 import { createCallBooking } from "../engine/callBookingEngine";
 
@@ -55,10 +56,11 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
     const scoring = scoreDeal(merged);
     const tier = classifyTier(scoring.score);
     const product = determineProduct(merged);
-    const lenders = await matchLenders(merged, tier);
+    const lenderMatches = await evaluateLenders(merged);
     const hotLead = shouldEscalate(scoring.score, merged.funding_amount);
-    const approvalProbability = calculateApprovalProbability(scoring.score);
-    const documentChecklist = generateDocumentChecklist(merged);
+    const probability = simulateApprovalProbability(scoring.score, lenderMatches.length);
+    const memo = await generateCreditMemo(merged);
+    const checklist = generateDocumentChecklist(merged);
 
     const nextConversation = [
       ...history,
@@ -72,10 +74,11 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
       scoring,
       tier,
       product,
-      lenderMatches: lenders,
+      lenderMatches,
       hotLead,
-      approvalProbability,
-      documentChecklist,
+      probability,
+      memo,
+      checklist,
       conversation: nextConversation
     };
 
@@ -87,7 +90,7 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
         score: scoring.score,
         tier,
         product,
-        lenders
+        lenders: lenderMatches
       });
       await notifyStaffIfHot(nextSession);
     }
@@ -103,10 +106,11 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
         scoring,
         tier,
         product,
-        lenders,
+        lenders: lenderMatches,
         hotLead,
-        approvalProbability,
-        documentChecklist
+        probability,
+        memo,
+        checklist
       }
     };
   }
