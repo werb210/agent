@@ -8,6 +8,7 @@ import startCampaignRoute from "./routes/startCampaign";
 import voiceHandlerRoute from "./routes/voiceHandler";
 import gatherResponseRoute from "./routes/gatherResponse";
 import speechHandlerRoute from "./routes/speechHandler";
+import rankDealsRoute from "./routes/rankDeals";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/start-campaign", startCampaignRoute);
 app.use("/voice-handler", voiceHandlerRoute);
 app.use("/gather-response", gatherResponseRoute);
 app.use("/speech-handler", speechHandlerRoute);
+app.use("/rank-deals", rankDealsRoute);
 
 const PORT = process.env.PORT || 5000;
 
