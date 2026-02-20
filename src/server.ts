@@ -1,70 +1,74 @@
 import express from "express";
 import cors from "cors";
-import analyzeLeadRoute from "./routes/analyzeLead";
-import callOutcomeRoute from "./routes/callOutcome";
-import recalcRoute from "./routes/recalculate";
-import startCampaignRoute from "./routes/startCampaign";
-import voiceHandlerRoute from "./routes/voiceHandler";
-import gatherResponseRoute from "./routes/gatherResponse";
-import speechHandlerRoute from "./routes/speechHandler";
-import rankDealsRoute from "./routes/rankDeals";
-import generateMemoRoute from "./routes/generateMemo";
-import forecastRoute from "./routes/forecast";
-import aiExecuteRoute from "./routes/aiExecute";
-
+import bodyParser from "body-parser";
+import Twilio from "twilio";
+import { routeAgent } from "./router/agentRouter";
 
 const app = express();
 
-console.log("ENV CHECK:", {
-  hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
-  hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
-});
-
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get("/", (_, res) => {
-  res.json({ status: "Agent running" });
+  res.json({ status: "Maya SMS Agent running" });
 });
 
-app.get("/health", (_, res) => {
-  res.json({ status: "Agent running" });
+/**
+ * Direct AI test endpoint
+ */
+app.post("/ai/execute", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    const result = await routeAgent("chat", { message });
+
+    return res.json({
+      success: true,
+      result,
+      confidence: 0.95
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
-/*
-|--------------------------------------------------------------------------
-| Core Business Routes
-|--------------------------------------------------------------------------
-*/
+/**
+ * Twilio SMS webhook
+ */
+app.post("/sms", async (req, res) => {
+  try {
+    const incomingMessage = req.body.Body;
+    const from = req.body.From;
 
-app.use("/analyze-lead", analyzeLeadRoute);
-app.use("/call-outcome", callOutcomeRoute);
-app.use("/recalculate", recalcRoute);
-app.use("/start-campaign", startCampaignRoute);
-app.use("/voice-handler", voiceHandlerRoute);
-app.use("/gather-response", gatherResponseRoute);
-app.use("/speech-handler", speechHandlerRoute);
-app.use("/rank-deals", rankDealsRoute);
-app.use("/generate-memo", generateMemoRoute);
-app.use("/forecast", forecastRoute);
+    if (!incomingMessage || !from) {
+      return res.sendStatus(400);
+    }
 
-/*
-|--------------------------------------------------------------------------
-| AI Secure Execute Route
-|--------------------------------------------------------------------------
-*/
+    const result = await routeAgent("chat", {
+      message: incomingMessage
+    });
 
-app.use("/ai", aiExecuteRoute);
+    const client = Twilio(
+      process.env.TWILIO_ACCOUNT_SID!,
+      process.env.TWILIO_AUTH_TOKEN!
+    );
 
-/*
-|--------------------------------------------------------------------------
-| Start Server
-|--------------------------------------------------------------------------
-*/
+    await client.messages.create({
+      body: result.content ?? "",
+      from: process.env.TWILIO_PHONE_NUMBER!,
+      to: from
+    });
+
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    return res.sendStatus(500);
+  }
+});
 
 const PORT = 4000;
 
 app.listen(PORT, () => {
-  console.log(`Agent service running on port ${PORT}`);
+  console.log(`Maya SMS Agent running on port ${PORT}`);
 });
