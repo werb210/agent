@@ -2,7 +2,8 @@ export type Mode =
   | "WEBSITE_VISITOR"
   | "CLIENT_APPLICANT"
   | "PORTAL_STAFF"
-  | "SERVER_INTERNAL";
+  | "SERVER_INTERNAL"
+  | "INTERNAL_TEST";
 
 export type Task =
   | "chat"
