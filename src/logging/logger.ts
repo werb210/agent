@@ -1,8 +1,7 @@
-export function logAgentEvent(data: any) {
-  console.log(
-    JSON.stringify({
-      timestamp: new Date().toISOString(),
-      ...data
-    })
-  );
-}
+import winston from "winston";
+
+export const logger = winston.createLogger({
+  transports: [
+    new winston.transports.File({ filename: "agent.log" })
+  ]
+});
