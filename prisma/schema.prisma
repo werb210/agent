@@ -83,8 +83,13 @@ model RepPerformance {
 }
 
 model Session {
-  sessionId String @id @map("session_id")
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  task      String
   data      Json
+  memo      String?
+  tier      String?
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("sessions")
 }
