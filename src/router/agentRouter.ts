@@ -1,162 +1,81 @@
-import { runAI } from "../brain/openaiClient";
-import { getSession, updateSession } from "../memory/sessionStore";
-import { scoreDeal } from "../engine/scoringEngine";
-import { classifyTier } from "../engine/tierEngine";
-import { determineProduct } from "../engine/productEngine";
-import { evaluateLenders } from "../engine/lenderMatrixEngine";
-import { notifyStaffIfHot, shouldEscalate } from "../engine/escalationEngine";
-import { pushToCRM } from "../engine/crmEngine";
-import { generateDocumentChecklist } from "../engine/documentChecklist";
-import { generateCreditMemo } from "../engine/memoEngine";
-import { scheduleFollowUp } from "../engine/followupEngine";
-import { createCallBooking } from "../engine/callBookingEngine";
-import { createLenderDeals } from "../engine/lenderDealEngine";
-import { advancedApprovalPredictor } from "../engine/predictiveEngine";
-import { getClosingProbability, trackDealEvent } from "../engine/dealEventsEngine";
+import crypto from "crypto";
+import { Router, Request, Response } from "express";
+import { pool } from "../db";
 
-const SYSTEM_PROMPT = `
-You are Maya, senior funding advisor.
-Qualify, collect data, and move deals forward.
-Keep SMS short.
-Ask one question at a time.
-`;
+type RouteAgentResult = {
+  content: string;
+  internal?: {
+    sessionId: string;
+    task: string;
+  };
+};
 
-const EXTRACTION_PROMPT = `
-Extract structured data and return JSON only:
-{
-  "business_name": string | null,
-  "industry": string | null,
-  "time_in_business_months": number | null,
-  "monthly_revenue": number | null,
-  "funding_amount": number | null,
-  "purpose": string | null,
-  "location": string | null
+const router = Router();
+
+async function executeChat(message: string, incomingSessionId?: string): Promise<{
+  sessionId: string;
+  reply: string;
+}> {
+  const sessionId = incomingSessionId ?? crypto.randomUUID();
+  const task = "chat";
+  const data = {
+    message,
+    timestamp: new Date().toISOString()
+  };
+
+  await pool.query(
+    `INSERT INTO sessions (session_id, task, data)
+     VALUES ($1, $2, $3)`,
+    [sessionId, task, data]
+  );
+
+  return {
+    sessionId,
+    reply: `Maya received: ${message}`
+  };
 }
-`;
 
-export async function routeAgent(task: string, payload: any, sessionId?: string) {
-  const resolvedSessionId = sessionId ?? payload?.userId ?? "default";
-  const session = await getSession(resolvedSessionId);
-  const history = session.conversation ?? [];
+router.post("/ai/execute", async (req: Request, res: Response) => {
+  try {
+    const { message } = req.body ?? {};
 
-  if (task === "chat") {
-    const userMessage = String(payload?.message ?? payload ?? "");
-
-    const conversational = await runAI(SYSTEM_PROMPT, userMessage, history);
-    const extractedRaw = await runAI(EXTRACTION_PROMPT, userMessage, history);
-
-    let structured = {};
-    try {
-      structured = JSON.parse(extractedRaw as string);
-    } catch {
-      structured = {};
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "message is required" });
     }
 
-    const merged = { ...session.structured, ...structured } as any;
+    const { sessionId, reply } = await executeChat(message);
 
-    const scoring = scoreDeal(merged);
-    const tier = classifyTier(scoring.score);
-    const product = determineProduct(merged);
-    const lenderMatches = await evaluateLenders(merged);
-    const hotLead = shouldEscalate(scoring.score, merged.funding_amount);
-    const probability = advancedApprovalPredictor({ ...merged, score: scoring.score });
-    const memo = await generateCreditMemo(merged);
-    const checklist = generateDocumentChecklist(merged);
+    return res.json({
+      success: true,
+      sessionId,
+      reply
+    });
+  } catch (err: any) {
+    console.error("AI execute error:", err);
+    const message = err instanceof Error && err.message ? err.message : "Internal server error";
+    return res.status(500).json({ error: message });
+  }
+});
 
-    await trackDealEvent(resolvedSessionId, "FIRST_RESPONSE");
-    if (lenderMatches.length > 0) {
-      await trackDealEvent(resolvedSessionId, "SENT_TO_LENDER");
-    }
-    await createLenderDeals(lenderMatches, resolvedSessionId);
-    const closingProbability = await getClosingProbability(resolvedSessionId);
-
-    const nextConversation = [
-      ...history,
-      { role: "user", content: userMessage },
-      { role: "assistant", content: conversational ?? "" }
-    ];
-
-    const nextSession = {
-      ...session,
-      structured: merged,
-      scoring,
-      tier,
-      product,
-      lenderMatches,
-      hotLead,
-      probability,
-      closingProbability,
-      memo,
-      checklist,
-      conversation: nextConversation
-    };
-
-    await updateSession(resolvedSessionId, nextSession);
-
-    if (hotLead) {
-      await pushToCRM({
-        ...merged,
-        score: scoring.score,
-        tier,
-        product,
-        lenders: lenderMatches
-      });
-      await notifyStaffIfHot(nextSession);
-    }
-
-    if (payload?.userId) {
-      scheduleFollowUp(payload.userId);
-    }
-
-    return {
-      content: conversational,
-      internal: {
-        structured: merged,
-        scoring,
-        tier,
-        product,
-        lenders: lenderMatches,
-        hotLead,
-        probability,
-        closingProbability,
-        memo,
-        checklist
-      }
-    };
+export async function routeAgent(task: string, payload: any, sessionId?: string): Promise<RouteAgentResult> {
+  if (task !== "chat") {
+    throw new Error("Invalid task");
   }
 
-  if (task === "objection") {
-    const response = await runAI(
-      "Handle funding objections professionally and move toward closing.",
-      String(payload?.message ?? ""),
-      history
-    );
-
-    const nextSession = {
-      ...session,
-      conversation: [
-        ...history,
-        { role: "user", content: String(payload?.message ?? "") },
-        { role: "assistant", content: response ?? "" }
-      ]
-    };
-
-    await updateSession(resolvedSessionId, nextSession);
-    return { content: response };
+  const message = String(payload?.message ?? payload ?? "").trim();
+  if (!message) {
+    throw new Error("message is required");
   }
 
-  if (task === "book_call") {
-    const booking = await createCallBooking(
-      resolvedSessionId,
-      String(payload?.phone ?? payload?.userId ?? ""),
-      String(payload?.requestedTime ?? new Date().toISOString())
-    );
+  const result = await executeChat(message, sessionId ?? payload?.userId);
 
-    return {
-      content: "Great — I have your call request and our team will confirm shortly.",
-      booking
-    };
-  }
-
-  throw new Error("Invalid task");
+  return {
+    content: result.reply,
+    internal: {
+      sessionId: result.sessionId,
+      task: "chat"
+    }
+  };
 }
+
+export default router;

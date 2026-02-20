@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import Twilio from "twilio";
-import { routeAgent } from "./router/agentRouter";
+import agentRouter, { routeAgent } from "./router/agentRouter";
 import { getSession } from "./memory/sessionStore";
 import { getLenderPortalDeals, uploadTermSheet } from "./engine/lenderDealEngine";
 import { pool } from "./config/pool";
@@ -18,6 +18,12 @@ app.use(express.json());
 app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
 });
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+app.use(agentRouter);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
@@ -94,26 +100,6 @@ app.post("/agent/recommend", async (req, res) => {
 app.get("/agent/dashboard/:id", async (req, res) => {
   const session = await getSession(req.params.id);
   res.json(session);
-});
-
-app.post("/ai/execute", async (req, res) => {
-  try {
-    const { message, userId } = req.body;
-
-    const result = await routeAgent("chat", {
-      message,
-      userId: userId ?? "direct-test"
-    });
-
-    return res.json({
-      success: true,
-      result,
-      confidence: 0.95
-    });
-  } catch (err: any) {
-    console.error("AI execute error:", err);
-    return res.status(500).json({ error: err.message });
-  }
 });
 
 app.post("/sms", async (req, res) => {
