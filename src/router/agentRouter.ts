@@ -1,44 +1,21 @@
 import { runAI } from "../brain/openaiClient";
-import { appendMessage } from "../training/memoryStore";
+import { getSession, updateSession } from "../memory/sessionStore";
+import { scoreDeal } from "../engine/scoringEngine";
+import { classifyTier } from "../engine/tierEngine";
+import { determineProduct } from "../engine/productEngine";
+import { matchLenders } from "../engine/lenderEngine";
+import { shouldEscalate } from "../engine/escalationEngine";
+import { pushToCRM } from "../engine/crmEngine";
 
-/*
-Core conversational system prompt
-*/
-const MAYA_SYSTEM_PROMPT = `
-You are Maya, a senior business funding advisor for Boreal Financial.
-
-Your job:
-- Qualify business funding leads
-- Collect underwriting data naturally
-- Identify best product fit
-- Score deal strength internally
-- Move qualified leads toward next step
-- Stay SMS friendly
-
-Collect:
-- Business name
-- Industry
-- Time in business
-- Monthly revenue
-- Funding amount
-- Purpose
-- Location
-
-Be proactive.
-Ask one focused question at a time.
-Never give legal or tax advice.
-Never guarantee approval.
-Keep responses short.
+const SYSTEM_PROMPT = `
+You are Maya, senior funding advisor.
+Qualify, collect data, and move deals forward.
+Keep SMS short.
+Ask one question at a time.
 `;
 
-/*
-Structured extraction prompt
-*/
 const EXTRACTION_PROMPT = `
-Extract structured underwriting data from the conversation.
-
-Return ONLY valid JSON in this format:
-
+Extract structured data and return JSON:
 {
   "business_name": string | null,
   "industry": string | null,
@@ -50,128 +27,60 @@ Return ONLY valid JSON in this format:
 }
 `;
 
-/*
-Scoring prompt
-*/
-const SCORING_PROMPT = `
-Score this deal from 0 to 100 based on funding strength.
-
-Return JSON:
-{
-  "score": number,
-  "risk": "LOW" | "MEDIUM" | "HIGH",
-  "reason": string
-}
-`;
-
-/*
-Product fit prompt
-*/
-const PRODUCT_PROMPT = `
-Determine best funding product.
-
-Return JSON:
-{
-  "recommended_product": string,
-  "why": string
-}
-`;
-
 export async function routeAgent(task: string, payload: any, sessionId?: string) {
-  let result;
+  if (!sessionId) sessionId = "default";
 
-  switch (task) {
-    case "chat": {
-      const conversational = await runAI(
-        MAYA_SYSTEM_PROMPT,
-        payload
-      );
+  const session = getSession(sessionId);
 
-      // Structured extraction
-      const extracted = await runAI(
-        EXTRACTION_PROMPT,
-        payload,
-        { json: true }
-      );
+  if (task === "chat") {
+    const conversational = await runAI(SYSTEM_PROMPT, payload);
 
-      let structuredData;
-      try {
-        structuredData = JSON.parse(extracted as string);
-      } catch {
-        structuredData = null;
-      }
+    const extractedRaw = await runAI(EXTRACTION_PROMPT, payload, { json: true });
 
-      let scoreData = null;
-      let productFit = null;
+    let structured = {};
+    try {
+      structured = JSON.parse(extractedRaw as string);
+    } catch {}
 
-      if (structuredData) {
-        try {
-          const scoring = await runAI(
-            SCORING_PROMPT,
-            structuredData,
-            { json: true }
-          );
-          scoreData = JSON.parse(scoring as string);
+    const merged = { ...session.structured, ...structured };
 
-          const product = await runAI(
-            PRODUCT_PROMPT,
-            structuredData,
-            { json: true }
-          );
-          productFit = JSON.parse(product as string);
-        } catch {
-          // fail silently for scoring layer
-        }
-      }
+    const scoring = scoreDeal(merged);
+    const tier = classifyTier(scoring.score);
+    const product = determineProduct(merged);
+    const lenders = matchLenders(merged, tier);
+    const hotLead = shouldEscalate(scoring.score, merged.funding_amount);
 
-      result = {
-        content: conversational,
-        structured: structuredData,
-        scoring: scoreData,
-        productFit
-      };
+    updateSession(sessionId, {
+      structured: merged,
+      scoring,
+      tier,
+      product,
+      lenderMatches: lenders,
+      hotLead
+    });
 
-      break;
+    if (hotLead) {
+      await pushToCRM({
+        ...merged,
+        score: scoring.score,
+        tier,
+        product,
+        lenders
+      });
     }
 
-    case "memo":
-      result = {
-        content: await runAI(
-          "Generate structured underwriting memo with risks and mitigants.",
-          payload
-        )
-      };
-      break;
-
-    case "recommend":
-      result = {
-        content: await runAI(
-          "Rank lenders best suited for this deal. Return structured JSON.",
-          payload
-        )
-      };
-      break;
-
-    case "forecast":
-      result = {
-        content: await runAI(
-          "Forecast projected commission and pipeline growth.",
-          payload
-        )
-      };
-      break;
-
-    default:
-      throw new Error("Invalid task");
+    return {
+      content: conversational,
+      internal: {
+        structured: merged,
+        scoring,
+        tier,
+        product,
+        lenders,
+        hotLead
+      }
+    };
   }
 
-  if (sessionId) {
-    appendMessage(sessionId, {
-      task,
-      payload,
-      result
-    });
-  }
-
-  return result;
+  throw new Error("Invalid task");
 }
