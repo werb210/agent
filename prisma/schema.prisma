@@ -62,3 +62,22 @@ model ConversationLog {
   escalated         Boolean
   createdAt         DateTime @default(now())
 }
+
+
+model Lender {
+  id                String   @id @default(uuid())
+  name              String
+  preferredIndustry String
+  minAmount         Float
+  maxAmount         Float
+  createdAt         DateTime @default(now())
+}
+
+model RepPerformance {
+  id           String   @id @default(uuid())
+  repName      String
+  assigned     Int
+  funded       Int
+  totalRevenue Float
+  updatedAt    DateTime @updatedAt
+}

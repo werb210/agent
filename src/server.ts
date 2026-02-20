@@ -9,6 +9,8 @@ import voiceHandlerRoute from "./routes/voiceHandler";
 import gatherResponseRoute from "./routes/gatherResponse";
 import speechHandlerRoute from "./routes/speechHandler";
 import rankDealsRoute from "./routes/rankDeals";
+import generateMemoRoute from "./routes/generateMemo";
+import forecastRoute from "./routes/forecast";
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ app.use("/voice-handler", voiceHandlerRoute);
 app.use("/gather-response", gatherResponseRoute);
 app.use("/speech-handler", speechHandlerRoute);
 app.use("/rank-deals", rankDealsRoute);
+app.use("/generate-memo", generateMemoRoute);
+app.use("/forecast", forecastRoute);
 
 const PORT = process.env.PORT || 5000;
 
