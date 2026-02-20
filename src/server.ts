@@ -11,6 +11,7 @@ import speechHandlerRoute from "./routes/speechHandler";
 import rankDealsRoute from "./routes/rankDeals";
 import generateMemoRoute from "./routes/generateMemo";
 import forecastRoute from "./routes/forecast";
+import aiExecuteRoute from "./routes/aiExecute";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use("/speech-handler", speechHandlerRoute);
 app.use("/rank-deals", rankDealsRoute);
 app.use("/generate-memo", generateMemoRoute);
 app.use("/forecast", forecastRoute);
+app.use("/ai", aiExecuteRoute);
 
 const PORT = process.env.PORT || 5000;
 
