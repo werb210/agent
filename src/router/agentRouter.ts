@@ -1,118 +1,143 @@
 import { runAI } from "../brain/openaiClient";
 import { appendMessage } from "../training/memoryStore";
 
+/*
+Core conversational system prompt
+*/
 const MAYA_SYSTEM_PROMPT = `
-You are Maya, a highly capable senior funding advisor for Boreal Financial.
+You are Maya, a senior business funding advisor for Boreal Financial.
 
-You are not just a chatbot. You qualify, structure, and move deals forward.
+Your job:
+- Qualify business funding leads
+- Collect underwriting data naturally
+- Identify best product fit
+- Score deal strength internally
+- Move qualified leads toward next step
+- Stay SMS friendly
 
-Primary Objectives:
-1. Identify if the user wants business funding.
-2. Pre-qualify quickly and intelligently.
-3. Collect structured underwriting data.
-4. Identify best-fit product.
-5. Move qualified leads toward application or call booking.
-6. Disqualify politely when needed.
-7. Stay conversational and SMS-friendly.
-
-Tone:
-- Confident
-- Efficient
-- Professional
-- Friendly
-- Never robotic
-- Short SMS-friendly responses
-- Ask one focused question at a time
-
-Core Underwriting Data to Collect:
+Collect:
 - Business name
 - Industry
 - Time in business
 - Monthly revenue
-- Funding amount requested
-- Purpose of funds
-- Province/State
-- Credit profile (optional but useful)
+- Funding amount
+- Purpose
+- Location
 
-Products You Can Position:
-- Line of Credit
-- Term Loan
-- Equipment Financing
-- Invoice Factoring
-- Merchant Cash Advance
-- Working Capital
-- Expansion Capital
-
-Basic Qualification Guidelines (Do not state explicitly unless needed):
-- Prefer 6+ months in business
-- Prefer $15k+ monthly revenue
-- Funding range typically 10k – 2M
-
-Behavior Rules:
-
-If user says:
-"I need funding"
-→ Ask funding amount first.
-
-If user gives amount:
-→ Ask time in business.
-
-If time < 6 months:
-→ Pivot to startup-style programs if possible.
-→ Otherwise politely explain minimums.
-
-If revenue given:
-→ Assess strength.
-→ Continue to purpose of funds.
-
-If user gives vague message like:
-"Hi"
-→ Engage: "Are you looking for business funding today?"
-
-If user tests:
-→ Light reply then redirect toward funding qualification.
-
-If user qualifies strongly:
-→ Move to next step:
-  - Offer call booking
-  - Offer quick application link
-  - Confirm contact info
-
-If user not qualified:
-→ Respond politely, provide general guidance.
-
-Never:
-- Give legal advice
-- Give tax advice
-- Guarantee approval
-- Invent lender policies
-- Overpromise
-
-When sufficient data collected:
-→ Internally summarize qualification (do not show full JSON)
-→ Move toward next step.
-
-Keep responses under ~3 SMS lengths.
 Be proactive.
+Ask one focused question at a time.
+Never give legal or tax advice.
+Never guarantee approval.
+Keep responses short.
+`;
+
+/*
+Structured extraction prompt
+*/
+const EXTRACTION_PROMPT = `
+Extract structured underwriting data from the conversation.
+
+Return ONLY valid JSON in this format:
+
+{
+  "business_name": string | null,
+  "industry": string | null,
+  "time_in_business_months": number | null,
+  "monthly_revenue": number | null,
+  "funding_amount": number | null,
+  "purpose": string | null,
+  "location": string | null
+}
+`;
+
+/*
+Scoring prompt
+*/
+const SCORING_PROMPT = `
+Score this deal from 0 to 100 based on funding strength.
+
+Return JSON:
+{
+  "score": number,
+  "risk": "LOW" | "MEDIUM" | "HIGH",
+  "reason": string
+}
+`;
+
+/*
+Product fit prompt
+*/
+const PRODUCT_PROMPT = `
+Determine best funding product.
+
+Return JSON:
+{
+  "recommended_product": string,
+  "why": string
+}
 `;
 
 export async function routeAgent(task: string, payload: any, sessionId?: string) {
   let result;
 
   switch (task) {
-    case "chat":
+    case "chat": {
+      const conversational = await runAI(
+        MAYA_SYSTEM_PROMPT,
+        payload
+      );
+
+      // Structured extraction
+      const extracted = await runAI(
+        EXTRACTION_PROMPT,
+        payload,
+        { json: true }
+      );
+
+      let structuredData;
+      try {
+        structuredData = JSON.parse(extracted as string);
+      } catch {
+        structuredData = null;
+      }
+
+      let scoreData = null;
+      let productFit = null;
+
+      if (structuredData) {
+        try {
+          const scoring = await runAI(
+            SCORING_PROMPT,
+            structuredData,
+            { json: true }
+          );
+          scoreData = JSON.parse(scoring as string);
+
+          const product = await runAI(
+            PRODUCT_PROMPT,
+            structuredData,
+            { json: true }
+          );
+          productFit = JSON.parse(product as string);
+        } catch {
+          // fail silently for scoring layer
+        }
+      }
+
       result = {
-        content: await runAI(
-          MAYA_SYSTEM_PROMPT,
-          payload
-        )
+        content: conversational,
+        structured: structuredData,
+        scoring: scoreData,
+        productFit
       };
+
       break;
+    }
 
     case "memo":
       result = {
         content: await runAI(
-          "Generate a structured underwriting memo including risks, mitigants, and recommended structure.",
+          "Generate structured underwriting memo with risks and mitigants.",
           payload
         )
       };
@@ -121,7 +146,7 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
     case "recommend":
       result = {
         content: await runAI(
-          "Rank funding options best suited for this business profile. Return structured JSON.",
+          "Rank lenders best suited for this deal. Return structured JSON.",
           payload
         )
       };
@@ -130,34 +155,7 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
     case "forecast":
       result = {
         content: await runAI(
-          "Forecast projected commissions and monthly revenue growth from this deal flow.",
-          payload
-        )
-      };
-      break;
-
-    case "risk_assessment":
-      result = {
-        content: await runAI(
-          "Assess underwriting risk and categorize as LOW, MEDIUM, or HIGH with reasoning.",
-          payload
-        )
-      };
-      break;
-
-    case "product_fit":
-      result = {
-        content: await runAI(
-          "Determine best funding product based on business profile and explain reasoning briefly.",
-          payload
-        )
-      };
-      break;
-
-    case "objection_handler":
-      result = {
-        content: await runAI(
-          "Handle funding objections professionally and move conversation forward.",
+          "Forecast projected commission and pipeline growth.",
           payload
         )
       };
