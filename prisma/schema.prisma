@@ -100,6 +100,20 @@ model LenderMatrix {
   @@map("lender_matrix")
 }
 
+
+model LenderRule {
+  id                Int      @id @default(autoincrement())
+  name              String
+  minTimeMonths     Int?     @map("min_time_months")
+  minRevenue        Int?     @map("min_revenue")
+  minFunding        Int?     @map("min_funding")
+  maxFunding        Int?     @map("max_funding")
+  allowedIndustries String[] @map("allowed_industries")
+  maxRisk           String?  @map("max_risk")
+
+  @@map("lenders")
+}
+
 model CallBooking {
   id            String   @id @default(dbgenerated("md5((random())::text || (clock_timestamp())::text)"))
   sessionId     String   @map("session_id")

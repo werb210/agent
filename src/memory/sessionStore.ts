@@ -20,6 +20,9 @@ export async function getSession(sessionId: string) {
       hotLead: false,
       approvalProbability: null,
       documentChecklist: [],
+      probability: null,
+      memo: null,
+      checklist: [],
       conversation: []
     };
 
