@@ -6,11 +6,13 @@ import { determineProduct } from "../engine/productEngine";
 import { evaluateLenders } from "../engine/lenderMatrixEngine";
 import { notifyStaffIfHot, shouldEscalate } from "../engine/escalationEngine";
 import { pushToCRM } from "../engine/crmEngine";
-import { simulateApprovalProbability } from "../engine/approvalEngine";
 import { generateDocumentChecklist } from "../engine/documentChecklist";
 import { generateCreditMemo } from "../engine/memoEngine";
 import { scheduleFollowUp } from "../engine/followupEngine";
 import { createCallBooking } from "../engine/callBookingEngine";
+import { createLenderDeals } from "../engine/lenderDealEngine";
+import { advancedApprovalPredictor } from "../engine/predictiveEngine";
+import { getClosingProbability, trackDealEvent } from "../engine/dealEventsEngine";
 
 const SYSTEM_PROMPT = `
 You are Maya, senior funding advisor.
@@ -41,7 +43,6 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
     const userMessage = String(payload?.message ?? payload ?? "");
 
     const conversational = await runAI(SYSTEM_PROMPT, userMessage, history);
-
     const extractedRaw = await runAI(EXTRACTION_PROMPT, userMessage, history);
 
     let structured = {};
@@ -51,16 +52,23 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
       structured = {};
     }
 
-    const merged = { ...session.structured, ...structured };
+    const merged = { ...session.structured, ...structured } as any;
 
     const scoring = scoreDeal(merged);
     const tier = classifyTier(scoring.score);
     const product = determineProduct(merged);
     const lenderMatches = await evaluateLenders(merged);
     const hotLead = shouldEscalate(scoring.score, merged.funding_amount);
-    const probability = simulateApprovalProbability(scoring.score, lenderMatches.length);
+    const probability = advancedApprovalPredictor({ ...merged, score: scoring.score });
     const memo = await generateCreditMemo(merged);
     const checklist = generateDocumentChecklist(merged);
+
+    await trackDealEvent(resolvedSessionId, "FIRST_RESPONSE");
+    if (lenderMatches.length > 0) {
+      await trackDealEvent(resolvedSessionId, "SENT_TO_LENDER");
+    }
+    await createLenderDeals(lenderMatches, resolvedSessionId);
+    const closingProbability = await getClosingProbability(resolvedSessionId);
 
     const nextConversation = [
       ...history,
@@ -77,6 +85,7 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
       lenderMatches,
       hotLead,
       probability,
+      closingProbability,
       memo,
       checklist,
       conversation: nextConversation
@@ -109,6 +118,7 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
         lenders: lenderMatches,
         hotLead,
         probability,
+        closingProbability,
         memo,
         checklist
       }

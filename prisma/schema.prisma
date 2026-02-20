@@ -124,3 +124,32 @@ model CallBooking {
 
   @@map("call_bookings")
 }
+
+
+model LenderUser {
+  id           Int    @id @default(autoincrement())
+  lenderId     Int?   @map("lender_id")
+  email        String @unique
+  passwordHash String @map("password_hash")
+
+  @@map("lender_users")
+}
+
+model LenderDeal {
+  id       Int     @id @default(autoincrement())
+  lenderId Int?    @map("lender_id")
+  sessionId String? @map("session_id")
+  status   String? @default("NEW")
+
+  @@unique([lenderId, sessionId], name: "lender_deals_lender_session_unique")
+  @@map("lender_deals")
+}
+
+model DealEvent {
+  id        Int       @id @default(autoincrement())
+  sessionId String?   @map("session_id")
+  eventType String?   @map("event_type")
+  createdAt DateTime? @default(now()) @map("created_at")
+
+  @@map("deal_events")
+}

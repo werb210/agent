@@ -1,8 +1,4 @@
-import { Pool } from "pg";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+import { pool } from "../config/pool";
 
 export async function getSession(sessionId: string) {
   const result = await pool.query(
