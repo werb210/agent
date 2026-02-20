@@ -1,12 +1,17 @@
 import { Router } from "express";
+import { generateMayaResponse } from "../voice/mayaConversation";
 
 const router = Router();
 
-router.post("/", (_req, res) => {
+router.post("/", async (req, res) => {
+  const speech = req.body.SpeechResult || "";
+
+  const reply = await generateMayaResponse(speech);
+
   const twiml = `
     <Response>
       <Say voice="alice">
-        Hi, this is Maya from Boreal Financial. How can I help you today?
+        ${reply}
       </Say>
       <Gather input="speech" action="/speech-handler" method="POST" speechTimeout="auto"/>
     </Response>
