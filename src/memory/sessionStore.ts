@@ -1,21 +1,42 @@
-const sessions: Record<string, any> = {};
+import { Pool } from "pg";
 
-export function getSession(sessionId: string) {
-  if (!sessions[sessionId]) {
-    sessions[sessionId] = {
-      conversation: [],
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+export async function getSession(sessionId: string) {
+  const result = await pool.query(
+    "SELECT data FROM sessions WHERE session_id = $1",
+    [sessionId]
+  );
+
+  if (result.rows.length === 0) {
+    const empty = {
       structured: {},
       scoring: null,
       tier: null,
       product: null,
       lenderMatches: null,
-      hotLead: false
+      hotLead: false,
+      approvalProbability: null,
+      documentChecklist: [],
+      conversation: []
     };
+
+    await pool.query(
+      "INSERT INTO sessions (session_id, data) VALUES ($1, $2)",
+      [sessionId, empty]
+    );
+
+    return empty;
   }
-  return sessions[sessionId];
+
+  return result.rows[0].data;
 }
 
-export function updateSession(sessionId: string, updates: any) {
-  const session = getSession(sessionId);
-  Object.assign(session, updates);
+export async function updateSession(sessionId: string, data: any) {
+  await pool.query(
+    "UPDATE sessions SET data = $1 WHERE session_id = $2",
+    [data, sessionId]
+  );
 }

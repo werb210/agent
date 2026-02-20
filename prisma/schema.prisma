@@ -81,3 +81,32 @@ model RepPerformance {
   totalRevenue Float
   updatedAt    DateTime @updatedAt
 }
+
+model Session {
+  sessionId String @id @map("session_id")
+  data      Json
+
+  @@map("sessions")
+}
+
+model LenderMatrix {
+  id         String   @id @default(dbgenerated("md5((random())::text || (clock_timestamp())::text)"))
+  lenderName String   @map("lender_name")
+  tier       String
+  minAmount  Float    @map("min_amount")
+  maxAmount  Float    @map("max_amount")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("lender_matrix")
+}
+
+model CallBooking {
+  id            String   @id @default(dbgenerated("md5((random())::text || (clock_timestamp())::text)"))
+  sessionId     String   @map("session_id")
+  phone         String
+  requestedTime String   @map("requested_time")
+  status        String   @default("pending")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("call_bookings")
+}
