@@ -1,21 +1,22 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
-import OpenAI from "openai";
 import { pool } from "../db";
+import { createChatCompletion } from "../services/openaiService";
+import { validateTime } from "../services/scheduler";
+import { createCalendarEvent } from "../services/calendarService";
+import { sendSMS } from "../services/twilioService";
+import { appendMemory, getMemory } from "../services/memoryService";
 
 type RouteAgentResult = {
   content: string;
   internal?: {
     sessionId: string;
     task: string;
+    confidence?: number;
   };
 };
 
 const router = Router();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "sk-placeholder"
-});
 
 async function ensureSession(sessionId: string): Promise<void> {
   await pool.query(
@@ -29,6 +30,7 @@ export async function executeChat(message: string, incomingSessionId?: string): 
   sessionId: string;
   reply: string | null;
   action?: "book_call";
+  confidence: number;
 }> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is not configured");
@@ -40,51 +42,36 @@ export async function executeChat(message: string, incomingSessionId?: string): 
     await ensureSession(sessionId);
   }
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
-You are Maya, an intelligent SMS business assistant.
-You can book calls and respond naturally.
-When appropriate, use tools.
-Respond conversationally if no tool is needed.
-`
-      },
-      {
-        role: "user",
-        content: message
-      }
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "book_call",
-          description: "Book a phone call for the user",
-          parameters: {
-            type: "object",
-            properties: {
-              date: { type: "string" },
-              time: { type: "string" }
-            },
-            required: ["date", "time"]
-          }
-        }
-      }
-    ],
-    tool_choice: "auto"
-  });
-
-  const msg = completion.choices[0]?.message;
+  const priorMemory = await getMemory(sessionId);
+  const { message: aiMessage, confidence } = await createChatCompletion(message, priorMemory);
+  const msg = aiMessage;
 
   if (msg?.tool_calls && msg.tool_calls.length > 0) {
     const toolCall = msg.tool_calls[0];
 
     if (toolCall.function.name === "book_call") {
-      const args = JSON.parse(toolCall.function.arguments);
+      const args = JSON.parse(toolCall.function.arguments) as { date: string; time: string };
+      const validation = validateTime(args.date, args.time);
+
+      if (!validation) {
+        const invalidReply = "That time is invalid. Please provide a future date and time.";
+        await appendMemory(sessionId, message, invalidReply);
+
+        return {
+          sessionId,
+          reply: invalidReply,
+          confidence
+        };
+      }
+
+      await createCalendarEvent(validation.startISO, validation.endISO);
+
+      if (incomingSessionId && /^\+?[1-9]\d{7,14}$/.test(incomingSessionId)) {
+        await sendSMS(incomingSessionId, `Confirmed: ${args.date} at ${args.time}`);
+      }
+
       const memo = `Booking for ${args.date} at ${args.time}`;
+      const bookingReply = `Your call has been scheduled for ${args.date} at ${args.time}.`;
 
       await pool.query(
         `UPDATE sessions
@@ -93,17 +80,24 @@ Respond conversationally if no tool is needed.
         ["book_call", memo, sessionId]
       );
 
+      await appendMemory(sessionId, message, bookingReply);
+
       return {
         sessionId,
-        reply: `Your call has been scheduled for ${args.date} at ${args.time}.`,
-        action: "book_call"
+        reply: bookingReply,
+        action: "book_call",
+        confidence
       };
     }
   }
 
+  const reply = msg?.content ?? "I can help with that.";
+  await appendMemory(sessionId, message, reply);
+
   return {
     sessionId,
-    reply: msg?.content ?? "I can help with that."
+    reply,
+    confidence
   };
 }
 
@@ -121,6 +115,7 @@ router.post("/ai/execute", async (req: Request, res: Response) => {
       success: true,
       sessionId: result.sessionId,
       reply: result.reply,
+      confidence: result.confidence,
       ...(result.action ? { action: result.action } : {})
     });
   } catch (err) {
@@ -145,7 +140,8 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
     content: result.reply ?? "I can help with that.",
     internal: {
       sessionId: result.sessionId,
-      task: result.action ?? "conversation"
+      task: result.action ?? "conversation",
+      confidence: result.confidence
     }
   };
 }
