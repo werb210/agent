@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-
 import analyzeLeadRoute from "./routes/analyzeLead";
 import callOutcomeRoute from "./routes/callOutcome";
 import recalcRoute from "./routes/recalculate";
@@ -14,16 +12,24 @@ import generateMemoRoute from "./routes/generateMemo";
 import forecastRoute from "./routes/forecast";
 import aiExecuteRoute from "./routes/aiExecute";
 
-dotenv.config();
 
 const app = express();
+
+console.log("ENV CHECK:", {
+  hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+  hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
+});
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get("/", (_, res) => {
+  res.json({ status: "Agent running" });
+});
+
 app.get("/health", (_, res) => {
-  res.json({ status: "AI Agent running" });
+  res.json({ status: "Agent running" });
 });
 
 /*
@@ -60,5 +66,5 @@ app.use("/ai", aiExecuteRoute);
 const PORT = 4000;
 
 app.listen(PORT, () => {
-  console.log(`AI Agent running on port ${PORT}`);
+  console.log(`Agent service running on port ${PORT}`);
 });
