@@ -1,7 +1,17 @@
+DROP TABLE IF EXISTS sessions;
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE sessions (
-  session_id TEXT PRIMARY KEY,
-  data JSONB NOT NULL
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  task TEXT NOT NULL,
+  data JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_sessions_session_id
+ON sessions (session_id);
 
 CREATE TABLE lender_matrix (
   id TEXT PRIMARY KEY DEFAULT md5(random()::text || clock_timestamp()::text),

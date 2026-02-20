@@ -1,5 +1,3 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+export { pool };

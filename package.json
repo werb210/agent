@@ -28,6 +28,7 @@
     "rate-limit-redis": "^4.3.1",
     "readline-sync": "^1.4.10",
     "tesseract.js": "^7.0.0",
+    "tslib": "^2.8.1",
     "twilio": "^4.23.0",
     "winston": "^3.19.0"
   },
