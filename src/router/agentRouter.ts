@@ -1,40 +1,57 @@
 import { runAI } from "../brain/openaiClient";
+import { appendMessage } from "../training/memoryStore";
 
-export async function routeAgent(task: string, payload: any) {
+export async function routeAgent(task: string, payload: any, sessionId?: string) {
+  let result;
+
   switch (task) {
     case "chat":
-      return {
+      result = {
         content: await runAI(
           "You are Maya, a booking agent. Never give legal or financial advice.",
           payload
         )
       };
+      break;
 
     case "memo":
-      return {
+      result = {
         content: await runAI(
           "Generate structured underwriting memo.",
           payload
         )
       };
+      break;
 
     case "recommend":
-      return {
+      result = {
         content: await runAI(
           "Rank lenders based on deal structure. Return structured JSON.",
           payload
         )
       };
+      break;
 
     case "forecast":
-      return {
+      result = {
         content: await runAI(
           "Forecast monthly revenue based on expected commissions.",
           payload
         )
       };
+      break;
 
     default:
       throw new Error("Invalid task");
   }
+
+  if (sessionId) {
+    appendMessage(sessionId, {
+      task,
+      payload,
+      result
+    });
+  }
+
+  return result;
 }
