@@ -49,3 +49,16 @@ model CallQueue {
   createdAt DateTime @default(now())
 }
 
+
+model ConversationLog {
+  id                String   @id @default(uuid())
+  leadId            String?
+  transcript        String
+  extractedRevenue  Float?
+  extractedAmount   Float?
+  extractedIndustry String?
+  urgencyLevel      String?
+  bookingIntent     Boolean
+  escalated         Boolean
+  createdAt         DateTime @default(now())
+}
