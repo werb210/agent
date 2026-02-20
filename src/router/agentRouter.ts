@@ -4,8 +4,12 @@ import { scoreDeal } from "../engine/scoringEngine";
 import { classifyTier } from "../engine/tierEngine";
 import { determineProduct } from "../engine/productEngine";
 import { matchLenders } from "../engine/lenderEngine";
-import { shouldEscalate } from "../engine/escalationEngine";
+import { notifyStaffIfHot, shouldEscalate } from "../engine/escalationEngine";
 import { pushToCRM } from "../engine/crmEngine";
+import { calculateApprovalProbability } from "../engine/probabilityEngine";
+import { generateDocumentChecklist } from "../engine/documentChecklist";
+import { scheduleFollowUp } from "../engine/followupEngine";
+import { createCallBooking } from "../engine/callBookingEngine";
 
 const SYSTEM_PROMPT = `
 You are Maya, senior funding advisor.
@@ -15,7 +19,7 @@ Ask one question at a time.
 `;
 
 const EXTRACTION_PROMPT = `
-Extract structured data and return JSON:
+Extract structured data and return JSON only:
 {
   "business_name": string | null,
   "industry": string | null,
@@ -28,36 +32,54 @@ Extract structured data and return JSON:
 `;
 
 export async function routeAgent(task: string, payload: any, sessionId?: string) {
-  if (!sessionId) sessionId = "default";
-
-  const session = getSession(sessionId);
+  const resolvedSessionId = sessionId ?? payload?.userId ?? "default";
+  const session = await getSession(resolvedSessionId);
+  const history = session.conversation ?? [];
 
   if (task === "chat") {
-    const conversational = await runAI(SYSTEM_PROMPT, payload);
+    const userMessage = String(payload?.message ?? payload ?? "");
 
-    const extractedRaw = await runAI(EXTRACTION_PROMPT, payload, { json: true });
+    const conversational = await runAI(SYSTEM_PROMPT, userMessage, history);
+
+    const extractedRaw = await runAI(EXTRACTION_PROMPT, userMessage, history);
 
     let structured = {};
     try {
       structured = JSON.parse(extractedRaw as string);
-    } catch {}
+    } catch {
+      structured = {};
+    }
 
     const merged = { ...session.structured, ...structured };
 
     const scoring = scoreDeal(merged);
     const tier = classifyTier(scoring.score);
     const product = determineProduct(merged);
-    const lenders = matchLenders(merged, tier);
+    const lenders = await matchLenders(merged, tier);
     const hotLead = shouldEscalate(scoring.score, merged.funding_amount);
+    const approvalProbability = calculateApprovalProbability(scoring.score);
+    const documentChecklist = generateDocumentChecklist(merged);
 
-    updateSession(sessionId, {
+    const nextConversation = [
+      ...history,
+      { role: "user", content: userMessage },
+      { role: "assistant", content: conversational ?? "" }
+    ];
+
+    const nextSession = {
+      ...session,
       structured: merged,
       scoring,
       tier,
       product,
       lenderMatches: lenders,
-      hotLead
-    });
+      hotLead,
+      approvalProbability,
+      documentChecklist,
+      conversation: nextConversation
+    };
+
+    await updateSession(resolvedSessionId, nextSession);
 
     if (hotLead) {
       await pushToCRM({
@@ -67,6 +89,11 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
         product,
         lenders
       });
+      await notifyStaffIfHot(nextSession);
+    }
+
+    if (payload?.userId) {
+      scheduleFollowUp(payload.userId);
     }
 
     return {
@@ -77,8 +104,43 @@ export async function routeAgent(task: string, payload: any, sessionId?: string)
         tier,
         product,
         lenders,
-        hotLead
+        hotLead,
+        approvalProbability,
+        documentChecklist
       }
+    };
+  }
+
+  if (task === "objection") {
+    const response = await runAI(
+      "Handle funding objections professionally and move toward closing.",
+      String(payload?.message ?? ""),
+      history
+    );
+
+    const nextSession = {
+      ...session,
+      conversation: [
+        ...history,
+        { role: "user", content: String(payload?.message ?? "") },
+        { role: "assistant", content: response ?? "" }
+      ]
+    };
+
+    await updateSession(resolvedSessionId, nextSession);
+    return { content: response };
+  }
+
+  if (task === "book_call") {
+    const booking = await createCallBooking(
+      resolvedSessionId,
+      String(payload?.phone ?? payload?.userId ?? ""),
+      String(payload?.requestedTime ?? new Date().toISOString())
+    );
+
+    return {
+      content: "Great — I have your call request and our team will confirm shortly.",
+      booking
     };
   }
 

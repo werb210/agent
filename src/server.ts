@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Twilio from "twilio";
 import { routeAgent } from "./router/agentRouter";
+import { getSession } from "./memory/sessionStore";
 
 const app = express();
 
@@ -16,6 +17,11 @@ app.use(express.json());
 
 app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
+});
+
+app.get("/dashboard/:sessionId", async (req, res) => {
+  const session = await getSession(req.params.sessionId);
+  res.json(session);
 });
 
 /**
@@ -69,7 +75,6 @@ app.post("/sms", async (req, res) => {
 
     res.type("text/xml");
     return res.send(twiml.toString());
-
   } catch (err) {
     console.error("SMS webhook error:", err);
     return res.sendStatus(500);
