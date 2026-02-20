@@ -19,9 +19,12 @@ app.get("/", (_, res) => {
  */
 app.post("/ai/execute", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, userId } = req.body;
 
-    const result = await routeAgent("chat", { message });
+    const result = await routeAgent("chat", {
+      message,
+      userId: userId ?? "direct-test"
+    });
 
     return res.json({
       success: true,
@@ -34,7 +37,7 @@ app.post("/ai/execute", async (req, res) => {
 });
 
 /**
- * Twilio SMS webhook
+ * Twilio SMS webhook (TwiML-based response)
  */
 app.post("/sms", async (req, res) => {
   try {
@@ -45,24 +48,22 @@ app.post("/sms", async (req, res) => {
       return res.sendStatus(400);
     }
 
+    console.log("Incoming SMS from:", from);
+    console.log("Message:", incomingMessage);
+
     const result = await routeAgent("chat", {
-      message: incomingMessage
+      message: incomingMessage,
+      userId: from
     });
 
-    const client = Twilio(
-      process.env.TWILIO_ACCOUNT_SID!,
-      process.env.TWILIO_AUTH_TOKEN!
-    );
+    const twiml = new Twilio.twiml.MessagingResponse();
+    twiml.message(result?.content ?? "No response.");
 
-    await client.messages.create({
-      body: result.content ?? "",
-      from: process.env.TWILIO_PHONE_NUMBER!,
-      to: from
-    });
+    res.type("text/xml");
+    return res.send(twiml.toString());
 
-    return res.sendStatus(200);
   } catch (err) {
-    console.error(err);
+    console.error("SMS webhook error:", err);
     return res.sendStatus(500);
   }
 });
