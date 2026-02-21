@@ -6,6 +6,7 @@ import { handleMarketingMode } from "../services/modes/marketingMode";
 import { complianceFilter } from "../guardrails/complianceFilter";
 import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
 import { logger } from "../logging/logger";
+import { logDecision } from "../services/decisionLogger";
 
 const router = Router();
 
@@ -44,10 +45,23 @@ router.post("/", async (req, res) => {
       });
     }
 
-    return res.json({
-      reply: guard.safeReply,
+    const finalReply = guard.safeReply;
+    const finalEscalated = result.escalated || guard.escalated;
+
+    await logDecision({
+      sessionId: body.sessionId,
+      mode: body.mode,
+      message: body.message,
+      reply: finalReply,
       confidence: result.confidence,
-      escalated: result.escalated || guard.escalated
+      escalated: finalEscalated,
+      violationDetected: guard.violationDetected
+    });
+
+    return res.json({
+      reply: finalReply,
+      confidence: result.confidence,
+      escalated: finalEscalated
     });
   } catch (error) {
     console.error("Maya router error:", error);
