@@ -1,5 +1,7 @@
 import twilio from "twilio";
 import { logAudit } from "../infrastructure/mayaAudit";
+import { enforceKillSwitch } from "../core/mayaSafety";
+import { logger } from "../infrastructure/logger";
 
 type StartupNotificationContact = {
   id: string;
@@ -14,6 +16,7 @@ const client = twilio(
 );
 
 export async function sendStartupNotification(contact: StartupNotificationContact): Promise<void> {
+  enforceKillSwitch();
   const message = `
 Good news ${contact.name || ""} —
 
@@ -31,7 +34,7 @@ Reply START to begin your application.
   }
 
   if (contact.email) {
-    console.log(`Email sent to ${contact.email}`);
+    logger.info("Email sent", { email: contact.email });
   }
 
   await logAudit("maya", "startup_notification_sent", {

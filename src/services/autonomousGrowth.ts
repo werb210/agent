@@ -3,8 +3,10 @@ import { generateAdCopy } from "./adCopyEngine";
 import { launchPlatformCampaign } from "./platformLaunchEngine";
 import { reinvestRevenue } from "./reinvestmentEngine";
 import { pool } from "../db";
+import { enforceKillSwitch } from "../core/mayaSafety";
 
 export async function autonomousGrowthCycle(): Promise<void> {
+  enforceKillSwitch();
   const industries = await determineTopIndustries();
 
   for (const industry of industries) {
