@@ -175,6 +175,9 @@ model MayaSetting {
   maxAutoBudgetAdjustPercent Int @default(10) @map("max_auto_budget_adjust_percent")
   highValueThreshold         Int @default(500000) @map("high_value_threshold")
   autoOutboundEnabled        Boolean @default(false) @map("auto_outbound_enabled")
+  allowFullAutoMarketing     Boolean @default(false) @map("allow_full_auto_marketing")
+  maxDailyBudgetShiftPercent Int @default(20) @map("max_daily_budget_shift_percent")
+  minDataPointsBeforeAdjustment Int @default(30) @map("min_data_points_before_adjustment")
   updatedAt           DateTime? @default(now()) @map("updated_at")
 
   @@map("maya_settings")
@@ -211,6 +214,18 @@ model MayaDecision {
   createdAt    DateTime? @default(now()) @map("created_at")
 
   @@map("maya_decisions")
+}
+
+
+model MayaMarketingAction {
+  id             Int       @id @default(autoincrement())
+  source         String?
+  previousBudget Float?    @map("previous_budget")
+  newBudget      Float?    @map("new_budget")
+  reason         String?
+  createdAt      DateTime? @default(now()) @map("created_at")
+
+  @@map("maya_marketing_actions")
 }
 
 model DealFeature {
