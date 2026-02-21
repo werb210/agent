@@ -1,4 +1,13 @@
 import { pool } from "../db";
+import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
+
+type ChannelPerformanceRow = {
+  source: string;
+  total_revenue: string;
+  leads: string;
+};
+
+const CACHE_KEY = "maya:campaign-performance";
 
 export async function recordAttribution(data: any) {
   await pool.query(
@@ -7,9 +16,16 @@ export async function recordAttribution(data: any) {
   );
 }
 
-export async function channelPerformance() {
-  const res = await pool.query(
+export async function channelPerformance(): Promise<ChannelPerformanceRow[]> {
+  const cached = await cacheGet<ChannelPerformanceRow[]>(CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
+  const res = await pool.query<ChannelPerformanceRow>(
     "SELECT source, SUM(revenue) as total_revenue, COUNT(*) as leads FROM maya_attribution GROUP BY source"
   );
+
+  await cacheSet(CACHE_KEY, res.rows);
   return res.rows;
 }

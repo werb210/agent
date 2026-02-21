@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function launchAutonomousCampaigns() {
   const strategy = await pool.query(`
@@ -23,5 +24,12 @@ export async function launchAutonomousCampaigns() {
       `,
       [channel, 10000, "High Revenue Industries", "North America", "launched", 2.5]
     );
+
+    await logAudit("maya", "campaign_launch", {
+      channel,
+      budget: 10000,
+      targetIndustry: "High Revenue Industries",
+      expectedRoi: 2.5
+    });
   }
 }

@@ -9,15 +9,18 @@
     "console": "ts-node-dev --respawn --transpile-only src/console/chatConsole.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "jest"
+    "test": "jest",
+    "worker": "ts-node-dev --respawn --transpile-only src/infrastructure/mayaWorker.ts"
   },
   "dependencies": {
+    "@azure/msal-node": "^2.6.4",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@prisma/client": "^5.0.0",
     "@types/node-fetch": "^2.6.13",
     "@types/pg": "^8.16.0",
     "axios": "^1.6.8",
     "body-parser": "^2.2.2",
+    "bullmq": "^5.70.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.0.0",
@@ -38,8 +41,7 @@
     "twilio": "^4.23.0",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
-    "xlsx": "^0.18.5",
-    "@azure/msal-node": "^2.6.4"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

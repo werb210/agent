@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function generateRevenueForecast() {
   const bookings = await pool.query(`
@@ -41,4 +42,10 @@ export async function generateRevenueForecast() {
     `,
     [new Date().toISOString().slice(0, 7), predictedRevenue, predictedCloses, confidence]
   );
+
+  await logAudit("maya", "revenue_forecast_generated", {
+    predictedRevenue,
+    predictedCloses,
+    confidence
+  });
 }

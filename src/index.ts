@@ -1,27 +1,11 @@
 import "dotenv/config";
 import "./server";
-import { clearExpiredLiveCalls } from "./services/liveCallMonitor";
-import { recalculateBrokerPerformance } from "./services/performanceEngine";
-import { adjustMarketingAllocation } from "./services/marketingEngine";
-import { launchAutonomousCampaigns } from "./services/campaignEngine";
-import { runFullMayaCycle } from "./core/mayaOrchestrator";
+import { mayaQueue } from "./infrastructure/mayaQueue";
 
-setInterval(() => {
-  void clearExpiredLiveCalls();
-}, 60000);
+async function scheduleJobs() {
+  await mayaQueue.add("full-cycle", {}, { repeat: { pattern: "0 2 * * *" } });
+  await mayaQueue.add("strategy", {}, { repeat: { pattern: "0 3 * * *" } });
+  await mayaQueue.add("growth", {}, { repeat: { pattern: "0 4 * * *" } });
+}
 
-setInterval(() => {
-  void recalculateBrokerPerformance();
-}, 3600000);
-
-setInterval(() => {
-  void adjustMarketingAllocation();
-}, 86400000);
-
-setInterval(() => {
-  void launchAutonomousCampaigns();
-}, 86400000);
-
-setInterval(() => {
-  void runFullMayaCycle();
-}, 86400000);
+void scheduleJobs();

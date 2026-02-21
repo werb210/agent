@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
 
 type IndustryAggregateRow = {
   industry: string;
@@ -6,7 +7,14 @@ type IndustryAggregateRow = {
   total_revenue: string | number | null;
 };
 
+const CACHE_KEY = "maya:industry-ranking";
+
 export async function determineTopIndustries(): Promise<string[]> {
+  const cached = await cacheGet<string[]>(CACHE_KEY);
+  if (cached) {
+    return cached;
+  }
+
   const data = await pool.query<IndustryAggregateRow>(`
     SELECT industry, COUNT(*) as deal_count, SUM(revenue) as total_revenue
     FROM maya_booking_analytics
@@ -21,5 +29,7 @@ export async function determineTopIndustries(): Promise<string[]> {
     }))
     .sort((a, b) => b.score - a.score);
 
-  return ranked.slice(0, 3).map((row) => row.industry);
+  const topIndustries = ranked.slice(0, 3).map((row) => row.industry);
+  await cacheSet(CACHE_KEY, topIndustries);
+  return topIndustries;
 }
