@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
+import OpenAI from "openai";
 import { pool } from "../db";
+import { loadFullClientContext } from "../core/mayaMemoryEngine";
 import {
   findTopAvailableSlots,
   createCalendarEvent,
@@ -17,6 +19,26 @@ type RouteAgentResult = {
 };
 
 const router = Router();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function buildEnhancedPrompt(phone: string, userMessage: string): Promise<string> {
+  const context = await loadFullClientContext(phone);
+
+  return `
+You are Maya, CB AI.
+Context:
+${JSON.stringify(context, null, 2)}
+
+User says:
+${userMessage}
+
+Follow compliance rules:
+- Never estimate approval
+- Never explain underwriting logic
+- Never negotiate
+- Give ranges only
+`;
+}
 
 // === STRUCTURED QUALIFICATION ENGINE ===
 
@@ -282,6 +304,27 @@ router.post("/ai/execute", async (req, res) => {
   } catch (err) {
     console.error("AI error:", err);
     return res.status(500).json({ error: "AI failure" });
+  }
+});
+
+router.post("/maya/client", async (req, res) => {
+  try {
+    const { phone, message } = req.body as { phone?: string; message?: string };
+
+    if (!phone || !message) {
+      return res.status(400).json({ error: "phone and message are required" });
+    }
+
+    const prompt = await buildEnhancedPrompt(phone, message);
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }]
+    });
+
+    return res.json({ reply: response.choices[0].message.content });
+  } catch (error) {
+    console.error("Maya client endpoint error:", error);
+    return res.status(500).json({ error: "Unable to process Maya client request" });
   }
 });
 
