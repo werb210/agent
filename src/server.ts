@@ -17,6 +17,7 @@ import { scoreCall } from "./engine/callScoringEngine";
 import { transcribeAudio, summarizeFundingCall } from "./services/openaiService";
 import { sendSMS } from "./services/smsService";
 import aiOperationsRoutes from "./routes/aiOperationsRoutes";
+import adminUploadRoutes from "./routes/adminUploadRoutes";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -36,6 +37,7 @@ app.get("/health", (_req, res) => {
 app.use(agentRouter);
 app.use("/maya", mayaRouter);
 app.use(aiOperationsRoutes);
+app.use("/api/admin", adminUploadRoutes);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
