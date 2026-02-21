@@ -5,6 +5,8 @@ import { recalculateBrokerPerformance } from "./services/performanceEngine";
 import { adjustMarketingAllocation } from "./services/marketingEngine";
 import { generateRevenueForecast } from "./services/forecastEngine";
 import { calculateBrokerCompensation } from "./services/compensationEngine";
+import { generateStrategicPlan } from "./services/strategyEngine";
+import { launchAutonomousCampaigns } from "./services/campaignEngine";
 
 setInterval(() => {
   void clearExpiredLiveCalls();
@@ -24,4 +26,12 @@ setInterval(() => {
 
 setInterval(() => {
   void calculateBrokerCompensation();
+}, 86400000);
+
+setInterval(() => {
+  void generateStrategicPlan();
+}, 86400000);
+
+setInterval(() => {
+  void launchAutonomousCampaigns();
 }, 86400000);

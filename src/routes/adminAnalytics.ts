@@ -37,4 +37,23 @@ router.get("/analytics/compensation", async (_req, res) => {
   res.json(data.rows);
 });
 
+router.get("/analytics/strategy", async (_req, res) => {
+  const data = await pool.query(`
+    SELECT * FROM maya_strategy_plans
+    ORDER BY created_at DESC
+    LIMIT 6
+  `);
+
+  res.json(data.rows);
+});
+
+router.get("/analytics/campaigns", async (_req, res) => {
+  const data = await pool.query(`
+    SELECT * FROM maya_campaigns
+    ORDER BY created_at DESC
+  `);
+
+  res.json(data.rows);
+});
+
 export default router;
