@@ -19,6 +19,7 @@ import { sendSMS } from "./services/smsService";
 import aiOperationsRoutes from "./routes/aiOperationsRoutes";
 import adminUploadRoutes from "./routes/adminUploadRoutes";
 import voiceRoutes from "./routes/voiceRoutes";
+import smsRoutes from "./routes/smsRoutes";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -40,6 +41,7 @@ app.use("/maya", mayaRouter);
 app.use(aiOperationsRoutes);
 app.use("/api/admin", adminUploadRoutes);
 app.use("/api", voiceRoutes);
+app.use("/api", smsRoutes);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
@@ -321,8 +323,21 @@ app.post("/voice/post-call", async (req, res) => {
   }
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Maya SMS Agent running on port ${PORT}`);
+
+  // Force test mode safety
+  try {
+    await pool.query(`
+      UPDATE maya_settings
+      SET autonomy_level = 0,
+          allow_full_auto_marketing = false,
+          auto_outbound_enabled = false
+    `);
+    console.log("Maya running in SAFE TEST MODE (Autonomy disabled)");
+  } catch (err) {
+    console.log("maya_settings table not found yet.");
+  }
 });
