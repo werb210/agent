@@ -1,21 +1,14 @@
-import { MayaAgentPayload } from "../agents/agentTypes";
-import { runMayaAgents } from "../agents/orchestrator";
-import { simulateRevenue } from "./revenueSimulator";
+import { PredictivePayload } from "./lenderMatchEngine";
+import { calculateDealPriority } from "./dealPriorityEngine";
 
-export async function strategicDecision(payload: MayaAgentPayload) {
-  const agentResults = await runMayaAgents(payload);
-
-  const simulation = await simulateRevenue({
-    funding_amount: payload.funding_amount,
-    risk_score: agentResults.risk.risk_score
-  });
+export async function advancedStrategicDecision(payload: PredictivePayload) {
+  const priority = await calculateDealPriority(payload);
 
   return {
-    ...agentResults,
-    simulation,
-    recommended_strategy:
-      agentResults.sales.likelihood > 0.8
-        ? "assign_senior_broker"
-        : "nurture_sequence"
+    ...priority,
+    recommended_action:
+      priority.priority === "high"
+        ? "assign_top_broker"
+        : "automated_nurture_sequence"
   };
 }
