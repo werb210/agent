@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { pool } from "../db";
-import { checkAvailability, createCalendarEvent } from "../services/bookingService";
+import { findNextAvailableSlot, createCalendarEvent } from "../services/bookingService";
 
 type RouteAgentResult = {
   content: string;
@@ -77,33 +77,35 @@ function extractStructuredField(text: string): { field: QualificationFields; val
 }
 
 async function handleBooking(session: any, requestedISO: string) {
-  const staffEmail = "broker@yourdomain.com";
-  const timezone = process.env.MS_DEFAULT_TIMEZONE!;
+  const slot = await findNextAvailableSlot(requestedISO);
 
-  const endISO = new Date(
-    new Date(requestedISO).getTime() + 30 * 60000
-  ).toISOString();
-
-  const availability = await checkAvailability(
-    staffEmail,
-    requestedISO,
-    endISO,
-    timezone
-  );
-
-  if (!availability.includes("0")) {
-    return "That time is unavailable. Please suggest another time.";
+  if (!slot) {
+    return "All advisors are booked at that time. Would you like me to suggest the next available slot?";
   }
 
   await createCalendarEvent(
-    staffEmail,
-    requestedISO,
-    endISO,
-    timezone,
+    slot.staff.email,
+    slot.startISO,
+    slot.endISO,
+    slot.staff.timezone,
     session.user_email || "client@example.com"
   );
 
-  return "Your call has been scheduled. A confirmation has been sent.";
+  await pool.query(
+    `UPDATE sessions
+     SET assigned_broker_id = $1, stage = 'booked'
+     WHERE session_id = $2`,
+    [slot.staff.id, session.session_id]
+  );
+
+  await pool.query(
+    `UPDATE staff_calendar
+     SET last_assigned_at = NOW()
+     WHERE id = $1`,
+    [slot.staff.id]
+  );
+
+  return `You're booked with ${slot.staff.email} at ${new Date(slot.startISO).toLocaleString()}. A Teams link has been sent.`;
 }
 
 async function structuredQualificationFlow(
