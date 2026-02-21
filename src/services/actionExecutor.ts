@@ -6,6 +6,7 @@ import {
   getApplicationsByStatus
 } from "./staffDataAccess";
 import { triggerOutboundCall } from "./outboundIntelligence";
+import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function executeAction(
   action: MayaAction,
@@ -108,6 +109,7 @@ export async function executeAction(
       }
 
       const summary = await getPipelineSummary();
+      await logAudit("staff", "staff_pipeline_summary", { mode: context.mode });
       return {
         success: true,
         message: summary
@@ -132,6 +134,7 @@ export async function executeAction(
       }
 
       const apps = await getApplicationsByStatus(status);
+      await logAudit("staff", "staff_applications_by_status", { status });
       return {
         success: true,
         message: apps

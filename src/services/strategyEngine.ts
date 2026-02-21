@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function generateStrategicPlan() {
   const revenueData = await pool.query(`
@@ -37,4 +38,11 @@ export async function generateStrategicPlan() {
     `,
     [new Date().toISOString().slice(0, 7), strategicFocus, recommendedActions, projectedRevenue, confidence]
   );
+
+  await logAudit("maya", "strategy_generation", {
+    strategicFocus,
+    projectedRevenue,
+    confidence,
+    channels: recommendedActions
+  });
 }
