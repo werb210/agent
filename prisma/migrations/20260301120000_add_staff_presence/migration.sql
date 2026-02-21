@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS staff_presence (
+  id SERIAL PRIMARY KEY,
+  staff_id TEXT NOT NULL,
+  is_online BOOLEAN DEFAULT FALSE,
+  is_on_call BOOLEAN DEFAULT FALSE,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
