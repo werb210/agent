@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 
 type MemoryTurn = {
   user: string;
@@ -67,4 +67,40 @@ Respond conversationally if no tool is needed.
     message: choice?.message,
     confidence
   };
+}
+
+
+export async function transcribeAudio(recordingUrl: string): Promise<string> {
+  const response = await fetch(recordingUrl);
+  if (!response.ok) {
+    throw new Error(`Unable to download recording for transcription: ${response.status}`);
+  }
+
+  const audioBuffer = Buffer.from(await response.arrayBuffer());
+  const audioFile = await toFile(audioBuffer, "call-recording.wav", { type: "audio/wav" });
+
+  const transcription = await openai.audio.transcriptions.create({
+    file: audioFile,
+    model: "gpt-4o-mini-transcribe"
+  });
+
+  return transcription.text;
+}
+
+export async function summarizeFundingCall(transcript: string): Promise<string> {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: "Summarize this funding call. Extract key financials and risk indicators."
+      },
+      {
+        role: "user",
+        content: transcript
+      }
+    ]
+  });
+
+  return completion.choices[0]?.message?.content?.trim() ?? "No summary generated.";
 }

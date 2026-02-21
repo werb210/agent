@@ -11,3 +11,11 @@ export async function logCall(sessionId: string, transcript: string) {
     [sessionId, transcript]
   );
 }
+
+export async function logCallSummary(callSid: string, summary: string, score: number) {
+  await pool.query(
+    `INSERT INTO call_logs (session_id, transcript, score, created_at)
+     VALUES ($1, $2, $3, NOW())`,
+    [callSid, summary, score]
+  );
+}
