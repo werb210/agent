@@ -1,5 +1,6 @@
 import { MayaAction } from "../types/actions";
 import { handleBooking } from "./bookingEngine";
+import { getMayaSettings } from "./mayaSettingsService";
 import {
   getPipelineSummary,
   getApplicationsByStatus
@@ -9,6 +10,39 @@ export async function executeAction(
   action: MayaAction,
   context: any
 ) {
+  const settings = await getMayaSettings();
+
+  if (settings.autonomy_level === 0) {
+    return {
+      success: false,
+      message: "Action execution is currently disabled."
+    };
+  }
+
+  if (action.type === "book" && !settings.allow_booking) {
+    return {
+      success: false,
+      message: "Booking is currently disabled."
+    };
+  }
+
+  if (action.type === "transfer" && !settings.allow_transfer) {
+    return {
+      success: false,
+      message: "Transfer is currently disabled."
+    };
+  }
+
+  if (
+    settings.require_confirmation &&
+    action.requiresConfirmation &&
+    !context.confirmed
+  ) {
+    return {
+      success: false,
+      message: "Confirmation required."
+    };
+  }
 
   switch (action.type) {
 
