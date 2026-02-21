@@ -188,3 +188,24 @@ model MarketingSession {
 
   @@map("marketing_sessions")
 }
+
+
+model MayaIntelligence {
+  id        Int       @id @default(autoincrement())
+  metric    String?
+  value     Float?
+  updatedAt DateTime? @default(now()) @map("updated_at")
+
+  @@map("maya_intelligence")
+}
+
+model MayaDecision {
+  id           Int       @id @default(autoincrement())
+  sessionId    String?   @map("session_id")
+  decisionType String?   @map("decision_type")
+  confidence   Float?
+  outcome      String?
+  createdAt    DateTime? @default(now()) @map("created_at")
+
+  @@map("maya_decisions")
+}

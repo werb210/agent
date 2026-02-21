@@ -15,3 +15,8 @@ export function calculateFundingProbability(data: FundingProbabilityInput): numb
 
   return Math.min(score, 100);
 }
+
+
+export function refineProbability(baseScore: number, historicalFactor: number) {
+  return Math.min(100, baseScore * historicalFactor);
+}

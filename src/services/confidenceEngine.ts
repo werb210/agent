@@ -1,8 +1,11 @@
+import { getDynamicEscalationThreshold } from "./adaptiveThreshold";
+
 interface ConfidenceInput {
   aiConfidence: number;
   stage: string;
   message: string;
   violationDetected: boolean;
+  bookingConversionRate?: number;
 }
 
 export function evaluateConfidence(input: ConfidenceInput) {
@@ -33,8 +36,11 @@ export function evaluateConfidence(input: ConfidenceInput) {
   // Clamp range
   score = Math.max(0, Math.min(1, score));
 
+  const dynamicThreshold = getDynamicEscalationThreshold(input.bookingConversionRate ?? 0.5);
+
   return {
     score,
-    shouldEscalate: score < 0.45
+    dynamicThreshold,
+    shouldEscalate: score < dynamicThreshold
   };
 }
