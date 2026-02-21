@@ -1,4 +1,5 @@
 import { getAvailableStaff } from "./staffAvailability";
+import { getMayaSettings } from "./mayaSettingsService";
 
 interface EscalationResult {
   shouldEscalate: boolean;
@@ -13,6 +14,15 @@ export async function evaluateEscalation(
     return {
       shouldEscalate: false,
       fallbackBooking: false
+    };
+  }
+
+  const settings = await getMayaSettings();
+
+  if (settings.autonomy_level < 2) {
+    return {
+      shouldEscalate: true,
+      fallbackBooking: true
     };
   }
 
