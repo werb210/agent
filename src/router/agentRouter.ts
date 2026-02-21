@@ -1,15 +1,6 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import OpenAI from "openai";
-import { DateTime } from "luxon";
 import { pool } from "../db";
-import { calculateFundingScore, QualificationData } from "../engine/scoring";
-import { matchLenders } from "../engine/lenderMatch";
-import { sendSlackAlert } from "../integrations/slack";
-import { sendSMS } from "../integrations/twilio";
-import { createO365Event } from "../integrations/o365";
-import { generatePreApprovalSummary } from "../engine/summary";
-import { pushToPipeline } from "../integrations/pipeline";
 
 type RouteAgentResult = {
   content: string;
@@ -22,71 +13,124 @@ type RouteAgentResult = {
 
 const router = Router();
 
-function normalizeCurrency(value: string) {
-  const digitsOnly = value.replace(/[^\d.]/g, "");
-  return Number(digitsOnly);
+// === STRUCTURED QUALIFICATION ENGINE ===
+
+type QualificationFields =
+  | "funding_amount"
+  | "product_type"
+  | "time_in_business"
+  | "annual_revenue"
+  | "industry";
+
+const REQUIRED_FIELDS: QualificationFields[] = [
+  "funding_amount",
+  "product_type",
+  "time_in_business",
+  "annual_revenue",
+  "industry"
+];
+
+function detectEscalation(text: string): boolean {
+  const triggers = [
+    "human",
+    "representative",
+    "agent",
+    "call me",
+    "talk to someone",
+    "speak to someone"
+  ];
+
+  return triggers.some((t) => text.toLowerCase().includes(t));
 }
 
-function extractQualificationData(message: string, existing: QualificationData): QualificationData {
-  const qualificationData: QualificationData = { ...existing };
-  const lowerMessage = message.toLowerCase();
+function extractStructuredField(text: string): { field: QualificationFields; value: number | string } | null {
+  const lower = text.toLowerCase();
 
-  const fundingAmountMatch = message.match(/(?:\$|cad\s*)?([\d,]+(?:\.\d+)?)\s*(?:k|m)?\s*(?:funding|loan|line\s*of\s*credit|loc)?/i);
-  if (fundingAmountMatch?.[1]) {
-    const numericAmount = normalizeCurrency(fundingAmountMatch[1]);
-    const multiplier = /\b\d+(?:\.\d+)?\s*m\b/i.test(fundingAmountMatch[0]) ? 1_000_000 : /\b\d+(?:\.\d+)?\s*k\b/i.test(fundingAmountMatch[0]) ? 1_000 : 1;
-    if (!Number.isNaN(numericAmount) && numericAmount > 0) {
-      qualificationData.fundingAmount = numericAmount * multiplier;
+  const amountMatch = text.match(/\$?([\d,]+(?:\.\d+)?)/);
+  if (amountMatch) {
+    return { field: "funding_amount", value: parseFloat(amountMatch[1].replace(/,/g, "")) };
+  }
+
+  if (lower.includes("line of credit")) return { field: "product_type", value: "line_of_credit" };
+  if (lower.includes("term loan")) return { field: "product_type", value: "term_loan" };
+  if (lower.includes("factoring")) return { field: "product_type", value: "factoring" };
+  if (lower.includes("equipment")) return { field: "product_type", value: "equipment_finance" };
+
+  const yearsMatch = text.match(/(\d+)\s*(years|year)/);
+  if (yearsMatch) {
+    return { field: "time_in_business", value: parseInt(yearsMatch[1], 10) };
+  }
+
+  if (lower.includes("revenue")) {
+    const revenueMatch = text.match(/\$?([\d,]+(?:\.\d+)?)/);
+    if (revenueMatch) {
+      return { field: "annual_revenue", value: parseFloat(revenueMatch[1].replace(/,/g, "")) };
     }
   }
 
-  const monthsMatch = lowerMessage.match(/(\d{1,3})\s*(?:months?|mos?)\s*(?:in\s*business)?/i);
-  if (monthsMatch?.[1]) {
-    qualificationData.monthsInBusiness = Number(monthsMatch[1]);
+  if (lower.includes("industry") || lower.includes("we are in")) {
+    return { field: "industry", value: text };
   }
 
-  const yearsMatch = lowerMessage.match(/(\d{1,2})\s*(?:years?|yrs?)\s*(?:in\s*business)?/i);
-  if (yearsMatch?.[1]) {
-    qualificationData.monthsInBusiness = Number(yearsMatch[1]) * 12;
-  }
-
-  const revenueMatch = message.match(/(?:\$|cad\s*)?([\d,]+(?:\.\d+)?)\s*(k|m)?\s*(?:\/\s*month|monthly|per\s*month)?\s*(?:revenue|sales)?/i);
-  if (revenueMatch?.[1]) {
-    const numericRevenue = normalizeCurrency(revenueMatch[1]);
-    const revenueMultiplier = revenueMatch[2]?.toLowerCase() === "m" ? 1_000_000 : revenueMatch[2]?.toLowerCase() === "k" ? 1_000 : 1;
-    if (!Number.isNaN(numericRevenue) && numericRevenue > 0) {
-      qualificationData.monthlyRevenue = numericRevenue * revenueMultiplier;
-    }
-  }
-
-  if (/\bno\b.*\b(cra|tax)\b|\b(cra|tax)\b.*\bno\b|\bnone\b.*\b(cra|tax)\b/i.test(lowerMessage)) {
-    qualificationData.craIssues = false;
-  }
-
-  if (/\b(yes|have|owe|outstanding|behind|issues?)\b.*\b(cra|tax)\b|\b(cra|tax)\b.*\b(issues?|owing|debt|arrears|problem)\b/i.test(lowerMessage)) {
-    qualificationData.craIssues = true;
-  }
-
-  return qualificationData;
+  return null;
 }
 
-async function loadQualificationData(sessionId: string): Promise<QualificationData> {
-  const result = await pool.query(
-    "SELECT qualification_data FROM sessions WHERE session_id = $1 LIMIT 1",
-    [sessionId]
+async function structuredQualificationFlow(
+  session: { session_id: string; qualification_data: Record<string, unknown> | null },
+  userMessage: string
+) {
+  const data = session.qualification_data || {};
+
+  if (detectEscalation(userMessage)) {
+    await pool.query(
+      `UPDATE sessions
+       SET escalation = 'requested', stage = 'escalated'
+       WHERE session_id = $1`,
+      [session.session_id]
+    );
+
+    return "Absolutely. I'll arrange for a team member to contact you shortly. Please confirm the best phone number to reach you.";
+  }
+
+  const extracted = extractStructuredField(userMessage);
+  if (extracted) {
+    data[extracted.field] = extracted.value;
+  }
+
+  await pool.query(
+    `UPDATE sessions SET qualification_data = $1 WHERE session_id = $2`,
+    [data, session.session_id]
   );
 
-  return (result.rows[0]?.qualification_data ?? {}) as QualificationData;
-}
+  const missing = REQUIRED_FIELDS.filter((f) => !data[f]);
 
-function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (missing.length === 0) {
+    await pool.query(
+      `UPDATE sessions
+       SET stage = 'qualified', tier = 'warm'
+       WHERE session_id = $1`,
+      [session.session_id]
+    );
+
+    return "Thank you. Based on what you've shared, you're pre-qualified for funding options. Would you like to book a strategy call or proceed with a formal application?";
   }
 
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
+  const nextField = missing[0];
+
+  const questionMap: Record<QualificationFields, string> = {
+    funding_amount: "How much funding are you seeking?",
+    product_type: "What type of funding are you interested in? (Line of credit, term loan, equipment financing, etc.)",
+    time_in_business: "How long has your business been operating?",
+    annual_revenue: "What is your approximate annual revenue?",
+    industry: "What industry is your business in?"
+  };
+
+  await pool.query(
+    `UPDATE sessions SET stage = 'qualifying' WHERE session_id = $1`,
+    [session.session_id]
+  );
+
+  return questionMap[nextField];
 }
 
 async function ensureSession(sessionId?: string, userPhone?: string) {
@@ -115,155 +159,21 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   confidence: number;
 }> {
   const currentSessionId = await ensureSession(incomingSessionId, userPhone);
-  const existingQualificationData = await loadQualificationData(currentSessionId);
-  const qualificationData = extractQualificationData(message, existingQualificationData);
-  const { score, tier } = calculateFundingScore(qualificationData);
-  const lenders = matchLenders(score, qualificationData.monthlyRevenue);
-  const summary = generatePreApprovalSummary(qualificationData, tier, lenders);
-
-  if (tier === "A") {
-    await sendSlackAlert(`🔥 Tier A Lead\n${summary}`);
-  }
-
-  await pushToPipeline({
-    sessionId: currentSessionId,
-    tier,
-    score,
-    lenders,
-    qualificationData
-  });
-
-  await pool.query(
-    `UPDATE sessions
-     SET qualification_data = $1, funding_score = $2, tier = $3
-     WHERE session_id = $4`,
-    [JSON.stringify(qualificationData), score, tier, currentSessionId]
+  const sessionResult = await pool.query(
+    `SELECT session_id, qualification_data
+     FROM sessions
+     WHERE session_id = $1
+     LIMIT 1`,
+    [currentSessionId]
   );
 
-  const completion = await getOpenAIClient().chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
-You are Maya, the AI funding assistant for Boreal Financial.
+  const session = sessionResult.rows[0] as {
+    session_id: string;
+    qualification_data: Record<string, unknown> | null;
+  };
 
-Your primary objective:
-Convert inbound SMS leads into qualified funding applications or booked strategy calls.
-
-Context:
-Boreal specializes in Canadian business funding:
-- Lines of Credit
-- Term Loans
-- Equipment Financing
-- Working Capital
-- Factoring
-
-When someone says:
-"I want to apply"
-Assume business financing unless clarified otherwise.
-
-When someone says:
-"Line of credit"
-Immediately move into qualification mode.
-
-Qualification flow for LOC:
-1. Ask how much funding they need.
-2. Ask how long they’ve been in business.
-3. Ask approximate monthly revenue.
-4. Ask if they have outstanding CRA or tax issues.
-5. Then offer to book a call.
-
-Tone:
-- Professional
-- Direct
-- Intelligent
-- Not robotic
-- No textbook explanations
-- No definitions unless asked
-- No generic financial advice
-
-Never explain what a line of credit is unless explicitly asked.
-
-Always guide conversation forward.
-
-If user requests call:
-Use the booking tool.
-
-If user gives partial info:
-Store context mentally and continue qualification.
-
-You are not ChatGPT.
-You are a revenue-generating funding assistant.
-`
-      },
-      { role: "user", content: message }
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "book_call",
-          description: "Book a phone call",
-          parameters: {
-            type: "object",
-            properties: {
-              date: { type: "string" },
-              time: { type: "string" }
-            },
-            required: ["date", "time"]
-          }
-        }
-      }
-    ],
-    tool_choice: "auto"
-  });
-
-  const aiMessage = completion.choices[0].message;
+  const response = await structuredQualificationFlow(session, message);
   const confidence = 0.9;
-
-  if (aiMessage.tool_calls?.length) {
-    const toolCall = aiMessage.tool_calls[0];
-    const args = JSON.parse(toolCall.function.arguments);
-
-    await pool.query(
-      `UPDATE sessions
-       SET task = $1, action_data = $2, confidence = $3
-       WHERE session_id = $4`,
-      ["book_call", JSON.stringify(args), confidence, currentSessionId]
-    );
-
-    const parsedStart = DateTime.fromFormat(`${args.date} ${args.time}`, "yyyy-MM-dd HH:mm", { zone: "America/Toronto" });
-    const startTime = parsedStart.isValid ? parsedStart : DateTime.now().setZone("America/Toronto").plus({ hours: 1 });
-    const endTime = startTime.plus({ minutes: 30 });
-    const startISO = startTime.toISO();
-    const endISO = endTime.toISO();
-
-    if (startISO && endISO) {
-      await createO365Event(startISO, endISO, "Boreal Funding Strategy Call");
-    }
-
-    if (userPhone) {
-      await sendSMS(
-        userPhone,
-        `Your Boreal strategy call is booked for ${args.date} at ${args.time}.`
-      );
-    }
-
-    let reply = "Let’s discuss options and see what may work. When can you speak?";
-    if (tier === "A") {
-      reply = "You look like a strong candidate. Let’s lock in a quick approval call. When works?";
-    } else if (tier === "B") {
-      reply = "You may qualify. A quick review call will confirm options. When works?";
-    }
-
-    return {
-      sessionId: currentSessionId,
-      reply,
-      action: "book_call",
-      confidence
-    };
-  }
 
   await pool.query(
     `UPDATE sessions
@@ -274,7 +184,7 @@ You are a revenue-generating funding assistant.
 
   return {
     sessionId: currentSessionId,
-    reply: aiMessage.content,
+    reply: response,
     confidence
   };
 }
