@@ -1,4 +1,6 @@
 import OpenAI, { toFile } from "openai";
+import { calculateConfidence } from "../core/mayaConfidence";
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 type MemoryTurn = {
   user: string;
@@ -10,65 +12,43 @@ const openai = new OpenAI({
 });
 
 export type ChatCompletionResult = {
-  message: OpenAI.Chat.Completions.ChatCompletionMessage;
+  message: {
+    role: "assistant";
+    content: string;
+  };
   confidence: number;
+  model: string;
 };
 
 export async function createChatCompletion(message: string, memory: MemoryTurn[] = []): Promise<ChatCompletionResult> {
-  const memoryMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = memory.flatMap((turn) => [
-    { role: "user", content: turn.user },
-    { role: "assistant", content: turn.assistant }
-  ]);
+  const memoryPrompt = memory
+    .map((turn) => `USER: ${turn.user}\nASSISTANT: ${turn.assistant}`)
+    .join("\n\n");
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
+  const prompt = `
 You are Maya, an intelligent SMS business assistant.
 You can book calls and respond naturally.
 When appropriate, use tools.
 Respond conversationally if no tool is needed.
-`
-      },
-      ...memoryMessages,
-      {
-        role: "user",
-        content: message
-      }
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "book_call",
-          description: "Book a phone call for the user",
-          parameters: {
-            type: "object",
-            properties: {
-              startISO: {
-                type: "string",
-                description: "ISO-8601 datetime for requested meeting start time"
-              }
-            },
-            required: ["startISO"]
-          }
-        }
-      }
-    ],
-    tool_choice: "auto"
-  });
 
-  const choice = completion.choices[0];
-  const confidence = (choice as { logprobs?: unknown }).logprobs ? 0.9 : 0.75;
+Conversation history:
+${memoryPrompt || "(none)"}
+
+User:
+${message}
+`;
+
+  const result = await resilientLLM("analysis", prompt);
 
   return {
-    message: choice?.message,
-    confidence
+    message: {
+      role: "assistant",
+      content: result.output
+    },
+    confidence: calculateConfidence(result.output),
+    model: result.model
   };
 }
-
 
 export async function transcribeAudio(recordingUrl: string): Promise<string> {
   const response = await fetch(recordingUrl);
@@ -88,19 +68,7 @@ export async function transcribeAudio(recordingUrl: string): Promise<string> {
 }
 
 export async function summarizeFundingCall(transcript: string): Promise<string> {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: "Summarize this funding call. Extract key financials and risk indicators."
-      },
-      {
-        role: "user",
-        content: transcript
-      }
-    ]
-  });
-
-  return completion.choices[0]?.message?.content?.trim() ?? "No summary generated.";
+  const prompt = `Summarize this funding call. Extract key financials and risk indicators.\n\n${transcript}`;
+  const result = await resilientLLM("analysis", prompt);
+  return result.output.trim() || "No summary generated.";
 }

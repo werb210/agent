@@ -1,8 +1,5 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
-});
+import { calculateConfidence } from "../core/mayaConfidence";
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 const SYSTEM_PROMPT = `
 You are Maya, a 27-year-old booking agent for Boreal Financial.
@@ -32,16 +29,13 @@ Return ONLY JSON in this format:
 `;
 
 export async function generateMayaResponse(userInput: string) {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.2,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userInput }
-    ]
-  });
+  const prompt = `${SYSTEM_PROMPT}\n\nUser input:\n${userInput}`;
+  const result = await resilientLLM("analysis", prompt);
+  const content = result.output;
 
-  const content = completion.choices[0].message.content;
-
-  return JSON.parse(content || "{}");
+  return {
+    ...JSON.parse(content || "{}"),
+    confidence: calculateConfidence(content),
+    model: result.model
+  };
 }

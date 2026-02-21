@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import OpenAI from "openai";
 import { pool } from "../db";
 import { loadFullClientContext } from "../core/mayaMemoryEngine";
 import {
@@ -8,6 +7,8 @@ import {
   createCalendarEvent,
   confirmBookingSMS
 } from "../services/bookingService";
+import { calculateConfidence } from "../core/mayaConfidence";
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 type RouteAgentResult = {
   content: string;
@@ -19,7 +20,6 @@ type RouteAgentResult = {
 };
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function buildEnhancedPrompt(phone: string, userMessage: string): Promise<string> {
   const context = await loadFullClientContext(phone);
@@ -316,12 +316,13 @@ router.post("/maya/client", async (req, res) => {
     }
 
     const prompt = await buildEnhancedPrompt(phone, message);
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }]
-    });
+    const result = await resilientLLM("analysis", prompt);
 
-    return res.json({ reply: response.choices[0].message.content });
+    return res.json({
+      reply: result.output,
+      confidence: calculateConfidence(result.output),
+      model: result.model
+    });
   } catch (error) {
     console.error("Maya client endpoint error:", error);
     return res.status(500).json({ error: "Unable to process Maya client request" });

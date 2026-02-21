@@ -1,14 +1,5 @@
-import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources";
-
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-
-  return new OpenAI({ apiKey });
-}
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 export async function runAI(
   systemPrompt: string,
@@ -29,11 +20,10 @@ export async function runAI(
     { role: "user", content: userMessage }
   ];
 
-  const completion = await getOpenAIClient().chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.3,
-    messages
-  });
+  const prompt = messages
+    .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+    .join("\n\n");
 
-  return completion.choices[0].message.content;
+  const result = await resilientLLM("analysis", prompt);
+  return result.output;
 }

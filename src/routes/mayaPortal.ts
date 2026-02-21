@@ -1,11 +1,11 @@
 import { Router } from "express";
-import OpenAI from "openai";
 import { enforcePolicy } from "../core/mayaAccessControl";
 import { MayaRole, validateCommand } from "../core/mayaAuthority";
 import { logAudit } from "../infrastructure/mayaAudit";
+import { calculateConfidence } from "../core/mayaConfidence";
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/maya/staff", async (req, res) => {
   try {
@@ -35,16 +35,17 @@ Staff message:
 ${message}
 `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }]
-    });
+    const result = await resilientLLM("analysis", prompt);
 
     if (command) {
       await logAudit("maya", "staff_command_executed", { role, command });
     }
 
-    return res.json({ reply: response.choices[0].message.content });
+    return res.json({
+      reply: result.output,
+      confidence: calculateConfidence(result.output),
+      model: result.model
+    });
   } catch (error) {
     console.error("Maya staff endpoint error:", error);
     return res.status(500).json({ error: "Unable to process Maya staff request" });
