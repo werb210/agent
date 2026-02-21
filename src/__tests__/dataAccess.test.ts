@@ -11,6 +11,10 @@ import {
   getDocumentStatus,
   getLenderProductRanges
 } from "../services/dataAccess";
+import {
+  getApplicationsByStatus,
+  getPipelineSummary
+} from "../services/staffDataAccess";
 import { formatRateRanges } from "../services/dataFormatter";
 import { interpretAction } from "../services/actionInterpreter";
 
@@ -71,5 +75,50 @@ describe("action interpreter data query intents", () => {
     expect(interpretAction("What are LOC rates right now?")).toEqual(
       expect.objectContaining({ type: "none", payload: { dataQuery: "rates" } })
     );
+  });
+
+  it("detects pipeline summary staff intent", () => {
+    expect(interpretAction("Give me pipeline summary")).toEqual(
+      expect.objectContaining({ type: "staff_pipeline_summary", requiresConfirmation: false })
+    );
+  });
+
+  it("detects applications by status staff intent", () => {
+    expect(interpretAction("show applications in booking")).toEqual(
+      expect.objectContaining({
+        type: "staff_applications_by_status",
+        payload: { status: "booking" }
+      })
+    );
+  });
+});
+
+describe("staff data access layer", () => {
+  beforeEach(() => {
+    queryMock.mockReset();
+  });
+
+  it("retrieves pipeline summary grouped by status", async () => {
+    queryMock.mockResolvedValue({
+      rows: [{ status: "qualifying", count: "14" }]
+    });
+
+    const summary = await getPipelineSummary();
+
+    expect(summary).toEqual([{ status: "qualifying", count: "14" }]);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("GROUP BY status"));
+  });
+
+  it("retrieves applications for a given status", async () => {
+    queryMock.mockResolvedValue({
+      rows: [{ id: "app_1", applicant_name: "A", product_type: "LOC", created_at: "2026-01-01" }]
+    });
+
+    const apps = await getApplicationsByStatus("booking");
+
+    expect(apps).toEqual([
+      { id: "app_1", applicant_name: "A", product_type: "LOC", created_at: "2026-01-01" }
+    ]);
+    expect(queryMock).toHaveBeenCalledWith(expect.stringContaining("WHERE status = $1"), ["booking"]);
   });
 });

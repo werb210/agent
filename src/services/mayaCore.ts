@@ -1,5 +1,6 @@
 import { runAI } from "../brain/openaiClient";
 import { SessionStage } from "../types/stages";
+import { MayaMode } from "../types/maya";
 
 type ConversationTurn = {
   role: "user" | "assistant";
@@ -9,19 +10,40 @@ type ConversationTurn = {
 export async function runMayaCore(
   message: string,
   stage: SessionStage,
+  mode: MayaMode,
   history: ConversationTurn[] = []
 ): Promise<string> {
-  const systemPrompt = `
-You are Maya, Boreal's AI funding assistant.
+  const systemPrompt = buildSystemPrompt(mode, stage);
 
-Current session stage: ${stage}
+  return (await runAI(systemPrompt, message, history)) ?? "Could you share a bit more detail?";
+}
 
-Guide the user forward in the funding process.
-Never give underwriting decisions.
+function buildSystemPrompt(mode: MayaMode, stage: SessionStage) {
+
+  if (mode === "staff") {
+    return `
+You are Maya, Boreal’s internal operations assistant.
+
+You may:
+- Summarize pipeline data
+- Retrieve application lists
+- Assist staff workflow
+
+Never:
+- Expose underwriting logic
+- Predict approval probability
+- Modify database records
+`;
+  }
+
+  return `
+You are Maya, Boreal’s funding assistant.
+
+Current stage: ${stage}
+
+Guide users through funding.
 Never estimate approval.
 Never negotiate rates.
 Escalate when uncertain.
 `;
-
-  return (await runAI(systemPrompt, message, history)) ?? "Could you share a bit more detail?";
 }

@@ -6,6 +6,24 @@ export function interpretAction(
 
   const lower = aiReply.toLowerCase();
 
+  if (lower.includes("pipeline summary")) {
+    return {
+      type: "staff_pipeline_summary",
+      requiresConfirmation: false
+    };
+  }
+
+  if (lower.includes("applications in")) {
+    const match = lower.match(/applications in\s+([a-z_\- ]+)/);
+    const status = match?.[1]?.trim();
+
+    return {
+      type: "staff_applications_by_status",
+      requiresConfirmation: false,
+      payload: status ? { status } : undefined
+    };
+  }
+
   if (lower.includes("book") || lower.includes("schedule")) {
     return {
       type: "book",

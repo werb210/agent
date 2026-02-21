@@ -1,7 +1,7 @@
 export type MayaMode = "client" | "staff" | "marketing";
 
 export interface MayaRequest {
-  mode: MayaMode;
+  mode?: MayaMode;
   sessionId: string;
   message?: string;
   action?: "book";
@@ -12,6 +12,7 @@ export interface MayaRequest {
   confirmed?: boolean;
   lookupIdentifier?: string;
   productType?: string;
+  status?: string;
 }
 
 export interface MayaResponse {
