@@ -14,6 +14,7 @@
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@prisma/client": "^5.0.0",
+    "@types/node-fetch": "^2.6.13",
     "@types/pg": "^8.16.0",
     "axios": "^1.13.5",
     "body-parser": "^2.2.2",
@@ -25,6 +26,7 @@
     "ioredis": "^5.9.3",
     "isomorphic-fetch": "^3.0.0",
     "luxon": "^3.7.2",
+    "node-fetch": "^2.7.0",
     "openai": "^4.104.0",
     "pdfkit": "^0.17.2",
     "pg": "^8.18.0",
