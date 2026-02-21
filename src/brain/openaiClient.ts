@@ -15,8 +15,16 @@ export async function runAI(
   userMessage: string,
   history: { role: "user" | "assistant"; content: string }[] = []
 ) {
+  const strictRules =
+    "\n\nSTRICT RULES:" +
+    "\n- Never estimate approval." +
+    "\n- Never predict rates." +
+    "\n- Never explain underwriting logic." +
+    "\n- Never negotiate." +
+    "\n- Keep responses concise and professional.";
+
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: `${systemPrompt}${strictRules}` },
     ...history,
     { role: "user", content: userMessage }
   ];
