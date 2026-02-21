@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { pool } from "../db";
+import { checkAvailability, createCalendarEvent } from "../services/bookingService";
 
 type RouteAgentResult = {
   content: string;
@@ -75,11 +76,50 @@ function extractStructuredField(text: string): { field: QualificationFields; val
   return null;
 }
 
+async function handleBooking(session: any, requestedISO: string) {
+  const staffEmail = "broker@yourdomain.com";
+  const timezone = process.env.MS_DEFAULT_TIMEZONE!;
+
+  const endISO = new Date(
+    new Date(requestedISO).getTime() + 30 * 60000
+  ).toISOString();
+
+  const availability = await checkAvailability(
+    staffEmail,
+    requestedISO,
+    endISO,
+    timezone
+  );
+
+  if (!availability.includes("0")) {
+    return "That time is unavailable. Please suggest another time.";
+  }
+
+  await createCalendarEvent(
+    staffEmail,
+    requestedISO,
+    endISO,
+    timezone,
+    session.user_email || "client@example.com"
+  );
+
+  return "Your call has been scheduled. A confirmation has been sent.";
+}
+
 async function structuredQualificationFlow(
-  session: { session_id: string; qualification_data: Record<string, unknown> | null },
+  session: { session_id: string; qualification_data: Record<string, unknown> | null; stage?: string; user_email?: string | null },
   userMessage: string
 ) {
   const data = session.qualification_data || {};
+
+  if (session.stage === "escalated") {
+    const requestedDate = new Date(userMessage);
+    if (!Number.isNaN(requestedDate.getTime())) {
+      return handleBooking(session, requestedDate.toISOString());
+    }
+
+    return "Please share your preferred call time in ISO format (for example: 2026-03-15T16:00:00.000Z).";
+  }
 
   if (detectEscalation(userMessage)) {
     await pool.query(
@@ -89,7 +129,7 @@ async function structuredQualificationFlow(
       [session.session_id]
     );
 
-    return "Absolutely. I'll arrange for a team member to contact you shortly. Please confirm the best phone number to reach you.";
+    return "Absolutely. I can book a strategy call for you. Please share your preferred date and time in ISO format (for example: 2026-03-15T16:00:00.000Z).";
   }
 
   const extracted = extractStructuredField(userMessage);
@@ -160,7 +200,7 @@ export async function executeChat(message: string, incomingSessionId?: string, u
 }> {
   const currentSessionId = await ensureSession(incomingSessionId, userPhone);
   const sessionResult = await pool.query(
-    `SELECT session_id, qualification_data
+    `SELECT session_id, qualification_data, stage, user_email
      FROM sessions
      WHERE session_id = $1
      LIMIT 1`,
@@ -170,6 +210,8 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   const session = sessionResult.rows[0] as {
     session_id: string;
     qualification_data: Record<string, unknown> | null;
+    stage?: string;
+    user_email?: string | null;
   };
 
   const response = await structuredQualificationFlow(session, message);
