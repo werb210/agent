@@ -26,9 +26,13 @@ const router = Router();
 
 router.post("/", async (req, res) => {
   try {
-    const body: MayaRequest = req.body;
+    const body: MayaRequest = {
+      ...req.body,
+      mode: req.body.mode ?? "client"
+    };
+    const mode = body.mode ?? "client";
 
-    if (!body.mode || !body.sessionId) {
+    if (!body.sessionId) {
       return res.status(400).json({ error: "Invalid Maya request" });
     }
 
@@ -40,7 +44,7 @@ router.post("/", async (req, res) => {
 
     let result: MayaResponse;
 
-    switch (body.mode) {
+    switch (mode) {
       case "client":
         result = await handleClientMode(body);
         break;
@@ -58,13 +62,13 @@ router.post("/", async (req, res) => {
       ? (session.context.history as { role: "user" | "assistant"; content: string }[])
       : [];
 
-    const stageAwareReply = await runMayaCore(body.message, session.stage, history);
+    const stageAwareReply = await runMayaCore(body.message, session.stage, mode, history);
     const sanitizedReply = sanitizeRateLanguage(stageAwareReply || result.reply);
     const guard = complianceFilter(sanitizedReply);
 
     if (guard.violationDetected) {
       logger.warn("Maya guardrail violation detected", {
-        mode: body.mode,
+        mode,
         sessionId: body.sessionId,
         originalReply: result.reply
       });
@@ -96,7 +100,7 @@ router.post("/", async (req, res) => {
 
     await logDecision({
       sessionId: body.sessionId,
-      mode: body.mode,
+      mode,
       message: body.message,
       reply: finalReply,
       confidence: confidenceEval.score,
@@ -104,7 +108,7 @@ router.post("/", async (req, res) => {
       violationDetected: guard.violationDetected
     });
 
-    const action = interpretAction(finalReply);
+    const action = interpretAction(`${body.message} ${finalReply}`);
 
     const nextStage = determineNextStage(session.stage, body.message);
     const nextContext = {
@@ -129,15 +133,21 @@ router.post("/", async (req, res) => {
       });
     }
 
-    if (action.type !== "none" && body.confirmed) {
-      const execution = await executeAction(action, body);
+    if (action.type !== "none") {
+      const execution = await executeAction(action, {
+        ...body,
+        ...(action.payload ?? {})
+      });
+      const executionMessage = typeof execution.message === "string"
+        ? execution.message
+        : JSON.stringify(execution.message);
 
       await logAction({
         sessionId: body.sessionId,
         actionType: action.type,
         requiresConfirmation: action.requiresConfirmation,
         executed: execution.success,
-        message: execution.message
+        message: executionMessage
       });
 
       return res.json({
