@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Twilio from "twilio";
 import agentRouter, { routeAgent } from "./router/agentRouter";
+import mayaRouter from "./router/mayaRouter";
 import { getSession } from "./memory/sessionStore";
 import { getLenderPortalDeals, uploadTermSheet } from "./engine/lenderDealEngine";
 import { pool } from "./config/pool";
@@ -24,6 +25,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use(agentRouter);
+app.use("/maya", mayaRouter);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
