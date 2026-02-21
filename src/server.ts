@@ -21,6 +21,7 @@ import adminUploadRoutes from "./routes/adminUploadRoutes";
 import voiceRoutes from "./routes/voiceRoutes";
 import smsRoutes from "./routes/smsRoutes";
 import adminAnalytics from "./routes/adminAnalytics";
+import mayaPortal from "./routes/mayaPortal";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -44,6 +45,7 @@ app.use("/api/admin", adminUploadRoutes);
 app.use("/api", voiceRoutes);
 app.use("/api", smsRoutes);
 app.use("/admin", adminAnalytics);
+app.use("/api", mayaPortal);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
