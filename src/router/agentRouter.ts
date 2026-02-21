@@ -9,6 +9,8 @@ import {
 } from "../services/bookingService";
 import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
+import { handleStartupInquiry } from "../core/mayaStartupHandler";
+import { captureStartupLead } from "../core/mayaStartupCapture";
 
 type RouteAgentResult = {
   content: string;
@@ -249,6 +251,7 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   sessionId: string;
   reply: string | null;
   action?: "book_call";
+  startupFlow?: "available" | "not_available";
   confidence: number;
 }> {
   const currentSessionId = await ensureSession(incomingSessionId, userPhone);
@@ -266,6 +269,17 @@ export async function executeChat(message: string, incomingSessionId?: string, u
     stage?: string;
     user_email?: string | null;
   };
+
+  if (message.toLowerCase().includes("startup")) {
+    const result = await handleStartupInquiry(message);
+
+    return {
+      sessionId: currentSessionId,
+      reply: result.reply,
+      startupFlow: result.status,
+      confidence: 0.95
+    };
+  }
 
   const response = await structuredQualificationFlow(session, message);
   const confidence = 0.9;
@@ -292,13 +306,15 @@ router.post("/ai/execute", async (req, res) => {
       return res.status(400).json({ error: "Message required" });
     }
 
-    const result = await executeChat(String(message), sessionId, userPhone);
+    const normalizedMessage = String(message);
+    const result = await executeChat(normalizedMessage, sessionId, userPhone);
 
     return res.json({
       success: true,
       sessionId: result.sessionId,
       reply: result.reply,
       confidence: result.confidence,
+      ...(result.startupFlow ? { startup_flow: result.startupFlow } : {}),
       ...(result.action ? { action: result.action } : {})
     });
   } catch (err) {
@@ -326,6 +342,28 @@ router.post("/maya/client", async (req, res) => {
   } catch (error) {
     console.error("Maya client endpoint error:", error);
     return res.status(500).json({ error: "Unable to process Maya client request" });
+  }
+});
+
+
+router.post("/maya/startup-capture", async (req, res) => {
+  try {
+    const { name, email, phone } = req.body as {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+
+    if (!name || !email || !phone) {
+      return res.status(400).json({ error: "name, email, and phone are required" });
+    }
+
+    const result = await captureStartupLead({ name, email, phone });
+
+    return res.json(result);
+  } catch (error) {
+    console.error("Startup capture endpoint error:", error);
+    return res.status(500).json({ error: "Unable to capture startup lead" });
   }
 });
 
