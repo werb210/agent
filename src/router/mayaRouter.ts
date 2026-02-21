@@ -13,6 +13,8 @@ import { logAction } from "../services/actionLogger";
 import { getSessionState, updateSessionState } from "../services/stageEngine";
 import { determineNextStage } from "../services/qualificationEngine";
 import { runMayaCore } from "../services/mayaCore";
+import { evaluateConfidence } from "../services/confidenceEngine";
+import { evaluateDealRisk } from "../services/dealRiskEngine";
 import {
   findApplication,
   getDocumentStatus,
@@ -70,6 +72,26 @@ router.post("/", async (req, res) => {
 
     const finalReply = guard.safeReply;
     const finalEscalated = result.escalated || guard.escalated;
+    const confidenceEval = evaluateConfidence({
+      aiConfidence: result.confidence ?? 0.5,
+      stage: session.stage,
+      message: body.message,
+      violationDetected: guard.violationDetected
+    });
+
+    const dealRisk = evaluateDealRisk(body.message);
+
+    let finalEscalation = finalEscalated;
+
+    // Escalate for low confidence
+    if (confidenceEval.shouldEscalate) {
+      finalEscalation = true;
+    }
+
+    // Escalate high-value deals
+    if (dealRisk.highValue) {
+      finalEscalation = true;
+    }
 
 
     await logDecision({
@@ -77,8 +99,8 @@ router.post("/", async (req, res) => {
       mode: body.mode,
       message: body.message,
       reply: finalReply,
-      confidence: result.confidence,
-      escalated: finalEscalated,
+      confidence: confidenceEval.score,
+      escalated: finalEscalation,
       violationDetected: guard.violationDetected
     });
 
@@ -156,8 +178,8 @@ router.post("/", async (req, res) => {
 
     return res.json({
       reply: finalReply,
-      confidence: result.confidence,
-      escalated: finalEscalated
+      confidence: confidenceEval.score,
+      escalated: finalEscalation
     });
   } catch (error) {
     console.error("Maya router error:", error);
