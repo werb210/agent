@@ -34,6 +34,7 @@
     "openai": "^4.104.0",
     "pdfkit": "^0.17.2",
     "pg": "^8.18.0",
+    "prom-client": "^15.1.3",
     "rate-limit-redis": "^4.3.1",
     "readline-sync": "^1.4.10",
     "tesseract.js": "^7.0.0",
@@ -41,7 +42,8 @@
     "twilio": "^4.23.0",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

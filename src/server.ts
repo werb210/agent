@@ -23,8 +23,11 @@ import smsRoutes from "./routes/smsRoutes";
 import adminAnalytics from "./routes/adminAnalytics";
 import mayaPortal from "./routes/mayaPortal";
 import mayaSandbox from "./routes/mayaSandbox";
+import twilio from "twilio";
+import { ENV } from "./infrastructure/env";
+import { logger } from "./infrastructure/logger";
 
-const app = express();
+export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
 
 app.use(cors());
@@ -136,6 +139,40 @@ app.get("/agent/dashboard/:id", async (req, res) => {
   res.json(session);
 });
 
+
+app.post("/webhooks/sms", async (req, res) => {
+  const signature = req.headers["x-twilio-signature"] as string | undefined;
+  const webhookUrl = `${ENV.PUBLIC_WEBHOOK_URL ?? ""}/webhooks/sms`;
+  const valid = Boolean(signature) && twilio.validateRequest(ENV.TWILIO_AUTH_TOKEN, signature as string, webhookUrl, req.body);
+
+  if (!valid) {
+    return res.status(403).send("Invalid signature");
+  }
+
+  try {
+    const incomingMessage = req.body?.Body;
+    const from = req.body?.From;
+
+    if (!incomingMessage || !from) {
+      return res.sendStatus(400);
+    }
+
+    const result = await routeAgent("chat", {
+      message: incomingMessage,
+      userId: from
+    });
+
+    const twiml = new Twilio.twiml.MessagingResponse();
+    twiml.message(result?.content ?? "No response generated.");
+
+    res.type("text/xml");
+    return res.send(twiml.toString());
+  } catch (err) {
+    logger.error("SMS webhook error", { err });
+    return res.sendStatus(500);
+  }
+});
+
 app.post("/sms", async (req, res) => {
   try {
     const incomingMessage = req.body?.Body;
@@ -156,7 +193,7 @@ app.post("/sms", async (req, res) => {
     res.type("text/xml");
     return res.send(twiml.toString());
   } catch (err) {
-    console.error("SMS webhook error:", err);
+    logger.error("SMS webhook error", { err });
     return res.sendStatus(500);
   }
 });
@@ -184,7 +221,7 @@ app.post("/voice/outbound", async (req, res) => {
 
     return res.json({ callSid: call.sid });
   } catch (error) {
-    console.error("Failed to start outbound call", error);
+    logger.error("Failed to start outbound call", { error });
     return res.status(500).json({ error: "Unable to initiate outbound call" });
   }
 });
@@ -334,26 +371,8 @@ app.post("/voice/post-call", async (req, res) => {
 
     res.sendStatus(200);
   } catch (error) {
-    console.error("Post-call processing failed", error);
+    logger.error("Post-call processing failed", { error });
     res.sendStatus(500);
   }
 });
 
-const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, async () => {
-  console.log(`Maya SMS Agent running on port ${PORT}`);
-
-  // Force test mode safety
-  try {
-    await pool.query(`
-      UPDATE maya_settings
-      SET autonomy_level = 0,
-          allow_full_auto_marketing = false,
-          auto_outbound_enabled = false
-    `);
-    console.log("Maya running in SAFE TEST MODE (Autonomy disabled)");
-  } catch (err) {
-    console.log("maya_settings table not found yet.");
-  }
-});
