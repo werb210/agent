@@ -1,8 +1,15 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import OpenAI from "openai";
+import { DateTime } from "luxon";
 import { pool } from "../db";
 import { calculateFundingScore, QualificationData } from "../engine/scoring";
+import { matchLenders } from "../engine/lenderMatch";
+import { sendSlackAlert } from "../integrations/slack";
+import { sendSMS } from "../integrations/twilio";
+import { createO365Event } from "../integrations/o365";
+import { generatePreApprovalSummary } from "../engine/summary";
+import { pushToPipeline } from "../integrations/pipeline";
 
 type RouteAgentResult = {
   content: string;
@@ -111,6 +118,20 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   const existingQualificationData = await loadQualificationData(currentSessionId);
   const qualificationData = extractQualificationData(message, existingQualificationData);
   const { score, tier } = calculateFundingScore(qualificationData);
+  const lenders = matchLenders(score, qualificationData.monthlyRevenue);
+  const summary = generatePreApprovalSummary(qualificationData, tier, lenders);
+
+  if (tier === "A") {
+    await sendSlackAlert(`🔥 Tier A Lead\n${summary}`);
+  }
+
+  await pushToPipeline({
+    sessionId: currentSessionId,
+    tier,
+    score,
+    lenders,
+    qualificationData
+  });
 
   await pool.query(
     `UPDATE sessions
@@ -211,6 +232,23 @@ You are a revenue-generating funding assistant.
        WHERE session_id = $4`,
       ["book_call", JSON.stringify(args), confidence, currentSessionId]
     );
+
+    const parsedStart = DateTime.fromFormat(`${args.date} ${args.time}`, "yyyy-MM-dd HH:mm", { zone: "America/Toronto" });
+    const startTime = parsedStart.isValid ? parsedStart : DateTime.now().setZone("America/Toronto").plus({ hours: 1 });
+    const endTime = startTime.plus({ minutes: 30 });
+    const startISO = startTime.toISO();
+    const endISO = endTime.toISO();
+
+    if (startISO && endISO) {
+      await createO365Event(startISO, endISO, "Boreal Funding Strategy Call");
+    }
+
+    if (userPhone) {
+      await sendSMS(
+        userPhone,
+        `Your Boreal strategy call is booked for ${args.date} at ${args.time}.`
+      );
+    }
 
     let reply = "Let’s discuss options and see what may work. When can you speak?";
     if (tier === "A") {
