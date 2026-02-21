@@ -1,6 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
+import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 
 type MemoryTurn = {
   user: string;
@@ -63,6 +64,9 @@ export async function transcribeAudio(recordingUrl: string): Promise<string> {
     file: audioFile,
     model: "gpt-4o-mini-transcribe"
   });
+
+  const estimatedOutputTokens = Math.ceil((transcription.text || "").length / 4);
+  await trackLLMUsage("gpt-4o-mini-transcribe", 0, estimatedOutputTokens);
 
   return transcription.text;
 }

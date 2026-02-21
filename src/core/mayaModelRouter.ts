@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { logLLMUsage } from "../infrastructure/mayaTelemetry";
+import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "sk-placeholder" });
 
@@ -37,6 +38,11 @@ export async function runMayaLLM(task: MayaTaskType, prompt: string) {
   });
 
   await logLLMUsage(model, task);
+  await trackLLMUsage(
+    model,
+    response.usage?.prompt_tokens ?? 0,
+    response.usage?.completion_tokens ?? 0
+  );
 
   return {
     model,

@@ -1,10 +1,19 @@
 import { Router } from "express";
 import { prisma } from "../config/db";
 import { getTwilioClient } from "../config/twilio";
+import { requireApproval } from "../core/mayaApprovalGate";
+import { logMayaAction } from "../services/mayaActionLedger";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
+  try {
+    await requireApproval("launch_campaign", req.body ?? {});
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Approval required";
+    return res.status(202).json({ status: "awaiting_approval", message });
+  }
+
   const leads = await (prisma as any).callQueue.findMany({
     where: { status: "pending" },
     orderBy: { priority: "desc" },
@@ -32,6 +41,7 @@ router.post("/", async (req, res) => {
     });
   }
 
+  await logMayaAction("launch_campaign", { phoneNumber: req.body.phoneNumber }, "executed");
   res.json({ status: "Campaign started" });
 });
 
