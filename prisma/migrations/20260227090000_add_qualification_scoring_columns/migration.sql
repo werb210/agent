@@ -1,0 +1,4 @@
+ALTER TABLE sessions
+ADD COLUMN IF NOT EXISTS qualification_data JSONB DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS tier TEXT,
+ADD COLUMN IF NOT EXISTS funding_score NUMERIC(5,2);

@@ -83,13 +83,15 @@ model RepPerformance {
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  sessionId String   @map("session_id")
-  task      String
-  data      Json
-  memo      String?
-  tier      String?
-  createdAt DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  sessionId         String   @map("session_id")
+  task              String
+  data              Json
+  memo              String?
+  qualificationData Json     @default("{}") @map("qualification_data")
+  tier              String?
+  fundingScore      Decimal? @map("funding_score") @db.Decimal(5, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
 
   @@map("sessions")
 }

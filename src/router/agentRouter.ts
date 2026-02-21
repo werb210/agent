@@ -2,6 +2,7 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import OpenAI from "openai";
 import { pool } from "../db";
+import { calculateFundingScore, QualificationData } from "../engine/scoring";
 
 type RouteAgentResult = {
   content: string;
@@ -13,6 +14,63 @@ type RouteAgentResult = {
 };
 
 const router = Router();
+
+function normalizeCurrency(value: string) {
+  const digitsOnly = value.replace(/[^\d.]/g, "");
+  return Number(digitsOnly);
+}
+
+function extractQualificationData(message: string, existing: QualificationData): QualificationData {
+  const qualificationData: QualificationData = { ...existing };
+  const lowerMessage = message.toLowerCase();
+
+  const fundingAmountMatch = message.match(/(?:\$|cad\s*)?([\d,]+(?:\.\d+)?)\s*(?:k|m)?\s*(?:funding|loan|line\s*of\s*credit|loc)?/i);
+  if (fundingAmountMatch?.[1]) {
+    const numericAmount = normalizeCurrency(fundingAmountMatch[1]);
+    const multiplier = /\b\d+(?:\.\d+)?\s*m\b/i.test(fundingAmountMatch[0]) ? 1_000_000 : /\b\d+(?:\.\d+)?\s*k\b/i.test(fundingAmountMatch[0]) ? 1_000 : 1;
+    if (!Number.isNaN(numericAmount) && numericAmount > 0) {
+      qualificationData.fundingAmount = numericAmount * multiplier;
+    }
+  }
+
+  const monthsMatch = lowerMessage.match(/(\d{1,3})\s*(?:months?|mos?)\s*(?:in\s*business)?/i);
+  if (monthsMatch?.[1]) {
+    qualificationData.monthsInBusiness = Number(monthsMatch[1]);
+  }
+
+  const yearsMatch = lowerMessage.match(/(\d{1,2})\s*(?:years?|yrs?)\s*(?:in\s*business)?/i);
+  if (yearsMatch?.[1]) {
+    qualificationData.monthsInBusiness = Number(yearsMatch[1]) * 12;
+  }
+
+  const revenueMatch = message.match(/(?:\$|cad\s*)?([\d,]+(?:\.\d+)?)\s*(k|m)?\s*(?:\/\s*month|monthly|per\s*month)?\s*(?:revenue|sales)?/i);
+  if (revenueMatch?.[1]) {
+    const numericRevenue = normalizeCurrency(revenueMatch[1]);
+    const revenueMultiplier = revenueMatch[2]?.toLowerCase() === "m" ? 1_000_000 : revenueMatch[2]?.toLowerCase() === "k" ? 1_000 : 1;
+    if (!Number.isNaN(numericRevenue) && numericRevenue > 0) {
+      qualificationData.monthlyRevenue = numericRevenue * revenueMultiplier;
+    }
+  }
+
+  if (/\bno\b.*\b(cra|tax)\b|\b(cra|tax)\b.*\bno\b|\bnone\b.*\b(cra|tax)\b/i.test(lowerMessage)) {
+    qualificationData.craIssues = false;
+  }
+
+  if (/\b(yes|have|owe|outstanding|behind|issues?)\b.*\b(cra|tax)\b|\b(cra|tax)\b.*\b(issues?|owing|debt|arrears|problem)\b/i.test(lowerMessage)) {
+    qualificationData.craIssues = true;
+  }
+
+  return qualificationData;
+}
+
+async function loadQualificationData(sessionId: string): Promise<QualificationData> {
+  const result = await pool.query(
+    "SELECT qualification_data FROM sessions WHERE session_id = $1 LIMIT 1",
+    [sessionId]
+  );
+
+  return (result.rows[0]?.qualification_data ?? {}) as QualificationData;
+}
 
 function getOpenAIClient() {
   if (!process.env.OPENAI_API_KEY) {
@@ -50,6 +108,16 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   confidence: number;
 }> {
   const currentSessionId = await ensureSession(incomingSessionId, userPhone);
+  const existingQualificationData = await loadQualificationData(currentSessionId);
+  const qualificationData = extractQualificationData(message, existingQualificationData);
+  const { score, tier } = calculateFundingScore(qualificationData);
+
+  await pool.query(
+    `UPDATE sessions
+     SET qualification_data = $1, funding_score = $2, tier = $3
+     WHERE session_id = $4`,
+    [JSON.stringify(qualificationData), score, tier, currentSessionId]
+  );
 
   const completion = await getOpenAIClient().chat.completions.create({
     model: "gpt-4o-mini",
@@ -144,9 +212,16 @@ You are a revenue-generating funding assistant.
       ["book_call", JSON.stringify(args), confidence, currentSessionId]
     );
 
+    let reply = "Let’s discuss options and see what may work. When can you speak?";
+    if (tier === "A") {
+      reply = "You look like a strong candidate. Let’s lock in a quick approval call. When works?";
+    } else if (tier === "B") {
+      reply = "You may qualify. A quick review call will confirm options. When works?";
+    }
+
     return {
       sessionId: currentSessionId,
-      reply: `Booking request received for ${args.date} at ${args.time}.`,
+      reply,
       action: "book_call",
       confidence
     };
