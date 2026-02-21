@@ -7,6 +7,7 @@ import { pool } from "./config/pool";
 import { redis } from "./infrastructure/redis";
 import { logger } from "./infrastructure/logger";
 import { register } from "./infrastructure/metrics";
+import { registerMayaAgents } from "./agents/registerAgents";
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -49,6 +50,7 @@ async function scheduleJobs() {
 }
 
 async function start() {
+  registerMayaAgents();
   await pool.connect();
   await redis.ping();
   await scheduleJobs();

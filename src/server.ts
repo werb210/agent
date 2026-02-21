@@ -26,6 +26,8 @@ import mayaSandbox from "./routes/mayaSandbox";
 import twilio from "twilio";
 import { ENV } from "./infrastructure/env";
 import { logger } from "./infrastructure/logger";
+import { strategicDecision } from "./core/strategicEngine";
+import { calculateBrokerScore } from "./core/brokerPerformance";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -49,6 +51,68 @@ app.get("/maya/health", async (_req, res) => {
     queue: true,
     llm: true,
     timestamp: new Date()
+  });
+});
+
+app.post("/maya/strategic-decision", async (req, res) => {
+  try {
+    const payload = req.body as {
+      funding_amount?: number;
+      product_type?: string;
+      industry?: string;
+      time_in_business?: number;
+    };
+
+    if (typeof payload.funding_amount !== "number") {
+      return res.status(400).json({ error: "funding_amount is required" });
+    }
+
+    const result = await strategicDecision({
+      funding_amount: payload.funding_amount,
+      product_type: payload.product_type,
+      industry: payload.industry,
+      time_in_business: payload.time_in_business
+    });
+
+    return res.json(result);
+  } catch (err) {
+    logger.error("Strategic decision error", { err });
+    return res.status(500).json({ error: "Failed to compute strategic decision" });
+  }
+});
+
+app.post("/maya/brokers/:brokerId/score", async (req, res) => {
+  try {
+    const brokerId = String(req.params.brokerId ?? "");
+
+    if (!brokerId) {
+      return res.status(400).json({ error: "brokerId is required" });
+    }
+
+    const performance = await calculateBrokerScore(brokerId);
+    return res.json({ broker_id: brokerId, performance_score: performance });
+  } catch (err) {
+    logger.error("Broker scoring error", { err });
+    return res.status(500).json({ error: "Failed to score broker" });
+  }
+});
+
+app.get("/maya/executive-dashboard", async (_req, res) => {
+  const simulations = await pool.query(`
+    SELECT COALESCE(SUM(risk_adjusted_projection), 0) AS forecasted_revenue
+    FROM maya_revenue_simulations
+  `);
+
+  const topBrokers = await pool.query(`
+    SELECT broker_id, performance_score
+    FROM maya_broker_scores
+    ORDER BY performance_score DESC
+    LIMIT 5
+  `);
+
+  res.json({
+    forecasted_revenue: simulations.rows[0]?.forecasted_revenue ?? 0,
+    top_brokers: topBrokers.rows
   });
 });
 
