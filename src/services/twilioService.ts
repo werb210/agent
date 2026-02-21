@@ -12,3 +12,11 @@ export const sendSMS = async (to: string, body: string) => {
     body
   });
 };
+
+export const triggerOutboundCall = async (to: string) => {
+  return client.calls.create({
+    from: process.env.TWILIO_PHONE_NUMBER || "",
+    to,
+    url: `${process.env.AGENT_URL || ""}/voice`
+  });
+};
