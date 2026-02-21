@@ -38,4 +38,32 @@ export async function updateSessionState(
      WHERE id::text = $1 OR session_id = $1`,
     [sessionId, stage, JSON.stringify(context)]
   );
+
+  if (stage === "booking") {
+    const utmSource =
+      typeof context.utm_source === "string"
+        ? context.utm_source
+        : typeof context.utmSource === "string"
+          ? context.utmSource
+          : null;
+    const utmCampaign =
+      typeof context.utm_campaign === "string"
+        ? context.utm_campaign
+        : typeof context.utmCampaign === "string"
+          ? context.utmCampaign
+          : null;
+    const funded = typeof context.funded === "boolean" ? context.funded : false;
+
+    await pool.query(
+      `INSERT INTO marketing_sessions (session_id, utm_source, utm_campaign, booked, funded)
+       VALUES ($1, $2, $3, true, $4)
+       ON CONFLICT (session_id)
+       DO UPDATE SET
+         utm_source = EXCLUDED.utm_source,
+         utm_campaign = EXCLUDED.utm_campaign,
+         booked = true,
+         funded = EXCLUDED.funded`,
+      [sessionId, utmSource, utmCampaign, funded]
+    );
+  }
 }
