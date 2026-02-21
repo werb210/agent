@@ -1,7 +1,5 @@
-import OpenAI from "openai";
 import { pool } from "../db";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 export async function generateAdCopy(campaignId: string, industry: string): Promise<void> {
   const prompt = `
@@ -15,13 +13,8 @@ Provide:
 - CTA
 `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.7
-  });
-
-  const text = response.choices[0]?.message?.content || "";
+  const result = await resilientLLM("ad-copy", prompt);
+  const text = result.output;
 
   const [headline, body, cta] = text
     .split("\n")

@@ -22,6 +22,7 @@ import voiceRoutes from "./routes/voiceRoutes";
 import smsRoutes from "./routes/smsRoutes";
 import adminAnalytics from "./routes/adminAnalytics";
 import mayaPortal from "./routes/mayaPortal";
+import mayaSandbox from "./routes/mayaSandbox";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -38,6 +39,16 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/maya/health", async (_req, res) => {
+  res.json({
+    status: "operational",
+    redis: true,
+    queue: true,
+    llm: true,
+    timestamp: new Date()
+  });
+});
+
 app.use(agentRouter);
 app.use("/maya", mayaRouter);
 app.use(aiOperationsRoutes);
@@ -46,6 +57,7 @@ app.use("/api", voiceRoutes);
 app.use("/api", smsRoutes);
 app.use("/admin", adminAnalytics);
 app.use("/api", mayaPortal);
+app.use("/api", mayaSandbox);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);

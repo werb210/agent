@@ -1,8 +1,4 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
-});
+import { resilientLLM } from "../infrastructure/mayaResilience";
 
 export async function generateUnderwritingMemo(input: {
   requestedAmount: number;
@@ -27,11 +23,6 @@ Credit: ${input.creditScore}
 Readiness: ${input.readiness}
 `;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.2,
-    messages: [{ role: "user", content: prompt }]
-  });
-
-  return completion.choices[0].message.content;
+  const result = await resilientLLM("analysis", prompt);
+  return result.output;
 }
