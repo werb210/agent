@@ -1,6 +1,7 @@
 import { runAI } from "../brain/openaiClient";
 import { SessionStage } from "../types/stages";
 import { MayaMode } from "../types/maya";
+import { getAvailableProductCategories } from "../core/mayaProductIntelligence";
 
 type ConversationTurn = {
   role: "user" | "assistant";
@@ -13,12 +14,12 @@ export async function runMayaCore(
   mode: MayaMode,
   history: ConversationTurn[] = []
 ): Promise<string> {
-  const systemPrompt = buildSystemPrompt(mode, stage);
+  const systemPrompt = await buildSystemPrompt(mode, stage);
 
   return (await runAI(systemPrompt, message, history)) ?? "Could you share a bit more detail?";
 }
 
-function buildSystemPrompt(mode: MayaMode, stage: SessionStage) {
+async function buildSystemPrompt(mode: MayaMode, stage: SessionStage): Promise<string> {
 
   if (mode === "staff") {
     return `
@@ -36,6 +37,17 @@ Never:
 `;
   }
 
+  const categories = await getAvailableProductCategories();
+
+  const productContext = `
+Available product categories:
+${categories.join(", ")}
+
+You must only reference products that exist in this list.
+If asked about a category not in this list, say it is not currently offered.
+Never invent products.
+`;
+
   return `
 You are Maya, Boreal’s funding assistant.
 
@@ -45,5 +57,7 @@ Guide users through funding.
 Never estimate approval.
 Never negotiate rates.
 Escalate when uncertain.
+
+${productContext}
 `;
 }
