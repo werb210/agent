@@ -34,6 +34,21 @@ export function interpretAction(
     };
   }
 
+  if (lower.includes("status of my application")) {
+    return {
+      type: "qualify",
+      requiresConfirmation: false
+    };
+  }
+
+  if (lower.includes("rates") || lower.includes("loc rate")) {
+    return {
+      type: "none",
+      requiresConfirmation: false,
+      payload: { dataQuery: "rates" }
+    };
+  }
+
   return {
     type: "none",
     requiresConfirmation: false
