@@ -8,6 +8,7 @@ import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
 import { logger } from "../logging/logger";
 import { logDecision } from "../services/decisionLogger";
 import { evaluateEscalation } from "../services/escalationEngine";
+import { handleBooking } from "../services/bookingEngine";
 
 const router = Router();
 
@@ -15,7 +16,30 @@ router.post("/", async (req, res) => {
   try {
     const body: MayaRequest = req.body;
 
-    if (!body.mode || !body.sessionId || !body.message) {
+    if (!body.mode || !body.sessionId) {
+      return res.status(400).json({ error: "Invalid Maya request" });
+    }
+
+    if (body.action === "book") {
+      if (!body.startISO || !body.endISO) {
+        return res.status(400).json({ error: "Missing booking window" });
+      }
+
+      const booking = await handleBooking({
+        startISO: body.startISO,
+        endISO: body.endISO,
+        phone: body.phone
+      });
+
+      return res.json({
+        reply: booking.message,
+        confidence: booking.success ? 0.95 : 0.5,
+        escalated: !booking.success,
+        bookingRequired: !booking.success
+      });
+    }
+
+    if (!body.message) {
       return res.status(400).json({ error: "Invalid Maya request" });
     }
 
@@ -60,6 +84,15 @@ router.post("/", async (req, res) => {
       escalated: finalEscalated,
       violationDetected: guard.violationDetected
     });
+
+    if (escalation.fallbackBooking) {
+      return res.json({
+        reply: `${finalReply} Let's schedule a call. What time works for you?`,
+        confidence: result.confidence,
+        escalated: true,
+        bookingRequired: true
+      });
+    }
 
     return res.json({
       reply: finalReply,
