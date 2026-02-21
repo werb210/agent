@@ -7,8 +7,9 @@ import { complianceFilter } from "../guardrails/complianceFilter";
 import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
 import { logger } from "../logging/logger";
 import { logDecision } from "../services/decisionLogger";
-import { evaluateEscalation } from "../services/escalationEngine";
-import { handleBooking } from "../services/bookingEngine";
+import { interpretAction } from "../services/actionInterpreter";
+import { executeAction } from "../services/actionExecutor";
+import { logAction } from "../services/actionLogger";
 
 const router = Router();
 
@@ -18,25 +19,6 @@ router.post("/", async (req, res) => {
 
     if (!body.mode || !body.sessionId) {
       return res.status(400).json({ error: "Invalid Maya request" });
-    }
-
-    if (body.action === "book") {
-      if (!body.startISO || !body.endISO) {
-        return res.status(400).json({ error: "Missing booking window" });
-      }
-
-      const booking = await handleBooking({
-        startISO: body.startISO,
-        endISO: body.endISO,
-        phone: body.phone
-      });
-
-      return res.json({
-        reply: booking.message,
-        confidence: booking.success ? 0.95 : 0.5,
-        escalated: !booking.success,
-        bookingRequired: !booking.success
-      });
     }
 
     if (!body.message) {
@@ -73,7 +55,6 @@ router.post("/", async (req, res) => {
     const finalReply = guard.safeReply;
     const finalEscalated = result.escalated || guard.escalated;
 
-    const escalation = await evaluateEscalation(finalEscalated);
 
     await logDecision({
       sessionId: body.sessionId,
@@ -85,21 +66,45 @@ router.post("/", async (req, res) => {
       violationDetected: guard.violationDetected
     });
 
-    if (escalation.fallbackBooking) {
+    const action = interpretAction(finalReply);
+
+    if (action.requiresConfirmation && !body.confirmed) {
+      await logAction({
+        sessionId: body.sessionId,
+        actionType: action.type,
+        requiresConfirmation: action.requiresConfirmation,
+        executed: false
+      });
+
       return res.json({
-        reply: `${finalReply} Let's schedule a call. What time works for you?`,
-        confidence: result.confidence,
-        escalated: true,
-        bookingRequired: true
+        reply: `${finalReply} Please confirm to proceed.`,
+        requiresConfirmation: true,
+        action: action.type
+      });
+    }
+
+    if (action.type !== "none" && body.confirmed) {
+      const execution = await executeAction(action, body);
+
+      await logAction({
+        sessionId: body.sessionId,
+        actionType: action.type,
+        requiresConfirmation: action.requiresConfirmation,
+        executed: execution.success,
+        message: execution.message
+      });
+
+      return res.json({
+        reply: execution.message,
+        action: action.type,
+        executed: execution.success
       });
     }
 
     return res.json({
       reply: finalReply,
       confidence: result.confidence,
-      escalated: finalEscalated,
-      transferTo: escalation.transferTo || null,
-      fallbackBooking: escalation.fallbackBooking
+      escalated: finalEscalated
     });
   } catch (error) {
     console.error("Maya router error:", error);

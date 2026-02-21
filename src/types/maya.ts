@@ -9,6 +9,7 @@ export interface MayaRequest {
   endISO?: string;
   phone?: string;
   contextId?: string; // dealId, clientId, etc.
+  confirmed?: boolean;
 }
 
 export interface MayaResponse {
