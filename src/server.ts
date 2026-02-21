@@ -18,6 +18,7 @@ import { transcribeAudio, summarizeFundingCall } from "./services/openaiService"
 import { sendSMS } from "./services/smsService";
 import aiOperationsRoutes from "./routes/aiOperationsRoutes";
 import adminUploadRoutes from "./routes/adminUploadRoutes";
+import voiceRoutes from "./routes/voiceRoutes";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -38,6 +39,7 @@ app.use(agentRouter);
 app.use("/maya", mayaRouter);
 app.use(aiOperationsRoutes);
 app.use("/api/admin", adminUploadRoutes);
+app.use("/api", voiceRoutes);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
