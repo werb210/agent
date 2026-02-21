@@ -28,6 +28,8 @@ import { ENV } from "./infrastructure/env";
 import { logger } from "./infrastructure/logger";
 import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
+import { generateRiskHeatmap } from "./core/portfolioRisk";
+import { forecast90Days } from "./core/capitalForecast";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -113,6 +115,16 @@ app.get("/maya/executive-dashboard", async (_req, res) => {
   res.json({
     forecasted_revenue: simulations.rows[0]?.forecasted_revenue ?? 0,
     top_brokers: topBrokers.rows
+  });
+});
+
+app.get("/maya/intelligence", async (_req, res) => {
+  const heatmap = await generateRiskHeatmap();
+  const forecast = await forecast90Days();
+
+  res.json({
+    risk_heatmap: heatmap,
+    capital_forecast: forecast
   });
 });
 
