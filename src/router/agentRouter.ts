@@ -11,6 +11,7 @@ import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import { captureStartupLead } from "../core/mayaStartupCapture";
+import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
 
 type RouteAgentResult = {
   content: string;
@@ -365,6 +366,11 @@ router.post("/maya/startup-capture", async (req, res) => {
     console.error("Startup capture endpoint error:", error);
     return res.status(500).json({ error: "Unable to capture startup lead" });
   }
+});
+
+router.post("/maya/admin/force-startup-check", async (_req, res) => {
+  await checkStartupProductLaunch();
+  res.json({ status: "checked" });
 });
 
 export async function routeAgent(task: string, payload: any, sessionId?: string): Promise<RouteAgentResult> {
