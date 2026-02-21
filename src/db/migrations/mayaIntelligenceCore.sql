@@ -13,3 +13,22 @@ CREATE TABLE IF NOT EXISTS maya_broker_scores (
   performance_score NUMERIC,
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS maya_feature_weights (
+  feature TEXT PRIMARY KEY,
+  weight NUMERIC NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO maya_feature_weights (feature, weight)
+VALUES
+  ('funding_amount', 100000),
+  ('annual_revenue', 500000),
+  ('time_in_business', 24)
+ON CONFLICT (feature) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS maya_deal_ltv (
+  session_id UUID PRIMARY KEY,
+  projected_ltv NUMERIC,
+  created_at TIMESTAMP DEFAULT NOW()
+);
