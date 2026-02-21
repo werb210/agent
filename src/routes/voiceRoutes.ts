@@ -35,7 +35,14 @@ router.post("/voice/respond", async (req, res) => {
   const aiResponse = await handleVoiceInput(sessionId, speech);
 
   const response = new twiml.VoiceResponse();
-  response.say(aiResponse);
+
+  if (typeof aiResponse === "object" && aiResponse !== null && aiResponse.transfer) {
+    response.say("Please hold while I connect you to a funding specialist.");
+    response.dial(aiResponse.staffPhone);
+  } else {
+    response.say(typeof aiResponse === "string" ? aiResponse : "Could you repeat that?");
+  }
+
   response.gather({
     input: ["speech"],
     action: `/api/voice/respond?sessionId=${sessionId}`,
