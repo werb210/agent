@@ -1,13 +1,24 @@
 import axios from "axios";
 import { getGraphToken } from "./msAuth";
 import { pool } from "../db";
+import twilio from "twilio";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
-export async function getActiveStaff() {
-  const result = await pool.query(
-    `SELECT * FROM staff_calendar WHERE is_active = true`
-  );
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID!,
+  process.env.TWILIO_AUTH_TOKEN!
+);
+
+export async function getActiveStaffSorted() {
+  const result = await pool.query(`
+    SELECT *
+    FROM staff_calendar
+    WHERE is_active = true
+    ORDER BY is_on_call DESC,
+             priority_weight DESC,
+             last_assigned_at ASC NULLS FIRST
+  `);
   return result.rows;
 }
 
@@ -35,31 +46,44 @@ export async function checkAvailability(
   return response.data.value[0].availabilityView;
 }
 
-export async function findNextAvailableSlot(preferredISO: string) {
-  const staff = await getActiveStaff();
+export async function findTopAvailableSlots(
+  preferredISO: string,
+  slotCount = 3
+) {
+  const staffList = await getActiveStaffSorted();
+  const suggestions: any[] = [];
 
-  for (const member of staff) {
-    const duration = member.call_duration_minutes;
-    const start = new Date(preferredISO);
-    const end = new Date(start.getTime() + duration * 60000);
+  for (const staff of staffList) {
+    const duration = staff.call_duration_minutes;
+    let start = new Date(preferredISO);
 
-    const availability = await checkAvailability(
-      member.email,
-      start.toISOString(),
-      end.toISOString(),
-      member.timezone
-    );
+    for (let i = 0; i < 8; i++) {
+      const end = new Date(start.getTime() + duration * 60000);
 
-    if (availability.includes("0")) {
-      return {
-        staff: member,
-        startISO: start.toISOString(),
-        endISO: end.toISOString()
-      };
+      const availability = await checkAvailability(
+        staff.email,
+        start.toISOString(),
+        end.toISOString(),
+        staff.timezone
+      );
+
+      if (availability.includes("0")) {
+        suggestions.push({
+          staff,
+          startISO: start.toISOString(),
+          endISO: end.toISOString()
+        });
+
+        if (suggestions.length >= slotCount) {
+          return suggestions;
+        }
+      }
+
+      start = new Date(start.getTime() + 30 * 60000);
     }
   }
 
-  return null;
+  return suggestions;
 }
 
 export async function createCalendarEvent(
@@ -95,4 +119,18 @@ export async function createCalendarEvent(
   );
 
   return response.data;
+}
+
+export async function confirmBookingSMS(
+  phone: string,
+  staffEmail: string,
+  startISO: string
+) {
+  await twilioClient.messages.create({
+    to: phone,
+    from: process.env.TWILIO_PHONE_NUMBER!,
+    body: `Your call with ${staffEmail} is confirmed for ${new Date(
+      startISO
+    ).toLocaleString()}. A Teams invite has been sent.`
+  });
 }

@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { pool } from "../db";
-import { findNextAvailableSlot, createCalendarEvent } from "../services/bookingService";
+import {
+  findTopAvailableSlots,
+  createCalendarEvent,
+  confirmBookingSMS
+} from "../services/bookingService";
 
 type RouteAgentResult = {
   content: string;
@@ -77,35 +81,60 @@ function extractStructuredField(text: string): { field: QualificationFields; val
 }
 
 async function handleBooking(session: any, requestedISO: string) {
-  const slot = await findNextAvailableSlot(requestedISO);
+  const suggestions = await findTopAvailableSlots(requestedISO);
 
-  if (!slot) {
-    return "All advisors are booked at that time. Would you like me to suggest the next available slot?";
+  if (!suggestions.length) {
+    return "All advisors are currently booked. Please try another date.";
   }
 
+  if (!session.pendingSlotSelection) {
+    session.pendingSlotSelection = suggestions;
+    return suggestions
+      .map(
+        (s: any, i: number) =>
+          `${i + 1}. ${new Date(s.startISO).toLocaleString()}`
+      )
+      .join("\n");
+  }
+
+  const choiceIndex = parseInt(session.lastUserMessage) - 1;
+
+  if (!suggestions[choiceIndex]) {
+    return "Please select a valid option number.";
+  }
+
+  const chosen = suggestions[choiceIndex];
+
   await createCalendarEvent(
-    slot.staff.email,
-    slot.startISO,
-    slot.endISO,
-    slot.staff.timezone,
+    chosen.staff.email,
+    chosen.startISO,
+    chosen.endISO,
+    chosen.staff.timezone,
     session.user_email || "client@example.com"
   );
 
   await pool.query(
     `UPDATE sessions
-     SET assigned_broker_id = $1, stage = 'booked'
+     SET assigned_broker_id = $1,
+         stage = 'booked'
      WHERE session_id = $2`,
-    [slot.staff.id, session.session_id]
+    [chosen.staff.id, session.session_id]
   );
 
   await pool.query(
     `UPDATE staff_calendar
      SET last_assigned_at = NOW()
      WHERE id = $1`,
-    [slot.staff.id]
+    [chosen.staff.id]
   );
 
-  return `You're booked with ${slot.staff.email} at ${new Date(slot.startISO).toLocaleString()}. A Teams link has been sent.`;
+  await confirmBookingSMS(
+    session.phone,
+    chosen.staff.email,
+    chosen.startISO
+  );
+
+  return `You're booked. Confirmation has been sent.`;
 }
 
 async function structuredQualificationFlow(
