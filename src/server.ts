@@ -20,6 +20,7 @@ import aiOperationsRoutes from "./routes/aiOperationsRoutes";
 import adminUploadRoutes from "./routes/adminUploadRoutes";
 import voiceRoutes from "./routes/voiceRoutes";
 import smsRoutes from "./routes/smsRoutes";
+import adminAnalytics from "./routes/adminAnalytics";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -42,6 +43,7 @@ app.use(aiOperationsRoutes);
 app.use("/api/admin", adminUploadRoutes);
 app.use("/api", voiceRoutes);
 app.use("/api", smsRoutes);
+app.use("/admin", adminAnalytics);
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
