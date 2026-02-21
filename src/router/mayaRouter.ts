@@ -7,6 +7,7 @@ import { complianceFilter } from "../guardrails/complianceFilter";
 import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
 import { logger } from "../logging/logger";
 import { logDecision } from "../services/decisionLogger";
+import { logDecisionMemory } from "../services/decisionMemory";
 import { interpretAction } from "../services/actionInterpreter";
 import { executeAction } from "../services/actionExecutor";
 import { logAction } from "../services/actionLogger";
@@ -106,6 +107,15 @@ router.post("/", async (req, res) => {
       confidence: confidenceEval.score,
       escalated: finalEscalation,
       violationDetected: guard.violationDetected
+    });
+
+
+
+    await logDecisionMemory({
+      sessionId: body.sessionId,
+      decisionType: finalEscalation ? "escalation" : "autonomous_response",
+      confidence: confidenceEval.score,
+      outcome: finalEscalation ? "escalated" : "not_escalated"
     });
 
     const action = interpretAction(`${body.message} ${finalReply}`);
