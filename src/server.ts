@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import Twilio from "twilio";
+import VoiceResponse = require("twilio/lib/twiml/VoiceResponse");
 import agentRouter, { routeAgent } from "./router/agentRouter";
 import mayaRouter from "./router/mayaRouter";
 import { getSession } from "./memory/sessionStore";
@@ -9,8 +10,12 @@ import { pool } from "./config/pool";
 import { generateCreditMemo } from "./engine/memoEngine";
 import { generateDealPDF } from "./engine/pdfEngine";
 import { extractTextFromDocument } from "./engine/ocrEngine";
+import { interpretAction } from "./services/actionInterpreter";
+import { executeAction } from "./services/actionExecutor";
+import { logCall } from "./services/callLogger";
 
 const app = express();
+const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
 
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
@@ -130,34 +135,98 @@ app.post("/sms", async (req, res) => {
 });
 
 app.post("/voice", async (_req, res) => {
-  const response = new Twilio.twiml.VoiceResponse();
-  response.say("Hi. I can help you get business funding. What amount are you looking for?");
-  response.gather({
+  const twiml = new VoiceResponse();
+
+  const gather = twiml.gather({
     input: ["speech"],
-    action: "/voice-process",
-    method: "POST"
+    action: "/voice/process",
+    speechTimeout: "auto"
   });
-  res.type("text/xml").send(response.toString());
+
+  gather.say(
+    "Hello. This is Maya from Boreal Financial. How can I assist you today?"
+  );
+
+  res.type("text/xml");
+  res.send(twiml.toString());
 });
 
-app.post("/voice-process", async (req, res) => {
-  const speech = String(req.body?.SpeechResult ?? "");
-  const callSid = String(req.body?.CallSid ?? `voice-${Date.now()}`);
+app.post("/voice/process", async (req, res) => {
+  const speechResult = String(req.body?.SpeechResult ?? "").trim();
+  const from = String(req.body?.From ?? req.body?.CallSid ?? `voice-${Date.now()}`);
+  const twiml = new VoiceResponse();
+
+  if (!speechResult) {
+    const gather = twiml.gather({
+      input: ["speech"],
+      action: "/voice/process",
+      speechTimeout: "auto"
+    });
+
+    gather.say("I didn't catch that. Could you repeat your request?");
+    res.type("text/xml");
+    return res.send(twiml.toString());
+  }
+
+  const pendingAction = pendingVoiceActions.get(from);
+  const isConfirm = ["confirm", "confirmed", "yes confirm"].includes(speechResult.toLowerCase());
+
+  if (pendingAction && isConfirm) {
+    const bookingExecution = await executeAction(pendingAction, {
+      mode: "client",
+      sessionId: from,
+      confirmed: true,
+      phone: from
+    });
+    pendingVoiceActions.delete(from);
+    twiml.say(typeof bookingExecution.message === "string"
+      ? bookingExecution.message
+      : "Your request has been confirmed.");
+    await logCall(from, `Caller: ${speechResult}\nMaya: ${twiml.toString()}`);
+    const gather = twiml.gather({
+      input: ["speech"],
+      action: "/voice/process",
+      speechTimeout: "auto"
+    });
+    gather.say("Is there anything else I can help you with?");
+    res.type("text/xml");
+    return res.send(twiml.toString());
+  }
 
   const result = await routeAgent("chat", {
-    message: speech,
-    userId: callSid
+    message: speechResult,
+    userId: from
   });
 
-  const response = new Twilio.twiml.VoiceResponse();
-  response.say(result.content ?? "Thank you. Our funding team will follow up shortly.");
-  response.gather({
-    input: ["speech"],
-    action: "/voice-process",
-    method: "POST"
-  });
+  const action = interpretAction(`${speechResult} ${result?.content ?? ""}`);
+  const escalated = action.type === "transfer";
 
-  res.type("text/xml").send(response.toString());
+  twiml.say(result?.content ?? "Thank you. A specialist will follow up shortly.");
+
+  if (action.requiresConfirmation) {
+    pendingVoiceActions.set(from, action);
+    twiml.say("Please say confirm to proceed.");
+  }
+
+  if (escalated) {
+    if (process.env.TRANSFER_NUMBER) {
+      twiml.dial(process.env.TRANSFER_NUMBER);
+    } else {
+      twiml.say("A specialist will call you back shortly.");
+    }
+  } else {
+    const gather = twiml.gather({
+      input: ["speech"],
+      action: "/voice/process",
+      speechTimeout: "auto"
+    });
+    gather.say("Is there anything else I can help you with?");
+  }
+
+  await logCall(from, `Caller: ${speechResult}\nMaya: ${result?.content ?? ""}`);
+
+  res.type("text/xml");
+  res.send(twiml.toString());
 });
 
 const PORT = 4000;
