@@ -3,6 +3,7 @@ import { redisConnection } from "./redis";
 import { runAdvancedIntelligence, runFullMayaCycle } from "../core/mayaOrchestrator";
 import { generateStrategicPlan } from "../services/strategyEngine";
 import { autonomousGrowthCycle } from "../services/autonomousGrowth";
+import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
 
 new Worker(
   "maya-jobs",
@@ -22,6 +23,10 @@ new Worker(
 
       case "advanced-intel":
         await runAdvancedIntelligence();
+        break;
+
+      case "startup-check":
+        await checkStartupProductLaunch();
         break;
 
       default:

@@ -1,6 +1,9 @@
 import { getAvailableProductCategories } from "./mayaProductIntelligence";
 
-export async function handleStartupInquiry(message: string) {
+export async function handleStartupInquiry(message: string): Promise<{
+  status: "available" | "not_available";
+  reply: string;
+}> {
   const categories = await getAvailableProductCategories();
 
   const hasStartup = categories.some((c) => c.toLowerCase().includes("startup"));

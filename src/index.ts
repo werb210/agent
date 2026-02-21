@@ -7,6 +7,7 @@ async function scheduleJobs() {
   await mayaQueue.add("strategy", {}, { repeat: { pattern: "0 3 * * *" } });
   await mayaQueue.add("growth", {}, { repeat: { pattern: "0 4 * * *" } });
   await mayaQueue.add("advanced-intel", {}, { repeat: { pattern: "0 5 * * *" } });
+  await mayaQueue.add("startup-check", {}, { repeat: { pattern: "0 * * * *" } });
 }
 
 void scheduleJobs();
