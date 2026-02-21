@@ -1,29 +1,25 @@
 import { pool } from "../db";
 
 export async function adjustMarketingAllocation() {
-  const metrics = await pool.query(`
-    SELECT * FROM maya_marketing_metrics
-  `);
+  const channels = await pool.query(`SELECT * FROM maya_marketing_metrics`);
 
-  for (const channel of metrics.rows) {
+  for (const channel of channels.rows) {
     const roi = channel.roi || 0;
+    const performanceWeight = channel.performance_weight || 1;
 
-    let adjustment = 1;
+    const learningFactor = roi > 2 ? 1.15 : roi < 1 ? 0.85 : 1;
 
-    if (roi > 2) {
-      adjustment = 1.2;
-    } else if (roi < 1) {
-      adjustment = 0.8;
-    }
+    const newWeight = performanceWeight * learningFactor;
 
     await pool.query(
       `
         UPDATE maya_marketing_metrics
-        SET spend = spend * $1,
+        SET performance_weight = $1,
+            spend = spend * $2,
             updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $3
       `,
-      [adjustment, channel.id]
+      [newWeight, learningFactor, channel.id]
     );
   }
 }
