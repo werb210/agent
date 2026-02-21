@@ -12,7 +12,10 @@ import { generateDealPDF } from "./engine/pdfEngine";
 import { extractTextFromDocument } from "./engine/ocrEngine";
 import { interpretAction } from "./services/actionInterpreter";
 import { executeAction } from "./services/actionExecutor";
-import { logCall } from "./services/callLogger";
+import { logCall, logCallSummary } from "./services/callLogger";
+import { scoreCall } from "./engine/callScoringEngine";
+import { transcribeAudio, summarizeFundingCall } from "./services/openaiService";
+import { sendSMS } from "./services/smsService";
 
 const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -134,6 +137,34 @@ app.post("/sms", async (req, res) => {
   }
 });
 
+
+app.post("/voice/outbound", async (req, res) => {
+  try {
+    const { to } = req.body ?? {};
+
+    if (!to) {
+      return res.status(400).json({ error: "to is required" });
+    }
+
+    if (!process.env.TWILIO_SID || !process.env.TWILIO_AUTH || !process.env.TWILIO_NUMBER || !process.env.AGENT_URL) {
+      return res.status(500).json({ error: "Twilio outbound voice env vars are not fully configured" });
+    }
+
+    const client = Twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
+
+    const call = await client.calls.create({
+      to: String(to),
+      from: process.env.TWILIO_NUMBER,
+      url: `${process.env.AGENT_URL}/voice`
+    });
+
+    return res.json({ callSid: call.sid });
+  } catch (error) {
+    console.error("Failed to start outbound call", error);
+    return res.status(500).json({ error: "Unable to initiate outbound call" });
+  }
+});
+
 app.post("/voice", async (_req, res) => {
   const twiml = new VoiceResponse();
 
@@ -210,7 +241,15 @@ app.post("/voice/process", async (req, res) => {
 
   if (escalated) {
     if (process.env.TRANSFER_NUMBER) {
-      twiml.dial(process.env.TRANSFER_NUMBER);
+      twiml.say(
+        { voice: "alice" },
+        "Whisper: High value deal. Monthly revenue above 100K."
+      );
+
+      twiml.dial({
+        record: "record-from-answer",
+        action: "/voice/post-call"
+      }, process.env.TRANSFER_NUMBER);
     } else {
       twiml.say("A specialist will call you back shortly.");
     }
@@ -227,6 +266,53 @@ app.post("/voice/process", async (req, res) => {
 
   res.type("text/xml");
   res.send(twiml.toString());
+});
+
+
+app.post("/voice/post-call", async (req, res) => {
+  try {
+    const recordingUrl = String(req.body?.RecordingUrl ?? "");
+    const callSid = String(req.body?.CallSid ?? "");
+    const from = String(req.body?.From ?? "");
+
+    if (!recordingUrl || !callSid) {
+      return res.status(400).json({ error: "RecordingUrl and CallSid are required" });
+    }
+
+    const transcript = await transcribeAudio(recordingUrl);
+    const summary = await summarizeFundingCall(transcript);
+    const score = scoreCall(summary);
+
+    await logCallSummary(callSid, summary, score);
+
+    if (process.env.STAFF_SERVER_URL && process.env.MAYA_INTERNAL_TOKEN) {
+      await fetch(`${process.env.STAFF_SERVER_URL}/api/internal/call-summary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-maya-token": process.env.MAYA_INTERNAL_TOKEN
+        },
+        body: JSON.stringify({
+          summary,
+          score,
+          callSid
+        })
+      });
+    }
+
+    if (from) {
+      if (score < 40) {
+        await sendSMS(from, "Thanks for your time today. We'll follow up with next steps shortly.");
+      } else if (score <= 70) {
+        await sendSMS(from, "Thanks for speaking with Maya. We will schedule a callback to continue your funding review.");
+      }
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Post-call processing failed", error);
+    res.sendStatus(500);
+  }
 });
 
 const PORT = 4000;
