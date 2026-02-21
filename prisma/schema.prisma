@@ -172,6 +172,9 @@ model MayaSetting {
   allowTransfer       Boolean   @default(true) @map("allow_transfer")
   requireConfirmation Boolean   @default(true) @map("require_confirmation")
   allowAdAdjustment   Boolean   @default(false) @map("allow_ad_adjustment")
+  maxAutoBudgetAdjustPercent Int @default(10) @map("max_auto_budget_adjust_percent")
+  highValueThreshold         Int @default(500000) @map("high_value_threshold")
+  autoOutboundEnabled        Boolean @default(false) @map("auto_outbound_enabled")
   updatedAt           DateTime? @default(now()) @map("updated_at")
 
   @@map("maya_settings")
@@ -192,7 +195,7 @@ model MarketingSession {
 
 model MayaIntelligence {
   id        Int       @id @default(autoincrement())
-  metric    String?
+  metric    String?   @unique
   value     Float?
   updatedAt DateTime? @default(now()) @map("updated_at")
 
@@ -208,4 +211,16 @@ model MayaDecision {
   createdAt    DateTime? @default(now()) @map("created_at")
 
   @@map("maya_decisions")
+}
+
+model DealFeature {
+  id              Int       @id @default(autoincrement())
+  revenue         Float?
+  yearsInBusiness Float?    @map("years_in_business")
+  requestedAmount Float?    @map("requested_amount")
+  industry        String?
+  funded          Boolean?
+  createdAt       DateTime? @default(now()) @map("created_at")
+
+  @@map("deal_features")
 }

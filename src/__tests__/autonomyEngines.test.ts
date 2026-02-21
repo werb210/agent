@@ -1,8 +1,9 @@
 import { getDynamicEscalationThreshold } from "../services/adaptiveThreshold";
 import { evaluateConfidence } from "../services/confidenceEngine";
-import { refineProbability } from "../services/probabilityEngine";
+import { clusterAdjustedProbability, refineProbability } from "../services/probabilityEngine";
 import { getRecommendedAdjustments } from "../services/budgetReallocationEngine";
 import { shouldRetryCall } from "../services/outboundIntelligence";
+import { classifyDeal } from "../services/dealClusterEngine";
 
 describe("adaptive threshold", () => {
   it("returns aggressive threshold for high booking conversion", () => {
@@ -75,5 +76,20 @@ describe("budget reallocation", () => {
         requiresApproval: true
       }
     ]);
+  });
+});
+
+
+describe("deal clustering", () => {
+  it("classifies deals into expected clusters", () => {
+    expect(classifyDeal({ revenue: 150000, yearsInBusiness: 5, requestedAmount: 200000 })).toBe("prime_cluster");
+    expect(classifyDeal({ revenue: 60000, yearsInBusiness: 2, requestedAmount: 180000 })).toBe("mid_cluster");
+    expect(classifyDeal({ revenue: 25000, yearsInBusiness: 1, requestedAmount: 100000 })).toBe("risk_cluster");
+  });
+
+  it("adjusts probability by cluster profile", () => {
+    expect(clusterAdjustedProbability(50, "prime_cluster")).toBe(60);
+    expect(clusterAdjustedProbability(50, "risk_cluster")).toBe(40);
+    expect(clusterAdjustedProbability(50, "mid_cluster")).toBe(50);
   });
 });

@@ -5,6 +5,7 @@ import {
   getPipelineSummary,
   getApplicationsByStatus
 } from "./staffDataAccess";
+import { triggerOutboundCall } from "./outboundIntelligence";
 
 export async function executeAction(
   action: MayaAction,
@@ -33,6 +34,22 @@ export async function executeAction(
     };
   }
 
+  if (settings.autonomy_level >= 4) {
+    if (action.type === "book" && settings.allow_booking) {
+      context.confirmed = true;
+    }
+
+    if (action.type === "transfer" && settings.allow_transfer) {
+      const leadValue = Number(
+        context.requestedAmount ?? context.leadValue ?? 0
+      );
+
+      if (leadValue >= settings.high_value_threshold) {
+        context.immediateTransfer = true;
+      }
+    }
+  }
+
   if (
     settings.require_confirmation &&
     action.requiresConfirmation &&
@@ -42,6 +59,14 @@ export async function executeAction(
       success: false,
       message: "Confirmation required."
     };
+  }
+
+  if (
+    settings.auto_outbound_enabled &&
+    context.lead?.score > 75 &&
+    context.lead?.phone
+  ) {
+    triggerOutboundCall(context.lead.phone);
   }
 
   switch (action.type) {
@@ -63,7 +88,9 @@ export async function executeAction(
     case "transfer":
       return {
         success: true,
-        message: "Connecting you to a Boreal specialist now."
+        message: context.immediateTransfer
+          ? "High-value lead detected. Connecting you to a Boreal specialist now."
+          : "Connecting you to a Boreal specialist now."
       };
 
     case "follow_up":

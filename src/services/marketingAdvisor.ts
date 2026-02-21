@@ -17,3 +17,21 @@ export function suggestAdjustments(roiData: RoiSummary): string[] {
 
   return suggestions;
 }
+
+export function getCappedBudgetAdjustment(
+  suggestedPercent: number,
+  settings: {
+    autonomy_level: number;
+    allow_ad_adjustment: boolean;
+    max_auto_budget_adjust_percent: number;
+  }
+): number | null {
+  if (settings.autonomy_level >= 4 && settings.allow_ad_adjustment) {
+    return Math.min(
+      suggestedPercent,
+      settings.max_auto_budget_adjust_percent
+    );
+  }
+
+  return null;
+}

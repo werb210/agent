@@ -15,7 +15,11 @@ export async function getMayaSettings() {
       autonomy_level: 1,
       allow_booking: true,
       allow_transfer: true,
-      require_confirmation: true
+      require_confirmation: true,
+      allow_ad_adjustment: false,
+      max_auto_budget_adjust_percent: 10,
+      high_value_threshold: 500000,
+      auto_outbound_enabled: false
     };
   }
 
