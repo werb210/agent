@@ -10,6 +10,9 @@ import { logDecision } from "../services/decisionLogger";
 import { interpretAction } from "../services/actionInterpreter";
 import { executeAction } from "../services/actionExecutor";
 import { logAction } from "../services/actionLogger";
+import { getSessionState, updateSessionState } from "../services/stageEngine";
+import { determineNextStage } from "../services/qualificationEngine";
+import { runMayaCore } from "../services/mayaCore";
 
 const router = Router();
 
@@ -24,6 +27,8 @@ router.post("/", async (req, res) => {
     if (!body.message) {
       return res.status(400).json({ error: "Invalid Maya request" });
     }
+
+    const session = await getSessionState(body.sessionId);
 
     let result: MayaResponse;
 
@@ -41,7 +46,12 @@ router.post("/", async (req, res) => {
         return res.status(400).json({ error: "Unknown mode" });
     }
 
-    const sanitizedReply = sanitizeRateLanguage(result.reply);
+    const history = Array.isArray(session.context.history)
+      ? (session.context.history as { role: "user" | "assistant"; content: string }[])
+      : [];
+
+    const stageAwareReply = await runMayaCore(body.message, session.stage, history);
+    const sanitizedReply = sanitizeRateLanguage(stageAwareReply || result.reply);
     const guard = complianceFilter(sanitizedReply);
 
     if (guard.violationDetected) {
@@ -67,6 +77,14 @@ router.post("/", async (req, res) => {
     });
 
     const action = interpretAction(finalReply);
+
+    const nextStage = determineNextStage(session.stage, body.message);
+    const nextContext = {
+      ...session.context,
+      history: [...history, { role: "user", content: body.message }, { role: "assistant", content: finalReply }].slice(-20)
+    };
+
+    await updateSessionState(body.sessionId, nextStage, nextContext);
 
     if (action.requiresConfirmation && !body.confirmed) {
       await logAction({
