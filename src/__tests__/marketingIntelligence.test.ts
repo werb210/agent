@@ -1,5 +1,5 @@
 import { extractApplicationFields, hasRequiredApplicationFields } from "../services/applicationIntake";
-import { suggestAdjustments } from "../services/marketingAdvisor";
+import { getCappedBudgetAdjustment, suggestAdjustments } from "../services/marketingAdvisor";
 import { calculateFundingProbability } from "../services/probabilityEngine";
 import { calculateROI } from "../services/roiEngine";
 
@@ -50,5 +50,22 @@ describe("marketing intelligence services", () => {
     expect(withContact.purpose).toContain("seasonal inventory");
     expect(withContact.email).toBe("owner@example.com");
     expect(hasRequiredApplicationFields(withContact)).toBe(true);
+  });
+
+  it("caps automatic budget adjustments at configured settings", () => {
+    const capped = getCappedBudgetAdjustment(18, {
+      autonomy_level: 4,
+      allow_ad_adjustment: true,
+      max_auto_budget_adjust_percent: 10
+    });
+
+    const blocked = getCappedBudgetAdjustment(8, {
+      autonomy_level: 3,
+      allow_ad_adjustment: true,
+      max_auto_budget_adjust_percent: 10
+    });
+
+    expect(capped).toBe(10);
+    expect(blocked).toBeNull();
   });
 });

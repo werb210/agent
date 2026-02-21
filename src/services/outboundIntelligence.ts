@@ -49,3 +49,11 @@ export function buildAttemptEffectivenessLog(success: boolean, attemptNumber: nu
     loggedAt: new Date().toISOString()
   };
 }
+
+
+export function triggerOutboundCall(phone: string) {
+  return {
+    triggered: true,
+    phone
+  };
+}

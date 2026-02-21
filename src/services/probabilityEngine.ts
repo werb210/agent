@@ -20,3 +20,11 @@ export function calculateFundingProbability(data: FundingProbabilityInput): numb
 export function refineProbability(baseScore: number, historicalFactor: number) {
   return Math.min(100, baseScore * historicalFactor);
 }
+
+
+export function clusterAdjustedProbability(baseProbability: number, cluster: string): number {
+  if (cluster === "prime_cluster") return Math.min(100, baseProbability * 1.2);
+  if (cluster === "risk_cluster") return Math.max(0, baseProbability * 0.8);
+
+  return baseProbability;
+}
