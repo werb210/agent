@@ -3,6 +3,9 @@ import { MayaRequest, MayaResponse } from "../types/maya";
 import { handleClientMode } from "../services/modes/clientMode";
 import { handleStaffMode } from "../services/modes/staffMode";
 import { handleMarketingMode } from "../services/modes/marketingMode";
+import { complianceFilter } from "../guardrails/complianceFilter";
+import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
+import { logger } from "../logging/logger";
 
 const router = Router();
 
@@ -30,7 +33,22 @@ router.post("/", async (req, res) => {
         return res.status(400).json({ error: "Unknown mode" });
     }
 
-    return res.json(result);
+    const sanitizedReply = sanitizeRateLanguage(result.reply);
+    const guard = complianceFilter(sanitizedReply);
+
+    if (guard.violationDetected) {
+      logger.warn("Maya guardrail violation detected", {
+        mode: body.mode,
+        sessionId: body.sessionId,
+        originalReply: result.reply
+      });
+    }
+
+    return res.json({
+      reply: guard.safeReply,
+      confidence: result.confidence,
+      escalated: result.escalated || guard.escalated
+    });
   } catch (error) {
     console.error("Maya router error:", error);
     return res.status(500).json({
