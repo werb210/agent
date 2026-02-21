@@ -163,3 +163,28 @@ model DealEvent {
 
   @@map("deal_events")
 }
+
+
+model MayaSetting {
+  id                  Int       @id @default(autoincrement())
+  autonomyLevel       Int       @default(1) @map("autonomy_level")
+  allowBooking        Boolean   @default(true) @map("allow_booking")
+  allowTransfer       Boolean   @default(true) @map("allow_transfer")
+  requireConfirmation Boolean   @default(true) @map("require_confirmation")
+  allowAdAdjustment   Boolean   @default(false) @map("allow_ad_adjustment")
+  updatedAt           DateTime? @default(now()) @map("updated_at")
+
+  @@map("maya_settings")
+}
+
+model MarketingSession {
+  id          Int      @id @default(autoincrement())
+  sessionId   String?  @unique @map("session_id")
+  utmSource   String?  @map("utm_source")
+  utmCampaign String?  @map("utm_campaign")
+  booked      Boolean  @default(false)
+  funded      Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("marketing_sessions")
+}
