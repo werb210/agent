@@ -19,7 +19,10 @@ export async function getMayaSettings() {
       allow_ad_adjustment: false,
       max_auto_budget_adjust_percent: 10,
       high_value_threshold: 500000,
-      auto_outbound_enabled: false
+      auto_outbound_enabled: false,
+      allow_full_auto_marketing: false,
+      max_daily_budget_shift_percent: 20,
+      min_data_points_before_adjustment: 30
     };
   }
 
