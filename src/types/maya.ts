@@ -10,6 +10,8 @@ export interface MayaRequest {
   phone?: string;
   contextId?: string; // dealId, clientId, etc.
   confirmed?: boolean;
+  lookupIdentifier?: string;
+  productType?: string;
 }
 
 export interface MayaResponse {

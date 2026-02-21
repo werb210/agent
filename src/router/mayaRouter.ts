@@ -13,6 +13,12 @@ import { logAction } from "../services/actionLogger";
 import { getSessionState, updateSessionState } from "../services/stageEngine";
 import { determineNextStage } from "../services/qualificationEngine";
 import { runMayaCore } from "../services/mayaCore";
+import {
+  findApplication,
+  getDocumentStatus,
+  getLenderProductRanges
+} from "../services/dataAccess";
+import { formatRateRanges } from "../services/dataFormatter";
 
 const router = Router();
 
@@ -116,6 +122,35 @@ router.post("/", async (req, res) => {
         reply: execution.message,
         action: action.type,
         executed: execution.success
+      });
+    }
+
+    // Application status check
+    if (body.lookupIdentifier) {
+      const app = await findApplication(body.lookupIdentifier);
+
+      if (app) {
+        const documents = await getDocumentStatus(app.id);
+
+        return res.json({
+          reply: `Your application is currently in ${app.status} status.`,
+          applicationId: app.id,
+          documentStatus: documents
+        });
+      }
+
+      return res.json({
+        reply: "No application found with that information."
+      });
+    }
+
+    // Rate range query
+    if (body.productType) {
+      const products = await getLenderProductRanges(body.productType);
+      const formatted = formatRateRanges(products);
+
+      return res.json({
+        reply: formatted
       });
     }
 
