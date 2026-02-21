@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { redisConnection } from "./redis";
-import { runFullMayaCycle } from "../core/mayaOrchestrator";
+import { runAdvancedIntelligence, runFullMayaCycle } from "../core/mayaOrchestrator";
 import { generateStrategicPlan } from "../services/strategyEngine";
 import { autonomousGrowthCycle } from "../services/autonomousGrowth";
 
@@ -18,6 +18,10 @@ new Worker(
 
       case "growth":
         await autonomousGrowthCycle();
+        break;
+
+      case "advanced-intel":
+        await runAdvancedIntelligence();
         break;
 
       default:
