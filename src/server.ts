@@ -1,5 +1,9 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from "xss-clean";
 import Twilio from "twilio";
 import VoiceResponse = require("twilio/lib/twiml/VoiceResponse");
 import agentRouter, { routeAgent } from "./router/agentRouter";
@@ -39,24 +43,90 @@ import { mlBreaker } from "./core/mlClient";
 import { recordMetric } from "./core/metricsLogger";
 import { detectMLDrift } from "./core/mlDriftMonitor";
 import { detectCampaignAnomaly } from "./core/campaignAnomaly";
-import { apiLimiter } from "./security/rateLimit";
+import { logAbuse } from "./security/abuseLogger";
 import { sanitizeString } from "./security/sanitizer";
 import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.PORTAL_URL,
+  process.env.WEBSITE_URL
+].filter((origin): origin is string => Boolean(origin));
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: async (req, res) => {
+    await logAbuse(req.ip ?? "unknown", req.originalUrl);
+    res.status(429).send("Too many requests");
+  }
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: "Too many AI requests. Please slow down.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: async (req, res) => {
+    await logAbuse(req.ip ?? "unknown", req.originalUrl);
+    res.status(429).send("Too many AI requests. Please slow down.");
+  }
+});
+
+const waitlistLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: async (req, res) => {
+    await logAbuse(req.ip ?? "unknown", req.originalUrl);
+    res.status(429).send("Too many requests");
+  }
+});
+
+app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", process.env.MAYA_INTERNAL_URL ?? ""].filter(Boolean),
+      imgSrc: ["'self'", "data:"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  })
+);
 
 app.use(cors({
-  origin: [
-    "https://yourproductiondomain.com",
-    "https://portal.yourproductiondomain.com"
-  ],
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-app.use("/maya", apiLimiter);
+app.use(mongoSanitize());
+app.use(xss());
+app.use(globalLimiter);
+app.use("/maya", aiLimiter);
+app.use("/crm/startup-waitlist", waitlistLimiter);
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production") {
+    return next();
+  }
+
+  const ua = String(req.headers["user-agent"] ?? "").toLowerCase();
+  if (ua.includes("curl") || ua.includes("bot")) {
+    return res.status(403).send("Forbidden");
+  }
+
+  return next();
+});
 
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {

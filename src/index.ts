@@ -25,6 +25,16 @@ function requireEnvVar(key: string) {
   }
 }
 
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.ML_INTERNAL_SECRET) {
+    throw new Error("Missing internal secret.");
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Missing OpenAI key.");
+  }
+}
+
 [
   "OPENAI_API_KEY",
   "ML_SERVICE_URL",
