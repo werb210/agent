@@ -41,6 +41,7 @@ import { detectMLDrift } from "./core/mlDriftMonitor";
 import { detectCampaignAnomaly } from "./core/campaignAnomaly";
 import { apiLimiter } from "./security/rateLimit";
 import { sanitizeString } from "./security/sanitizer";
+import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -212,6 +213,43 @@ app.get("/maya/intelligence", async (_req, res) => {
   res.json({
     risk_heatmap: heatmap,
     capital_forecast: forecast
+  });
+});
+
+async function getExplanation(sessionId: string) {
+  const result = await pool.query(
+    `SELECT * FROM maya_explanations
+     WHERE session_id = $1
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [sessionId]
+  );
+
+  return result.rows[0] || null;
+}
+
+app.get("/maya/explain/:sessionId", async (req: any, res) => {
+  const role = req.user?.role ?? req.headers["x-maya-role"];
+  requireCapability(role, "view_executive");
+
+  const data = await getExplanation(req.params.sessionId);
+  res.json(data || {});
+});
+
+app.get("/maya/executive-explain/:sessionId", async (req: any, res) => {
+  const role = req.user?.role ?? req.headers["x-maya-role"];
+  requireCapability(role, "view_executive");
+
+  const data = await getExplanation(req.params.sessionId);
+
+  if (!data) {
+    return res.json({});
+  }
+
+  return res.json({
+    probability: data.probability,
+    confidence_score: calculateMLConfidence(Number(data.probability)),
+    reasoning_summary: data.reasoning_summary
   });
 });
 

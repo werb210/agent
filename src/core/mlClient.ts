@@ -5,6 +5,9 @@ import { requireCapability } from "../security/capabilityGuard";
 import { featureFlags } from "../security/featureFlags";
 import { recordMetric } from "./metricsLogger";
 import { measureExecutionTime } from "./performanceTelemetry";
+import { calculateFeatureContributions } from "./explainability";
+import { generateReasoningSummary } from "./generateExplanation";
+import { pool } from "../db";
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
 
@@ -47,6 +50,25 @@ export async function getMLApprovalProbability(payload: any, role: string = "sys
         entityType: "session",
         entityId: payload.session_id,
         newValue: { approval_probability: prob }
+      });
+
+      const contributions = calculateFeatureContributions(payload);
+      const summary = generateReasoningSummary(prob, contributions);
+
+      await pool.query(
+        `INSERT INTO maya_explanations
+         (session_id, model_version, probability, feature_contributions, reasoning_summary)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [payload.session_id, "NN_v1", prob, contributions, summary]
+      );
+
+      await logAudit({
+        correlationId: resolvedCorrelationId,
+        agentName: "ExplainabilityEngine",
+        actionType: "explanation_generated",
+        entityType: "session",
+        entityId: payload.session_id,
+        newValue: { probability: prob }
       });
 
       return prob;
