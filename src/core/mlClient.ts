@@ -1,9 +1,16 @@
 import axios from "axios";
 import { createCorrelationId, logAudit } from "./auditLogger";
+import { requireCapability } from "../security/capabilityGuard";
+import { featureFlags } from "../security/featureFlags";
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
 
-export async function getMLApprovalProbability(payload: any, correlationId?: string) {
+export async function getMLApprovalProbability(payload: any, role: string = "system", correlationId?: string) {
+  requireCapability(role, "ml_predict");
+  if (!featureFlags.enableNeuralNetwork) {
+    throw new Error("Neural network predictions are disabled");
+  }
+
   const resolvedCorrelationId = correlationId || createCorrelationId();
 
   const response = await axios.post(`${ML_URL}/predict-nn`, payload, {
