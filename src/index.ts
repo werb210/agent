@@ -1,6 +1,4 @@
 import "./infrastructure/env";
-import "dotenv/config";
-import rateLimit from "express-rate-limit";
 import { app } from "./server";
 import { mayaQueue } from "./infrastructure/mayaQueue";
 import { pool } from "./config/pool";
@@ -20,12 +18,21 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200
-});
+function requireEnvVar(key: string) {
+  if (!process.env[key]) {
+    throw new Error(`Missing ${key}`);
+  }
+}
 
-app.use(limiter);
+[
+  "OPENAI_API_KEY",
+  "ML_SERVICE_URL",
+  "ML_INTERNAL_SECRET",
+  "DATABASE_URL",
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_PHONE_NUMBER"
+].forEach(requireEnvVar);
 
 app.get("/ready", async (_req, res) => {
   try {
