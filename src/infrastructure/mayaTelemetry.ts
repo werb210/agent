@@ -1,17 +1,14 @@
-import { pool } from "../db";
+import { createCorrelationId, logAudit } from "../core/auditLogger";
 
 export async function logLLMUsage(model: string, task: string) {
-  await pool.query(
-    `
-    INSERT INTO maya_audit_log (actor, action, metadata)
-    VALUES ('maya', 'llm_usage', $1)
-  `,
-    [
-      {
-        model,
-        task,
-        timestamp: new Date()
-      }
-    ]
-  );
+  await logAudit({
+    correlationId: createCorrelationId(),
+    agentName: "maya",
+    actionType: "llm_usage",
+    metadata: {
+      model,
+      task,
+      timestamp: new Date()
+    }
+  });
 }

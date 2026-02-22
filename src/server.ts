@@ -131,6 +131,20 @@ app.get("/maya/executive-macro", async (_req, res) => {
   });
 });
 
+
+app.get("/maya/audit/:entityId", async (req, res) => {
+  const { entityId } = req.params;
+
+  const logs = await pool.query(
+    `SELECT * FROM maya_audit_log
+     WHERE entity_id=$1
+     ORDER BY created_at DESC`,
+    [entityId]
+  );
+
+  res.json(logs.rows);
+});
+
 app.get("/maya/intelligence", async (_req, res) => {
   const heatmap = await generateRiskHeatmap();
   const forecast = await forecast90Days();

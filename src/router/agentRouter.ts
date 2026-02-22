@@ -12,7 +12,7 @@ import { resilientLLM } from "../infrastructure/mayaResilience";
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import { captureStartupLead } from "../core/mayaStartupCapture";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
-import { validateStateTransition } from "../core/stateMachine";
+import { auditStateTransition, validateStateTransition } from "../core/stateMachine";
 
 type RouteAgentResult = {
   content: string;
@@ -41,6 +41,12 @@ async function transitionSessionState(sessionId: string, nextState: "qualifying"
      WHERE session_id = $2`,
     [nextState, sessionId]
   );
+
+  await auditStateTransition({
+    sessionId,
+    currentState,
+    newState: nextState
+  });
 }
 
 async function buildEnhancedPrompt(phone: string, userMessage: string): Promise<string> {
