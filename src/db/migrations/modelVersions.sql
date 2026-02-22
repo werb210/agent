@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS maya_model_versions (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  model_type TEXT,
   version TEXT,
-  accuracy FLOAT,
+  accuracy NUMERIC,
   created_at TIMESTAMP DEFAULT NOW()
 );
