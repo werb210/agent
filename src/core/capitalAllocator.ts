@@ -14,3 +14,9 @@ export function allocateMarketingBudget(totalBudget: number, industries: Industr
     allocated_budget: totalWeight === 0 ? 0 : (weights[index] / totalWeight) * totalBudget
   }));
 }
+
+export function optimizeCapitalAllocation(deals: any[]) {
+  return deals
+    .sort((a, b) => b.expected_ltv - a.expected_ltv)
+    .slice(0, 20);
+}
