@@ -60,6 +60,7 @@ app.post("/maya/strategic-decision", async (req, res) => {
   try {
     const payload = req.body as {
       funding_amount?: number;
+      annual_revenue?: number;
       product_type?: string;
       industry?: string;
       time_in_business?: number;
@@ -71,9 +72,10 @@ app.post("/maya/strategic-decision", async (req, res) => {
 
     const result = await strategicDecision({
       funding_amount: payload.funding_amount,
+      annual_revenue: payload.annual_revenue ?? 0,
+      time_in_business: payload.time_in_business ?? 0,
       product_type: payload.product_type,
-      industry: payload.industry,
-      time_in_business: payload.time_in_business
+      industry: payload.industry
     });
 
     return res.json(result);

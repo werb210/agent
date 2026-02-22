@@ -1,8 +1,17 @@
 import { PredictivePayload } from "./lenderMatchEngine";
 import { calculateDealPriority } from "./dealPriorityEngine";
 
-export async function advancedStrategicDecision(payload: PredictivePayload) {
-  const priority = await calculateDealPriority(payload);
+type StrategicPayload = PredictivePayload & {
+  product_type?: string;
+  industry?: string;
+};
+
+export async function advancedStrategicDecision(payload: StrategicPayload) {
+  const priority = await calculateDealPriority({
+    funding_amount: payload.funding_amount,
+    annual_revenue: payload.annual_revenue,
+    time_in_business: payload.time_in_business
+  });
 
   return {
     ...priority,
@@ -12,3 +21,5 @@ export async function advancedStrategicDecision(payload: PredictivePayload) {
         : "automated_nurture_sequence"
   };
 }
+
+export const strategicDecision = advancedStrategicDecision;
