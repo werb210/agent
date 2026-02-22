@@ -2,8 +2,9 @@ import { Router } from "express";
 import multer from "multer";
 import { processExcel } from "../services/mayaOutbound/excelProcessor";
 import { runOutboundCampaign } from "../services/mayaOutbound/outboundExecutor";
-import { pool } from "../db";
 import { createCorrelationId, logAudit } from "../core/auditLogger";
+import { requireCapability } from "../security/capabilityGuard";
+import { secureQuery } from "../db/secureDb";
 
 const router = Router();
 const upload = multer({ dest: "uploads/" });
@@ -35,9 +36,8 @@ router.post("/run-outbound/:campaignId", async (req: any, res) => {
 });
 
 router.patch("/session/:sessionId/override", async (req: any, res) => {
-  if (!req.user || req.user.role !== "Admin") {
-    return res.status(403).json({ error: "Admin only" });
-  }
+  const role = String(req.user?.role ?? req.headers?.["x-maya-role"] ?? "").toLowerCase();
+  requireCapability(role, "admin_override");
 
   const { sessionId } = req.params;
   const { updates } = req.body as { updates?: Record<string, unknown> };
@@ -46,7 +46,9 @@ router.patch("/session/:sessionId/override", async (req: any, res) => {
     return res.status(400).json({ error: "updates payload is required" });
   }
 
-  const existingResult = await pool.query<{ data: Record<string, unknown> }>(
+  const existingResult = await secureQuery(
+    role,
+    "view_sessions",
     `SELECT data FROM sessions WHERE session_id = $1 LIMIT 1`,
     [sessionId]
   );
@@ -61,7 +63,9 @@ router.patch("/session/:sessionId/override", async (req: any, res) => {
     ...updates
   };
 
-  await pool.query(
+  await secureQuery(
+    role,
+    "modify_sessions",
     `UPDATE sessions SET data = $1 WHERE session_id = $2`,
     [newValues, sessionId]
   );

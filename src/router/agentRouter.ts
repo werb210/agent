@@ -13,6 +13,8 @@ import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import { captureStartupLead } from "../core/mayaStartupCapture";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
 import { auditStateTransition, validateStateTransition } from "../core/stateMachine";
+import { requireCapability } from "../security/capabilityGuard";
+import { secureQuery } from "../db/secureDb";
 
 type RouteAgentResult = {
   content: string;
@@ -26,8 +28,16 @@ type RouteAgentResult = {
 const router = Router();
 
 
-async function transitionSessionState(sessionId: string, nextState: "qualifying" | "qualified" | "booked") {
-  const currentResult = await pool.query(
+async function transitionSessionState(
+  sessionId: string,
+  nextState: "qualifying" | "qualified" | "booked",
+  role: string = "system"
+) {
+  requireCapability(role, "state_transition");
+
+  const currentResult = await secureQuery(
+    role,
+    "view_sessions",
     `SELECT state FROM sessions WHERE session_id = $1 LIMIT 1`,
     [sessionId]
   );
@@ -35,7 +45,9 @@ async function transitionSessionState(sessionId: string, nextState: "qualifying"
   const currentState = (currentResult.rows[0]?.state ?? "new") as string;
   validateStateTransition(currentState, nextState);
 
-  await pool.query(
+  await secureQuery(
+    role,
+    "modify_sessions",
     `UPDATE sessions
      SET state = $1
      WHERE session_id = $2`,

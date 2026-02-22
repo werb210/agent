@@ -31,6 +31,9 @@ import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
 import { generateRiskHeatmap } from "./core/portfolioRisk";
 import { forecast90Days } from "./core/capitalForecast";
+import { capitalEfficiencyIndex } from "./core/capitalEfficiency";
+import { requireCapability } from "./security/capabilityGuard";
+import { featureFlags } from "./security/featureFlags";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -122,12 +125,18 @@ app.get("/maya/executive-dashboard", async (_req, res) => {
 });
 
 
-app.get("/maya/executive-macro", async (_req, res) => {
+app.get("/maya/executive-macro", async (req: any, res) => {
+  const role = req.user?.role ?? req.headers["x-maya-role"];
+  requireCapability(role, "view_executive");
+
+  const forecast = await forecast90Days();
+  const efficiency = await capitalEfficiencyIndex();
+
   res.json({
-    macro_adjusted_probability_model: true,
-    volatility_simulation_enabled: true,
-    neural_network_active: true,
-    reinforcement_learning_active: true
+    forecast,
+    efficiency,
+    neural_network_active: featureFlags.enableNeuralNetwork,
+    reinforcement_learning_active: featureFlags.enableReinforcementLearning
   });
 });
 

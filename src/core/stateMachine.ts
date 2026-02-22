@@ -1,4 +1,5 @@
 import { createCorrelationId, logAudit } from "./auditLogger";
+import { requireCapability } from "../security/capabilityGuard";
 
 const allowedTransitions: Record<string, string[]> = {
   new: ["qualifying"],
@@ -11,7 +12,8 @@ const allowedTransitions: Record<string, string[]> = {
   archived: []
 };
 
-export function validateStateTransition(current: string, next: string) {
+export function validateStateTransition(current: string, next: string, role: string = "system") {
+  requireCapability(role, "state_transition");
   if (!allowedTransitions[current]?.includes(next)) {
     throw new Error(`Invalid state transition from ${current} to ${next}`);
   }
