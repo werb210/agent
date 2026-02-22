@@ -1,3 +1,5 @@
+import { safeExecute } from "./safeAsync";
+
 export function simulatePortfolioVolatility(currentValue: number) {
   const simulations = 1000;
   const results: number[] = [];
@@ -14,4 +16,11 @@ export function simulatePortfolioVolatility(currentValue: number) {
     expected_value: avg,
     worst_case_95: worstCase
   };
+}
+
+export async function simulatePortfolioVolatilitySafe(currentValue: number) {
+  return safeExecute(async () => simulatePortfolioVolatility(currentValue), {
+    expected_value: currentValue,
+    worst_case_95: currentValue
+  });
 }

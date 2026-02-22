@@ -34,6 +34,7 @@ import { forecast90Days } from "./core/capitalForecast";
 import { capitalEfficiencyIndex } from "./core/capitalEfficiency";
 import { requireCapability } from "./security/capabilityGuard";
 import { featureFlags } from "./security/featureFlags";
+import { mlBreaker } from "./core/mlClient";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -47,7 +48,10 @@ app.get("/", (_, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok",
+    ml_circuit_state: mlBreaker.getState()
+  });
 });
 
 app.get("/maya/health", async (_req, res) => {
@@ -487,4 +491,9 @@ app.post("/voice/post-call", async (req, res) => {
     logger.error("Post-call processing failed", { error });
     res.sendStatus(500);
   }
+});
+
+app.use((err: any, _req: any, res: any, _next: any) => {
+  console.error("Global error:", err?.message);
+  res.status(500).json({ error: "Internal error" });
 });
