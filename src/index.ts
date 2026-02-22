@@ -8,6 +8,7 @@ import { redis } from "./infrastructure/redis";
 import { logger } from "./infrastructure/logger";
 import { register } from "./infrastructure/metrics";
 import { registerMayaAgents } from "./agents/registerAgents";
+import { processRetryQueue } from "./core/retryWorker";
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -54,6 +55,10 @@ async function start() {
   await pool.connect();
   await redis.ping();
   await scheduleJobs();
+
+  setInterval(() => {
+    void processRetryQueue();
+  }, 30000);
 
   const port = Number(process.env.PORT || 4000);
   app.listen(port, () => {

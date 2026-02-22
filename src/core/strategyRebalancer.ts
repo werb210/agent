@@ -1,5 +1,6 @@
 import { capitalEfficiencyIndex } from "./capitalEfficiency";
 import { optimizeCampaignBudget } from "./campaignOptimizer";
+import { safeExecute } from "./safeAsync";
 import { pool } from "../db";
 
 type CampaignRow = {
@@ -16,7 +17,10 @@ export async function rebalanceStrategy() {
 
   for (const campaign of campaigns.rows) {
     if (efficiency < 2) {
-      await optimizeCampaignBudget(campaign.id);
+      await safeExecute(async () => {
+        await optimizeCampaignBudget(campaign.id);
+        return null;
+      }, null);
     }
   }
 
