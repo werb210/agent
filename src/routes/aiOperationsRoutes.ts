@@ -5,6 +5,8 @@ import { requireApproval } from "../core/mayaApprovalGate";
 import { pool } from "../db";
 import { logMayaAction } from "../services/mayaActionLedger";
 import { escalateIfAnomaly } from "../core/mayaEscalation";
+import { capitalEfficiencyIndex } from "../core/capitalEfficiency";
+import { calibrateProbability } from "../core/probabilityCalibration";
 
 const router = Router();
 
@@ -57,6 +59,16 @@ router.get("/maya/kpi", async (_req, res) => {
   res.json({
     kpi: kpi.rows[0],
     llm_cost: llmCost.rows[0].total_llm_cost || 0
+  });
+});
+
+router.get("/maya/advanced-intel", async (_req, res) => {
+  const efficiency = await capitalEfficiencyIndex();
+  const calibrationError = await calibrateProbability();
+
+  res.json({
+    capital_efficiency_index: efficiency,
+    prediction_error_rate: calibrationError
   });
 });
 
