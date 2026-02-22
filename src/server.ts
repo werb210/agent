@@ -4,6 +4,7 @@ import Twilio from "twilio";
 import VoiceResponse = require("twilio/lib/twiml/VoiceResponse");
 import agentRouter, { routeAgent } from "./router/agentRouter";
 import mayaRouter from "./router/mayaRouter";
+import multiAgentRouter from "./router/multiAgentRouter";
 import { getSession } from "./memory/sessionStore";
 import { getLenderPortalDeals, uploadTermSheet } from "./engine/lenderDealEngine";
 import { pool } from "./config/pool";
@@ -142,6 +143,7 @@ app.get("/maya/intelligence", async (_req, res) => {
 
 app.use(agentRouter);
 app.use("/maya", mayaRouter);
+app.use(multiAgentRouter);
 app.use(aiOperationsRoutes);
 app.use("/api/admin", adminUploadRoutes);
 app.use("/api", voiceRoutes);
@@ -463,4 +465,3 @@ app.post("/voice/post-call", async (req, res) => {
     res.sendStatus(500);
   }
 });
-
