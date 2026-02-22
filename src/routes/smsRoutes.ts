@@ -4,12 +4,13 @@ import { twiml } from "twilio";
 import { pool } from "../db";
 import { runAI } from "../brain/openaiClient";
 import { logDecision } from "../services/complianceLogger";
+import { sanitizeString } from "../security/sanitizer";
 
 const router = Router();
 
 router.post("/sms", async (req, res) => {
-  const from = req.body?.From;
-  const body = req.body?.Body;
+  const from = sanitizeString(String(req.body?.From ?? ""));
+  const body = sanitizeString(String(req.body?.Body ?? ""));
 
   if (!from || !body) {
     return res.sendStatus(400);

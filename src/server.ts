@@ -26,6 +26,7 @@ import mayaPortal from "./routes/mayaPortal";
 import mayaSandbox from "./routes/mayaSandbox";
 import twilio from "twilio";
 import { ENV } from "./infrastructure/env";
+import { isProd } from "./config/env";
 import { logger } from "./infrastructure/logger";
 import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
@@ -38,13 +39,31 @@ import { mlBreaker } from "./core/mlClient";
 import { recordMetric } from "./core/metricsLogger";
 import { detectMLDrift } from "./core/mlDriftMonitor";
 import { detectCampaignAnomaly } from "./core/campaignAnomaly";
+import { apiLimiter } from "./security/rateLimit";
+import { sanitizeString } from "./security/sanitizer";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
 
-app.use(cors());
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.use(cors({
+  origin: [
+    "https://yourproductiondomain.com",
+    "https://portal.yourproductiondomain.com"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use("/maya", apiLimiter);
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
+    return res.status(403).send("HTTPS required");
+  }
+
+  return next();
+});
 
 app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
@@ -205,7 +224,10 @@ app.use("/api", voiceRoutes);
 app.use("/api", smsRoutes);
 app.use("/admin", adminAnalytics);
 app.use("/api", mayaPortal);
-app.use("/api", mayaSandbox);
+
+if (!isProd) {
+  app.use("/api", mayaSandbox);
+}
 
 app.get("/dashboard/:sessionId", async (req, res) => {
   const session = await getSession(req.params.sessionId);
@@ -218,7 +240,7 @@ app.get("/admin/pipeline", async (_req, res) => {
 });
 
 app.get("/lender/deals", async (req, res) => {
-  const email = String(req.query.email ?? "");
+  const email = sanitizeString(String(req.query.email ?? ""));
   if (!email) {
     return res.status(400).json({ error: "email is required" });
   }
@@ -240,8 +262,9 @@ app.post("/lender/deals/:id/term-sheet", async (req, res) => {
 });
 
 app.post("/agent/intake", async (req, res) => {
-  const { message, userId } = req.body;
-  const result = await routeAgent("chat", { message, userId: userId ?? "agent-intake" });
+  const message = sanitizeString(String(req.body?.message ?? ""));
+  const userId = sanitizeString(String(req.body?.userId ?? "agent-intake"));
+  const result = await routeAgent("chat", { message, userId });
   res.json(result);
 });
 
@@ -274,8 +297,9 @@ app.post("/agent/deal-pack", async (req, res) => {
 });
 
 app.post("/agent/recommend", async (req, res) => {
-  const { message, userId } = req.body;
-  const result = await routeAgent("chat", { message, userId: userId ?? "agent-recommend" });
+  const message = sanitizeString(String(req.body?.message ?? ""));
+  const userId = sanitizeString(String(req.body?.userId ?? "agent-recommend"));
+  const result = await routeAgent("chat", { message, userId });
   res.json({ recommendations: result.internal });
 });
 
@@ -285,12 +309,25 @@ app.get("/agent/dashboard/:id", async (req, res) => {
 });
 
 
-app.post("/webhooks/sms", async (req, res) => {
+function validateTwilio(req: express.Request) {
   const signature = req.headers["x-twilio-signature"] as string | undefined;
-  const webhookUrl = `${ENV.PUBLIC_WEBHOOK_URL ?? ""}/webhooks/sms`;
-  const valid = Boolean(signature) && twilio.validateRequest(ENV.TWILIO_AUTH_TOKEN, signature as string, webhookUrl, req.body);
+  const url = `${process.env.PUBLIC_WEBHOOK_URL ?? ""}/webhooks/sms`;
+  const params = req.body;
 
-  if (!valid) {
+  if (!signature || !process.env.TWILIO_AUTH_TOKEN || !url) {
+    return false;
+  }
+
+  return twilio.validateRequest(
+    process.env.TWILIO_AUTH_TOKEN,
+    signature,
+    url,
+    params
+  );
+}
+
+app.post("/webhooks/sms", async (req, res) => {
+  if (!validateTwilio(req)) {
     return res.status(403).send("Invalid signature");
   }
 

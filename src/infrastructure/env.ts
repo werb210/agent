@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { ENV as nodeEnv } from "../config/env";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production"]),
+  NODE_ENV: z.enum(["development", "staging", "production"]),
   PORT: z.string(),
   DATABASE_URL: z.string(),
   REDIS_URL: z.string(),
@@ -17,7 +18,10 @@ const envSchema = z.object({
   PUBLIC_WEBHOOK_URL: z.string().optional()
 });
 
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse({
+  ...process.env,
+  NODE_ENV: process.env.NODE_ENV ?? nodeEnv
+});
 
 if (!parsed.success) {
   console.error("❌ Missing required environment variables");
