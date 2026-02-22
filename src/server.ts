@@ -120,6 +120,16 @@ app.get("/maya/executive-dashboard", async (_req, res) => {
   });
 });
 
+
+app.get("/maya/executive-macro", async (_req, res) => {
+  res.json({
+    macro_adjusted_probability_model: true,
+    volatility_simulation_enabled: true,
+    neural_network_active: true,
+    reinforcement_learning_active: true
+  });
+});
+
 app.get("/maya/intelligence", async (_req, res) => {
   const heatmap = await generateRiskHeatmap();
   const forecast = await forecast90Days();
