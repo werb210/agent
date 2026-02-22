@@ -2,6 +2,7 @@ import { pool } from "../db";
 import { logAudit } from "../infrastructure/mayaAudit";
 import { launchStartupCampaign } from "../services/mayaStartupCampaignService";
 import { sendStartupNotification } from "../services/mayaStartupNotificationService";
+import { decryptAndMaskContact } from "../compliance/piiCrypto";
 
 type StartupProductRow = { id: string };
 
@@ -42,8 +43,11 @@ export async function checkStartupProductLaunch(): Promise<void> {
 
   let notifiedCount = 0;
 
+  const actor = "startup-launch-engine";
+
   for (const contact of waitingList.rows) {
-    await sendStartupNotification(contact);
+    const safeContact = await decryptAndMaskContact(contact, actor, contact.id, false);
+    await sendStartupNotification(safeContact);
     await pool.query(
       `
       UPDATE crm_contacts

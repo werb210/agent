@@ -1,14 +1,17 @@
 import { pool } from "../db";
 import { storeEmbedding } from "./mayaEmbeddingEngine";
+import { encryptPIIFields } from "../compliance/piiCrypto";
 
 export async function captureStartupLead(data: {
   name: string;
   email: string;
   phone: string;
 }) {
+  const encrypted = encryptPIIFields(data);
+
   const existing = await pool.query(
     `SELECT id FROM crm_contacts WHERE email = $1 OR phone = $2`,
-    [data.email, data.phone]
+    [encrypted.email, encrypted.phone]
   );
 
   let contactId: string;
@@ -20,7 +23,7 @@ export async function captureStartupLead(data: {
       `INSERT INTO crm_contacts (name, email, phone)
        VALUES ($1,$2,$3)
        RETURNING id`,
-      [data.name, data.email, data.phone]
+      [data.name, encrypted.email, encrypted.phone]
     );
 
     contactId = insert.rows[0].id;

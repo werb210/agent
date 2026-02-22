@@ -7,6 +7,7 @@ import { logger } from "./infrastructure/logger";
 import { register } from "./infrastructure/metrics";
 import { registerMayaAgents } from "./agents/registerAgents";
 import { processRetryQueue } from "./core/retryWorker";
+import { runRetentionPurge } from "./compliance/purgeJob";
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -66,6 +67,10 @@ async function start() {
   setInterval(() => {
     void processRetryQueue();
   }, 30000);
+
+  setInterval(() => {
+    void runRetentionPurge();
+  }, 24 * 60 * 60 * 1000);
 
   const port = Number(process.env.PORT || 4000);
   app.listen(port, () => {
