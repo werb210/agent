@@ -35,6 +35,9 @@ import { capitalEfficiencyIndex } from "./core/capitalEfficiency";
 import { requireCapability } from "./security/capabilityGuard";
 import { featureFlags } from "./security/featureFlags";
 import { mlBreaker } from "./core/mlClient";
+import { recordMetric } from "./core/metricsLogger";
+import { detectMLDrift } from "./core/mlDriftMonitor";
+import { detectCampaignAnomaly } from "./core/campaignAnomaly";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -47,9 +50,16 @@ app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
 });
 
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
+  const errorCount = await pool.query(`
+    SELECT COUNT(*) FROM maya_metrics
+    WHERE metric_name='system_error'
+    AND created_at > NOW() - INTERVAL '1 hour'
+  `);
+
   res.json({
     status: "ok",
+    errors_last_hour: Number(errorCount.rows[0].count),
     ml_circuit_state: mlBreaker.getState()
   });
 });
@@ -144,6 +154,24 @@ app.get("/maya/executive-macro", async (req: any, res) => {
   });
 });
 
+
+
+app.get("/maya/observability", async (_req, res) => {
+  const drift = await detectMLDrift();
+  const anomaly = await detectCampaignAnomaly();
+
+  const errorCount = await pool.query(`
+    SELECT COUNT(*) FROM maya_metrics
+    WHERE metric_name='system_error'
+    AND created_at > NOW() - INTERVAL '24 hours'
+  `);
+
+  res.json({
+    ml_drift_score: drift,
+    campaign_anomaly: anomaly,
+    system_errors_last_24h: Number(errorCount.rows[0].count)
+  });
+});
 
 app.get("/maya/audit/:entityId", async (req, res) => {
   const { entityId } = req.params;
@@ -493,7 +521,8 @@ app.post("/voice/post-call", async (req, res) => {
   }
 });
 
-app.use((err: any, _req: any, res: any, _next: any) => {
+app.use(async (err: any, _req: any, res: any, _next: any) => {
   console.error("Global error:", err?.message);
+  await recordMetric("system_error", 1, { message: err.message });
   res.status(500).json({ error: "Internal error" });
 });

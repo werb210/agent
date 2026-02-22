@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import { recordMetric } from "./metricsLogger";
 
 type AggregateRow = {
   total: string | number | null;
@@ -18,5 +19,11 @@ export async function capitalEfficiencyIndex() {
   const totalRevenue = Number(revenue.rows[0]?.total || 0);
   const totalSpend = Number(marketing.rows[0]?.total || 1);
 
-  return totalRevenue / totalSpend;
+  const efficiency = totalRevenue / totalSpend;
+  await recordMetric("capital_efficiency", efficiency, {
+    total_revenue: totalRevenue,
+    total_spend: totalSpend
+  });
+
+  return efficiency;
 }
