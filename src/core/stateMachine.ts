@@ -1,3 +1,5 @@
+import { createCorrelationId, logAudit } from "./auditLogger";
+
 const allowedTransitions: Record<string, string[]> = {
   new: ["qualifying"],
   qualifying: ["qualified", "archived"],
@@ -13,4 +15,28 @@ export function validateStateTransition(current: string, next: string) {
   if (!allowedTransitions[current]?.includes(next)) {
     throw new Error(`Invalid state transition from ${current} to ${next}`);
   }
+}
+
+export async function auditStateTransition({
+  sessionId,
+  currentState,
+  newState,
+  correlationId,
+  agentName
+}: {
+  sessionId: string;
+  currentState: string;
+  newState: string;
+  correlationId?: string;
+  agentName?: string;
+}) {
+  await logAudit({
+    correlationId: correlationId || createCorrelationId(),
+    agentName: agentName || "System",
+    actionType: "state_transition",
+    entityType: "session",
+    entityId: sessionId,
+    previousValue: { state: currentState },
+    newValue: { state: newState }
+  });
 }

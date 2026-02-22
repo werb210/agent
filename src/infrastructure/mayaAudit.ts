@@ -1,9 +1,10 @@
-import { pool } from "../db";
+import { createCorrelationId, logAudit as logStructuredAudit } from "../core/auditLogger";
 
 export async function logAudit(actor: string, action: string, metadata: unknown) {
-  await pool.query(
-    `INSERT INTO maya_audit_log (actor, action, metadata)
-     VALUES ($1,$2,$3)`,
-    [actor, action, metadata]
-  );
+  await logStructuredAudit({
+    correlationId: createCorrelationId(),
+    agentName: actor,
+    actionType: action,
+    metadata
+  });
 }
