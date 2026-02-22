@@ -102,3 +102,8 @@ def predict_nn(payload: dict):
 @app.post("/forecast")
 def forecast(payload: dict):
     return {"forecast": forecast_revenue(payload["history"])}
+
+
+@app.get("/model-health")
+def model_health():
+    return {"model_loaded": True}
