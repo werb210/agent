@@ -12,6 +12,7 @@ import { resilientLLM } from "../infrastructure/mayaResilience";
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import { captureStartupLead } from "../core/mayaStartupCapture";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
+import { validateStateTransition } from "../core/stateMachine";
 
 type RouteAgentResult = {
   content: string;
@@ -23,6 +24,24 @@ type RouteAgentResult = {
 };
 
 const router = Router();
+
+
+async function transitionSessionState(sessionId: string, nextState: "qualifying" | "qualified" | "booked") {
+  const currentResult = await pool.query(
+    `SELECT state FROM sessions WHERE session_id = $1 LIMIT 1`,
+    [sessionId]
+  );
+
+  const currentState = (currentResult.rows[0]?.state ?? "new") as string;
+  validateStateTransition(currentState, nextState);
+
+  await pool.query(
+    `UPDATE sessions
+     SET state = $1
+     WHERE session_id = $2`,
+    [nextState, sessionId]
+  );
+}
 
 async function buildEnhancedPrompt(phone: string, userMessage: string): Promise<string> {
   const context = await loadFullClientContext(phone);
@@ -146,6 +165,8 @@ async function handleBooking(session: any, requestedISO: string) {
     [chosen.staff.id, session.session_id]
   );
 
+  await transitionSessionState(session.session_id, "booked");
+
   await pool.query(
     `UPDATE staff_calendar
      SET last_assigned_at = NOW()
@@ -208,6 +229,8 @@ async function structuredQualificationFlow(
       [session.session_id]
     );
 
+    await transitionSessionState(session.session_id, "qualified");
+
     return "Thank you. Based on what you've shared, you're pre-qualified for funding options. Would you like to book a strategy call or proceed with a formal application?";
   }
 
@@ -225,6 +248,8 @@ async function structuredQualificationFlow(
     `UPDATE sessions SET stage = 'qualifying' WHERE session_id = $1`,
     [session.session_id]
   );
+
+  await transitionSessionState(session.session_id, "qualifying");
 
   return questionMap[nextField];
 }
