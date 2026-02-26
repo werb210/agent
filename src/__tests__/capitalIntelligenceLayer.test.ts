@@ -6,6 +6,10 @@ jest.mock("pg", () => ({
   }))
 }));
 
+jest.mock("../core/mlClient", () => ({
+  getMLApprovalProbability: jest.fn().mockResolvedValue(0.95)
+}));
+
 import { calculateFundingProbability } from "../core/probabilityEngine";
 import { calculateDealLTV } from "../core/ltvEngine";
 import { generateRiskHeatmap } from "../core/portfolioRisk";
@@ -29,6 +33,7 @@ describe("capital intelligence layer", () => {
     });
 
     const probability = await calculateFundingProbability({
+      product_type: "term_loan",
       funding_amount: 100000,
       annual_revenue: 500000,
       time_in_business: 24
