@@ -9,7 +9,7 @@
     "console": "ts-node-dev --respawn --transpile-only src/console/chatConsole.ts",
     "build": "tsc",
     "start": "NODE_ENV=production node dist/index.js",
-    "test": "jest",
+    "test": "jest --passWithNoTests --testPathIgnorePatterns=/dist/",
     "worker": "ts-node-dev --respawn --transpile-only src/infrastructure/mayaWorker.ts",
     "predeploy": "ts-node src/testing/preDeployCheck.ts"
   },
