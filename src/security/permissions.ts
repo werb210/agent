@@ -1,4 +1,5 @@
 import { Mode, Task } from "../types/agent";
+import { AppError } from "../errors/AppError";
 
 const permissionMatrix: Record<Mode, Task[]> = {
   WEBSITE_VISITOR: ["chat"],
@@ -10,6 +11,6 @@ const permissionMatrix: Record<Mode, Task[]> = {
 
 export function validatePermissions(mode: Mode, task: Task) {
   if (!permissionMatrix[mode].includes(task)) {
-    throw new Error("Forbidden task for mode");
+    throw new AppError("unauthorized", 401, "Forbidden task for mode");
   }
 }

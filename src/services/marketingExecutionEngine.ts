@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { AppError } from "../errors/AppError";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
@@ -27,7 +28,7 @@ export interface CampaignAdjustmentResult {
 }
 
 function blockExecution(reason: string): never {
-  throw new Error(`Marketing execution blocked: ${reason}`);
+  throw new AppError("bad_request", 400, `Marketing execution blocked: ${reason}`);
 }
 
 export function evaluateCampaignAdjustment(

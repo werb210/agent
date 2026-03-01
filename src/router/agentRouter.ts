@@ -7,6 +7,7 @@ import {
   createCalendarEvent,
   confirmBookingSMS
 } from "../services/bookingService";
+import { AppError } from "../errors/AppError";
 import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
@@ -418,12 +419,12 @@ router.post("/maya/admin/force-startup-check", async (_req, res) => {
 
 export async function routeAgent(task: string, payload: any, sessionId?: string): Promise<RouteAgentResult> {
   if (task !== "chat") {
-    throw new Error("Invalid task");
+    throw new AppError("bad_request", 400, "Invalid task");
   }
 
   const message = String(payload?.message ?? payload ?? "").trim();
   if (!message) {
-    throw new Error("message is required");
+    throw new AppError("bad_request", 400, "message is required");
   }
 
   const result = await executeChat(message, sessionId ?? payload?.userId, payload?.userPhone);

@@ -1,8 +1,9 @@
+import { AppError } from "../errors/AppError";
 const activeSessions = new Map<string, number>();
 
 export function startSession(identity: string) {
   if (activeSessions.has(identity)) {
-    throw new Error("session_already_active");
+    throw new AppError("bad_request", 400, "session_already_active");
   }
 
   activeSessions.set(identity, Date.now());

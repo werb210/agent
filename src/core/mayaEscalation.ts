@@ -1,6 +1,7 @@
+import { AppError } from "../errors/AppError";
 export function escalateIfAnomaly(metric: number, threshold: number) {
   if (metric > threshold) {
-    throw new Error("Anomaly detected – escalation required");
+    throw new AppError("internal_error", 500, "Anomaly detected – escalation required");
   }
 }
 

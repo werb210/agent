@@ -2,6 +2,7 @@ import OpenAI, { toFile } from "openai";
 import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
+import { AppError } from "../errors/AppError";
 
 type MemoryTurn = {
   user: string;
@@ -54,7 +55,7 @@ ${message}
 export async function transcribeAudio(recordingUrl: string): Promise<string> {
   const response = await fetch(recordingUrl);
   if (!response.ok) {
-    throw new Error(`Unable to download recording for transcription: ${response.status}`);
+    throw new AppError("upstream_error", response.status, `Unable to download recording for transcription: ${response.status}`);
   }
 
   const audioBuffer = Buffer.from(await response.arrayBuffer());

@@ -1,13 +1,24 @@
 import "./infrastructure/env";
+import { NextFunction, Request, Response } from "express";
 import { app } from "./server";
 import { mayaQueue } from "./infrastructure/mayaQueue";
 import { pool } from "./config/pool";
+import { AppError } from "./errors/AppError";
 import { redis } from "./infrastructure/redis";
 import { logger } from "./infrastructure/logger";
 import { register } from "./infrastructure/metrics";
 import { registerMayaAgents } from "./agents/registerAgents";
 import { processRetryQueue } from "./core/retryWorker";
 import { runRetentionPurge } from "./compliance/purgeJob";
+import { errorMiddleware } from "./middleware/error.middleware";
+
+const requiredEnv = ["PORT", "BF_SERVER_URL"];
+
+requiredEnv.forEach((key) => {
+  if (!process.env[key]) {
+    throw new AppError("internal_error", 500, `Missing required env var: ${key}`);
+  }
+});
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -21,17 +32,17 @@ process.on("uncaughtException", (err) => {
 
 function requireEnvVar(key: string) {
   if (!process.env[key]) {
-    throw new Error(`Missing ${key}`);
+    throw new AppError("internal_error", 500, `Missing ${key}`);
   }
 }
 
 if (process.env.NODE_ENV === "production") {
   if (!process.env.ML_INTERNAL_SECRET) {
-    throw new Error("Missing internal secret.");
+    throw new AppError("internal_error", 500, "Missing internal secret.");
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("Missing OpenAI key.");
+    throw new AppError("internal_error", 500, "Missing OpenAI key.");
   }
 }
 
@@ -48,19 +59,26 @@ if (process.env.NODE_ENV === "production") {
 ].forEach(requireEnvVar);
 
 app.get("/ready", async (_req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    await redis.ping();
-    res.json({ status: "ready" });
-  } catch {
-    res.status(500).json({ status: "not ready" });
-  }
+  res.json({ status: "ready" });
 });
 
 app.get("/metrics", async (_req, res) => {
   res.set("Content-Type", register.contentType);
   res.end(await register.metrics());
 });
+
+app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof SyntaxError) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid_json"
+    });
+  }
+
+  return next(err);
+});
+
+app.use(errorMiddleware);
 
 async function scheduleJobs() {
   await mayaQueue.add("full-cycle", {}, { repeat: { pattern: "0 2 * * *" } });

@@ -1,3 +1,4 @@
+import { AppError } from "../errors/AppError";
 interface CircuitOptions {
   timeout: number;
   failureThreshold: number;
@@ -23,7 +24,7 @@ export class CircuitBreaker {
       if (now - this.lastFailureTime > this.options.resetTimeout) {
         this.state = "HALF";
       } else {
-        throw new Error("Circuit is OPEN");
+        throw new AppError("internal_error", 500, "Circuit is OPEN");
       }
     }
 

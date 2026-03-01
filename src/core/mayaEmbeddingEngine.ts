@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { pool } from "../db";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
+import { AppError } from "../errors/AppError";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -15,7 +16,7 @@ export async function storeEmbedding(entityType: string, entityId: string, text:
   const embedding = response.data[0]?.embedding;
 
   if (!embedding) {
-    throw new Error("Embedding response was empty.");
+    throw new AppError("internal_error", 500, "Embedding response was empty.");
   }
 
   await pool.query(

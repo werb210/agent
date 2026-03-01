@@ -6,6 +6,7 @@ import { snapshotCampaign } from "./campaignRollback";
 import { requireApproval } from "../core/mayaApprovalGate";
 import { logMayaAction } from "./mayaActionLedger";
 import { escalateIfAnomaly } from "../core/mayaEscalation";
+import { AppError } from "../errors/AppError";
 
 export async function launchAutonomousCampaigns() {
   enforceKillSwitch();
@@ -29,7 +30,7 @@ export async function launchAutonomousCampaigns() {
     escalateIfAnomaly(campaignBudget, maxBudget);
 
     if (campaignBudget > maxBudget) {
-      throw new Error("Campaign exceeds global budget cap");
+      throw new AppError("bad_request", 400, "Campaign exceeds global budget cap");
     }
     const campaignInsert = await pool.query<{ id: string }>(
       `

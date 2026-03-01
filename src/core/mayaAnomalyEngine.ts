@@ -20,6 +20,8 @@ export async function detectRevenueAnomalies(): Promise<void> {
   const anomalies = values.filter((value) => value > average * 1.5 || value < average * 0.5);
 
   if (anomalies.length > 0) {
-    console.log("Revenue anomaly detected.");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Revenue anomaly detected.");
+    }
   }
 }

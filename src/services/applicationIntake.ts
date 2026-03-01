@@ -1,4 +1,5 @@
 import axios from "axios";
+import { AppError } from "../errors/AppError";
 
 type ApplicationContext = {
   revenue?: number;
@@ -86,7 +87,7 @@ export async function createDraftApplication(context: ApplicationContext): Promi
   const baseUrl = process.env.STAFF_SERVER_URL;
 
   if (!baseUrl) {
-    throw new Error("STAFF_SERVER_URL is not configured.");
+    throw new AppError("internal_error", 500, "STAFF_SERVER_URL is not configured.");
   }
 
   const response = await axios.post(`${baseUrl}/api/applications/create-draft`, context);

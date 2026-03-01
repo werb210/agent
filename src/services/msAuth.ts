@@ -1,4 +1,5 @@
 import { ConfidentialClientApplication } from "@azure/msal-node";
+import { AppError } from "../errors/AppError";
 
 const msalConfig = {
   auth: {
@@ -16,7 +17,7 @@ export async function getGraphToken(): Promise<string> {
   });
 
   if (!result?.accessToken) {
-    throw new Error("Failed to acquire Microsoft Graph token");
+    throw new AppError("upstream_error", 502, "Failed to acquire Microsoft Graph token");
   }
 
   return result.accessToken;

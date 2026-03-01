@@ -1,3 +1,4 @@
+import { AppError } from "../errors/AppError";
 export type AgentType = "sales" | "marketing" | "risk";
 
 export interface MayaAgent<TInput = unknown, TOutput = unknown> {
@@ -14,7 +15,7 @@ export function getAgent(type: AgentType): MayaAgent {
   const agent = registry[type];
 
   if (!agent) {
-    throw new Error(`Agent '${type}' has not been registered.`);
+    throw new AppError("not_found", 404, `Agent '${type}' has not been registered.`);
   }
 
   return agent;
