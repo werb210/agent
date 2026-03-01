@@ -3,10 +3,12 @@ import { v4 as uuidv4 } from "uuid";
 import { twiml } from "twilio";
 import { pool } from "../db";
 import { handleVoiceInput } from "../services/voice/voiceConversationService";
+import { verifyTwilioSignature } from "../middleware/verifyTwilio";
+import { mayaRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.post("/voice/inbound", async (req, res) => {
+router.post("/voice/inbound", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const callSid = req.body.CallSid;
   const phone = req.body.From;
   const sessionId = uuidv4();
@@ -28,7 +30,7 @@ router.post("/voice/inbound", async (req, res) => {
   res.send(response.toString());
 });
 
-router.post("/voice/respond", async (req, res) => {
+router.post("/voice/respond", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const sessionId = req.query.sessionId as string;
   const speech = req.body.SpeechResult;
 

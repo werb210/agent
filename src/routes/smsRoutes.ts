@@ -5,10 +5,12 @@ import { pool } from "../db";
 import { runAI } from "../brain/openaiClient";
 import { logDecision } from "../services/complianceLogger";
 import { sanitizeString } from "../security/sanitizer";
+import { verifyTwilioSignature } from "../middleware/verifyTwilio";
+import { mayaRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.post("/sms", async (req, res) => {
+router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const from = sanitizeString(String(req.body?.From ?? ""));
   const body = sanitizeString(String(req.body?.Body ?? ""));
 

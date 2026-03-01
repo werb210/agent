@@ -28,10 +28,11 @@ import smsRoutes from "./routes/smsRoutes";
 import adminAnalytics from "./routes/adminAnalytics";
 import mayaPortal from "./routes/mayaPortal";
 import mayaSandbox from "./routes/mayaSandbox";
-import twilio from "twilio";
 import { ENV } from "./infrastructure/env";
 import { isProd } from "./config/env";
 import { logger } from "./infrastructure/logger";
+import { verifyTwilioSignature } from "./middleware/verifyTwilio";
+import { mayaRateLimit } from "./middleware/rateLimit";
 import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
 import { generateRiskHeatmap } from "./core/portfolioRisk";
@@ -46,9 +47,12 @@ import { detectCampaignAnomaly } from "./core/campaignAnomaly";
 import { logAbuse } from "./security/abuseLogger";
 import { sanitizeString } from "./security/sanitizer";
 import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
+import { checkServerHealth } from "./services/healthCheck";
+import { endSession, hasSession, startSession } from "./services/sessionManager";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
+const pendingVoiceActionTimeouts = new Map<string, NodeJS.Timeout>();
 const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.PORTAL_URL,
@@ -417,27 +421,7 @@ app.get("/agent/dashboard/:id", async (req, res) => {
 });
 
 
-function validateTwilio(req: express.Request) {
-  const signature = req.headers["x-twilio-signature"] as string | undefined;
-  const url = `${process.env.PUBLIC_WEBHOOK_URL ?? ""}/webhooks/sms`;
-  const params = req.body;
-
-  if (!signature || !process.env.TWILIO_AUTH_TOKEN || !url) {
-    return false;
-  }
-
-  return twilio.validateRequest(
-    process.env.TWILIO_AUTH_TOKEN,
-    signature,
-    url,
-    params
-  );
-}
-
-app.post("/webhooks/sms", async (req, res) => {
-  if (!validateTwilio(req)) {
-    return res.status(403).send("Invalid signature");
-  }
+app.post("/webhooks/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
 
   try {
     const incomingMessage = req.body?.Body;
@@ -463,7 +447,7 @@ app.post("/webhooks/sms", async (req, res) => {
   }
 });
 
-app.post("/sms", async (req, res) => {
+app.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   try {
     const incomingMessage = req.body?.Body;
     const from = req.body?.From;
@@ -516,7 +500,24 @@ app.post("/voice/outbound", async (req, res) => {
   }
 });
 
-app.post("/voice", async (_req, res) => {
+app.post("/voice", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+  const identity = String(req.body?.From ?? req.body?.CallSid ?? "");
+
+  if (!identity) {
+    return res.status(400).json({ error: "missing_identity" });
+  }
+
+  if (hasSession(identity)) {
+    return res.status(409).json({ error: "session_already_active" });
+  }
+
+  try {
+    startSession(identity);
+    logger.info({ event: "call_started", identity });
+  } catch {
+    return res.status(409).json({ error: "session_already_active" });
+  }
+
   const twiml = new VoiceResponse();
 
   const gather = twiml.gather({
@@ -533,7 +534,13 @@ app.post("/voice", async (_req, res) => {
   res.send(twiml.toString());
 });
 
-app.post("/voice/process", async (req, res) => {
+app.post("/voice/process", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+  if (!(await checkServerHealth())) {
+    return res.json({
+      message: "Service temporarily unavailable. Please try again later."
+    });
+  }
+
   const speechResult = String(req.body?.SpeechResult ?? "").trim();
   const from = String(req.body?.From ?? req.body?.CallSid ?? `voice-${Date.now()}`);
   const twiml = new VoiceResponse();
@@ -561,6 +568,11 @@ app.post("/voice/process", async (req, res) => {
       phone: from
     });
     pendingVoiceActions.delete(from);
+    const actionTimeout = pendingVoiceActionTimeouts.get(from);
+    if (actionTimeout) {
+      clearTimeout(actionTimeout);
+      pendingVoiceActionTimeouts.delete(from);
+    }
     twiml.say(typeof bookingExecution.message === "string"
       ? bookingExecution.message
       : "Your request has been confirmed.");
@@ -587,6 +599,17 @@ app.post("/voice/process", async (req, res) => {
 
   if (action.requiresConfirmation) {
     pendingVoiceActions.set(from, action);
+    const existingTimeout = pendingVoiceActionTimeouts.get(from);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      pendingVoiceActions.delete(from);
+      pendingVoiceActionTimeouts.delete(from);
+    }, 10 * 60 * 1000);
+
+    pendingVoiceActionTimeouts.set(from, timeout);
     twiml.say("Please say confirm to proceed.");
   }
 
@@ -620,7 +643,7 @@ app.post("/voice/process", async (req, res) => {
 });
 
 
-app.post("/voice/post-call", async (req, res) => {
+app.post("/voice/post-call", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   try {
     const recordingUrl = String(req.body?.RecordingUrl ?? "");
     const callSid = String(req.body?.CallSid ?? "");
@@ -628,6 +651,17 @@ app.post("/voice/post-call", async (req, res) => {
 
     if (!recordingUrl || !callSid) {
       return res.status(400).json({ error: "RecordingUrl and CallSid are required" });
+    }
+
+    if (from) {
+      endSession(from);
+      pendingVoiceActions.delete(from);
+      const timeout = pendingVoiceActionTimeouts.get(from);
+      if (timeout) {
+        clearTimeout(timeout);
+        pendingVoiceActionTimeouts.delete(from);
+      }
+      logger.info({ event: "call_ended", identity: from, callSid });
     }
 
     const transcript = await transcribeAudio(recordingUrl);
@@ -667,7 +701,7 @@ app.post("/voice/post-call", async (req, res) => {
 });
 
 app.use(async (err: any, _req: any, res: any, _next: any) => {
-  console.error("Global error:", err?.message);
+  logger.error({ err, event: "global_error" });
   await recordMetric("system_error", 1, { message: err.message });
   res.status(500).json({ error: "Internal error" });
 });
