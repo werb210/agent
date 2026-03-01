@@ -5,7 +5,9 @@ export async function preDeployValidation() {
   const loadResult = await runLoadTest();
   validatePerformance(loadResult);
 
-  console.log("Pre-deployment validation passed.");
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Pre-deployment validation passed.");
+  }
 }
 
 void preDeployValidation();

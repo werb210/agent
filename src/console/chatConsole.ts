@@ -1,13 +1,14 @@
 import axios from "axios";
 import readline from "readline-sync";
 import crypto from "crypto";
+import { AppError } from "../errors/AppError";
 
 const AGENT_URL = "http://localhost:4000/ai/execute";
 const rawSecret = process.env.AGENT_SHARED_SECRET;
 const rawInternalKey = process.env.AGENT_INTERNAL_KEY;
 
 if (!rawSecret || !rawInternalKey) {
-  throw new Error("Missing required environment variables: AGENT_SHARED_SECRET and AGENT_INTERNAL_KEY");
+  throw new AppError("internal_error", 500, "Missing required environment variables: AGENT_SHARED_SECRET and AGENT_INTERNAL_KEY");
 }
 
 const SECRET = rawSecret;
@@ -51,8 +52,10 @@ async function sendMessage(sessionId: string, message: string) {
 }
 
 async function startConsole() {
-  console.log("Maya AI Console Started");
-  console.log("Type 'exit' to quit\n");
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Maya AI Console Started");
+    console.log("Type 'exit' to quit\n");
+  }
 
   const sessionId = "dev-session";
 
@@ -70,9 +73,11 @@ async function startConsole() {
     try {
       const result = await sendMessage(sessionId, input);
 
-      console.log("\nMaya:", result.result.content);
-      console.log("Confidence:", result.confidence);
-      console.log("----\n");
+      if (process.env.NODE_ENV !== "production") {
+        console.log("\nMaya:", result.result.content);
+        console.log("Confidence:", result.confidence);
+        console.log("----\n");
+      }
     } catch (err: any) {
       console.error("Error:", err.response?.data || err.message);
     }

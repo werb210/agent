@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
+import morgan from "morgan";
 import Twilio from "twilio";
 import VoiceResponse = require("twilio/lib/twiml/VoiceResponse");
 import agentRouter, { routeAgent } from "./router/agentRouter";
@@ -111,7 +112,8 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
-app.use(express.json({ limit: "1mb" }));
+app.use(morgan("combined"));
+app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(mongoSanitize());
 app.use(xss());
@@ -144,18 +146,8 @@ app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
 });
 
-app.get("/health", async (_req, res) => {
-  const errorCount = await pool.query(`
-    SELECT COUNT(*) FROM maya_metrics
-    WHERE metric_name='system_error'
-    AND created_at > NOW() - INTERVAL '1 hour'
-  `);
-
-  res.json({
-    status: "ok",
-    errors_last_hour: Number(errorCount.rows[0].count),
-    ml_circuit_state: mlBreaker.getState()
-  });
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
 app.get("/maya/health", async (_req, res) => {
@@ -263,7 +255,7 @@ app.get("/maya/observability", async (_req, res) => {
   res.json({
     ml_drift_score: drift,
     campaign_anomaly: anomaly,
-    system_errors_last_24h: Number(errorCount.rows[0].count)
+    system_errors_last_24h: Number(errorCount.rows[0]?.count ?? 0)
   });
 });
 
@@ -535,7 +527,13 @@ app.post("/voice", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
 });
 
 app.post("/voice/process", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
-  if (!(await checkServerHealth())) {
+  try {
+    if (!(await checkServerHealth())) {
+      return res.json({
+        message: "Service temporarily unavailable. Please try again later."
+      });
+    }
+  } catch {
     return res.json({
       message: "Service temporarily unavailable. Please try again later."
     });

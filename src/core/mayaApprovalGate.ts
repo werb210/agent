@@ -2,6 +2,7 @@ import { pool } from "../db";
 import { logMayaAction } from "../services/mayaActionLedger";
 import { detectPII } from "../compliance/piiDetection";
 import { flagSessionCompliance } from "../compliance/complianceFlag";
+import { AppError } from "../errors/AppError";
 
 const highRiskActions = [
   "launch_campaign",
@@ -32,7 +33,7 @@ export async function requireApproval(actionType: string, payload: unknown) {
 
   await logMayaAction(actionType, payloadWithCompliance, "pending_approval");
 
-  throw new Error(
+  throw new AppError("bad_request", 400,
     `Action ${actionType} requires approval. Approval ID: ${record.rows[0].id}`
   );
 }

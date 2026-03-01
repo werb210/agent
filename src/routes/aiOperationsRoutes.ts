@@ -7,6 +7,7 @@ import { logMayaAction } from "../services/mayaActionLedger";
 import { escalateIfAnomaly } from "../core/mayaEscalation";
 import { capitalEfficiencyIndex } from "../core/capitalEfficiency";
 import { calibrateProbability } from "../core/probabilityCalibration";
+import { AppError } from "../errors/AppError";
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.get("/maya/kpi", async (_req, res) => {
 
   const roiTotal = Number(kpi.rows[0]?.roi_score_total || 0);
   if (roiTotal < Number(process.env.MAYA_MIN_ROI_TOTAL || 0)) {
-    throw new Error("Anomaly detected – escalation required");
+    throw new AppError("internal_error", 500, "Anomaly detected – escalation required");
   }
 
   await logMayaAction("kpi_read", { llmCost: llmCostValue }, "executed");

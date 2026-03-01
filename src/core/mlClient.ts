@@ -8,6 +8,7 @@ import { measureExecutionTime } from "./performanceTelemetry";
 import { calculateFeatureContributions } from "./explainability";
 import { generateReasoningSummary } from "./generateExplanation";
 import { pool } from "../db";
+import { AppError } from "../errors/AppError";
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
 
@@ -20,7 +21,7 @@ export const mlBreaker = new CircuitBreaker({
 export async function getMLApprovalProbability(payload: any, role: string = "system", correlationId?: string) {
   requireCapability(role, "ml_predict");
   if (!featureFlags.enableNeuralNetwork) {
-    throw new Error("Neural network predictions are disabled");
+    throw new AppError("internal_error", 500, "Neural network predictions are disabled");
   }
 
   const resolvedCorrelationId = correlationId || createCorrelationId();

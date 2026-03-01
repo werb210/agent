@@ -1,4 +1,5 @@
 import Twilio from "twilio";
+import { AppError } from "../errors/AppError";
 
 let client: ReturnType<typeof Twilio> | null = null;
 
@@ -14,7 +15,7 @@ export function getTwilioClient() {
       return {} as any;
     }
 
-    throw new Error("Twilio credentials missing");
+    throw new AppError("internal_error", 500, "Twilio credentials missing");
   }
 
   client = Twilio(sid, token);

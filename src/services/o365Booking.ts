@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { AppError } from "../errors/AppError";
 
 export async function createO365Booking(
   startISO: string,
@@ -7,7 +8,7 @@ export async function createO365Booking(
 ) {
 
   if (!process.env.O365_TOKEN) {
-    throw new Error("O365 token missing");
+    throw new AppError("internal_error", 500, "O365 token missing");
   }
 
   const response = await fetch(

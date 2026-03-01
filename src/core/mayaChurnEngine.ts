@@ -15,7 +15,9 @@ export async function predictChurn(): Promise<void> {
     const daysInactive = (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);
 
     if (daysInactive > 30) {
-      console.log("Potential churn risk:", client.contact_id);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Potential churn risk:", client.contact_id);
+      }
     }
   }
 }
