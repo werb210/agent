@@ -22,6 +22,9 @@ import {
   getLenderProductRanges
 } from "../services/dataAccess";
 import { formatRateRanges } from "../services/dataFormatter";
+import { AppError } from "../errors/AppError";
+import { sanitizeModelInput } from "../services/inputSanitizer";
+import { buildMayaContext } from "../services/contextBuilder";
 
 const router = Router();
 
@@ -32,6 +35,13 @@ router.post("/", async (req, res) => {
       mode: req.body.mode ?? "client"
     };
     const mode = body.mode ?? "client";
+    const role = req.body.role as string | undefined;
+    const applicationId = req.body.applicationId as string | undefined;
+    const userId = req.body.userId as string | undefined;
+
+    if (role !== "Admin" && role !== "Staff") {
+      throw new AppError("forbidden", 403);
+    }
 
     if (!body.sessionId) {
       return res.status(400).json({ error: "Invalid Maya request" });
@@ -39,6 +49,16 @@ router.post("/", async (req, res) => {
 
     if (!body.message) {
       return res.status(400).json({ error: "Invalid Maya request" });
+    }
+
+    if (!applicationId || !userId) {
+      return res.status(400).json({ error: "applicationId and userId are required" });
+    }
+
+    const scopedContext = await buildMayaContext({ applicationId, userId, role });
+
+    if (process.env.NODE_ENV !== "production") {
+      logger.debug("Maya scoped context established", { applicationId, userId, role, mode });
     }
 
     const session = await getSessionState(body.sessionId);
@@ -63,7 +83,12 @@ router.post("/", async (req, res) => {
       ? (session.context.history as { role: "user" | "assistant"; content: string }[])
       : [];
 
-    const stageAwareReply = await runMayaCore(body.message, session.stage, mode, history);
+    const sanitizedMessage = sanitizeModelInput(body.message);
+    const stageAwareReply = await runMayaCore(sanitizedMessage, session.stage, mode, history, {
+      role,
+      applicationId: scopedContext.applicationId,
+      userId: scopedContext.userId
+    });
     const sanitizedReply = sanitizeRateLanguage(stageAwareReply || result.reply);
     const guard = complianceFilter(sanitizedReply);
 
@@ -123,7 +148,7 @@ router.post("/", async (req, res) => {
     const nextStage = determineNextStage(session.stage, body.message);
     const nextContext = {
       ...session.context,
-      history: [...history, { role: "user", content: body.message }, { role: "assistant", content: finalReply }].slice(-20)
+      history: [...history, { role: "user", content: sanitizedMessage }, { role: "assistant", content: finalReply }].slice(-20)
     };
 
     await updateSessionState(body.sessionId, nextStage, nextContext);
@@ -202,7 +227,7 @@ router.post("/", async (req, res) => {
       escalated: finalEscalation
     });
   } catch (error) {
-    console.error("Maya router error:", error);
+    logger.error("Maya router error", { error });
     return res.status(500).json({
       reply: "System error. Please try again.",
       confidence: 0,

@@ -1,7 +1,7 @@
 import { runAI } from "../brain/openaiClient";
 import { SessionStage } from "../types/stages";
 import { MayaMode } from "../types/maya";
-import { getAvailableProductCategories } from "../core/mayaProductIntelligence";
+import { MAYA_SYSTEM_PROMPT } from "../prompts/system";
 
 type ConversationTurn = {
   role: "user" | "assistant";
@@ -12,52 +12,21 @@ export async function runMayaCore(
   message: string,
   stage: SessionStage,
   mode: MayaMode,
-  history: ConversationTurn[] = []
+  history: ConversationTurn[] = [],
+  scope?: { role: "Admin" | "Staff" | string; applicationId?: string; userId?: string }
 ): Promise<string> {
   const systemPrompt = await buildSystemPrompt(mode, stage);
 
-  return (await runAI(systemPrompt, message, history)) ?? "Could you share a bit more detail?";
+  const aiScope = scope
+    ? {
+      ...scope,
+      actionType: "maya_stage_reply"
+    }
+    : undefined;
+
+  return (await runAI(systemPrompt, message, history, aiScope)) ?? "Insufficient data provided.";
 }
 
 async function buildSystemPrompt(mode: MayaMode, stage: SessionStage): Promise<string> {
-
-  if (mode === "staff") {
-    return `
-You are Maya, Boreal’s internal operations assistant.
-
-You may:
-- Summarize pipeline data
-- Retrieve application lists
-- Assist staff workflow
-
-Never:
-- Expose underwriting logic
-- Predict approval probability
-- Modify database records
-`;
-  }
-
-  const categories = await getAvailableProductCategories();
-
-  const productContext = `
-Available product categories:
-${categories.join(", ")}
-
-You must only reference products that exist in this list.
-If asked about a category not in this list, say it is not currently offered.
-Never invent products.
-`;
-
-  return `
-You are Maya, Boreal’s funding assistant.
-
-Current stage: ${stage}
-
-Guide users through funding.
-Never estimate approval.
-Never negotiate rates.
-Escalate when uncertain.
-
-${productContext}
-`;
+  return `${MAYA_SYSTEM_PROMPT}\nMode: ${mode}\nStage: ${stage}`;
 }
