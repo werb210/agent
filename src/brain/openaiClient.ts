@@ -1,29 +1,39 @@
 import type { ChatCompletionMessageParam } from "openai/resources";
 import { resilientLLM } from "../infrastructure/mayaResilience";
+import { AppError } from "../errors/AppError";
+import { sanitizeModelInput } from "../services/inputSanitizer";
+
+type InvocationScope = {
+  role: "Admin" | "Staff" | string;
+  applicationId?: string;
+  userId?: string;
+  actionType?: string;
+};
 
 export async function runAI(
   systemPrompt: string,
   userMessage: string,
-  history: { role: "user" | "assistant"; content: string }[] = []
+  history: { role: "user" | "assistant"; content: string }[] = [],
+  scope?: InvocationScope
 ) {
-  const strictRules =
-    "\n\nSTRICT RULES:" +
-    "\n- Never estimate approval." +
-    "\n- Never predict rates." +
-    "\n- Never explain underwriting logic." +
-    "\n- Never negotiate." +
-    "\n- Keep responses concise and professional.";
+  if (scope && scope.role !== "Admin" && scope.role !== "Staff") {
+    throw new AppError("forbidden", 403);
+  }
 
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: `${systemPrompt}${strictRules}` },
-    ...history,
-    { role: "user", content: userMessage }
+    { role: "system", content: sanitizeModelInput(systemPrompt) },
+    ...history.map((item) => ({ ...item, content: sanitizeModelInput(item.content) })),
+    { role: "user", content: sanitizeModelInput(userMessage) }
   ];
 
   const prompt = messages
     .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
     .join("\n\n");
 
-  const result = await resilientLLM("analysis", prompt);
+  const result = await resilientLLM("analysis", prompt, {
+    applicationId: scope?.applicationId,
+    userId: scope?.userId,
+    actionType: scope?.actionType ?? "maya_chat"
+  });
   return result.output;
 }

@@ -1,41 +1,34 @@
 import { runMayaCore } from "../services/mayaCore";
 import { runAI } from "../brain/openaiClient";
-import { getAvailableProductCategories } from "../core/mayaProductIntelligence";
 
 jest.mock("../brain/openaiClient", () => ({
   runAI: jest.fn()
 }));
 
-jest.mock("../core/mayaProductIntelligence", () => ({
-  getAvailableProductCategories: jest.fn()
-}));
-
 describe("runMayaCore", () => {
-  beforeEach(() => {
-    (getAvailableProductCategories as jest.Mock).mockResolvedValue(["term_loan", "line_of_credit"]);
-  });
-
   it("injects stage into the system prompt", async () => {
     (runAI as jest.Mock).mockResolvedValue("Reply");
 
     await runMayaCore("hello", "qualifying", "client", []);
 
     expect(runAI).toHaveBeenCalledWith(
-      expect.stringContaining("Current stage: qualifying"),
+      expect.stringContaining("Stage: qualifying"),
       "hello",
-      []
+      [],
+      undefined
     );
   });
 
-  it("injects live product context into client system prompt", async () => {
+  it("uses deterministic system prompt for client mode", async () => {
     (runAI as jest.Mock).mockResolvedValue("Reply");
 
     await runMayaCore("what products do you have", "new", "client", []);
 
     expect(runAI).toHaveBeenCalledWith(
-      expect.stringContaining("Available product categories:\nterm_loan, line_of_credit"),
+      expect.stringContaining("Do not speculate."),
       "what products do you have",
-      []
+      [],
+      undefined
     );
   });
 
@@ -44,7 +37,7 @@ describe("runMayaCore", () => {
 
     const reply = await runMayaCore("hello", "new", "client", []);
 
-    expect(reply).toBe("Could you share a bit more detail?");
+    expect(reply).toBe("Insufficient data provided.");
   });
 
   it("uses staff system prompt in staff mode", async () => {
@@ -53,9 +46,10 @@ describe("runMayaCore", () => {
     await runMayaCore("give me summary", "qualifying", "staff", []);
 
     expect(runAI).toHaveBeenCalledWith(
-      expect.stringContaining("internal operations assistant"),
+      expect.stringContaining("Mode: staff"),
       "give me summary",
-      []
+      [],
+      undefined
     );
   });
 });

@@ -18,7 +18,7 @@ Provide:
 
   const [headline, body, cta] = text
     .split("\n")
-    .map((line) => line.trim())
+    .map((line: string) => line.trim())
     .filter(Boolean);
 
   await pool.query(
