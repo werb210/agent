@@ -11,6 +11,7 @@ import { registerMayaAgents } from "./agents/registerAgents";
 import { processRetryQueue } from "./core/retryWorker";
 import { runRetentionPurge } from "./compliance/purgeJob";
 import { errorMiddleware } from "./middleware/error.middleware";
+import { clearLocks } from "./services/lock.service";
 
 const requiredEnv = ["PORT", "BF_SERVER_URL"];
 
@@ -109,6 +110,7 @@ async function start() {
 
   const shutdown = () => {
     logger.info("Shutting down Maya gracefully...");
+    clearLocks();
     clearInterval(retryInterval);
     clearInterval(retentionInterval);
     server.close(() => {

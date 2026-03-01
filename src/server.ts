@@ -33,7 +33,11 @@ import { ENV } from "./infrastructure/env";
 import { isProd } from "./config/env";
 import { logger } from "./infrastructure/logger";
 import { verifyTwilioSignature } from "./middleware/verifyTwilio";
+import { validateTimestamp } from "./middleware/validateTimestamp";
 import { mayaRateLimit } from "./middleware/rateLimit";
+import { isDuplicate } from "./services/idempotency.service";
+import { acquireLock, releaseLock } from "./services/lock.service";
+import { retryFetch } from "./services/retryFetch";
 import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
 import { generateRiskHeatmap } from "./core/portfolioRisk";
@@ -83,6 +87,14 @@ const aiLimiter = rateLimit({
   }
 });
 
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => String(req.body?.From ?? req.body?.CallSid ?? req.body?.MessageSid ?? req.ip ?? "unknown")
+});
+
 const waitlistLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 3,
@@ -119,6 +131,8 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(globalLimiter);
 app.use("/maya", aiLimiter);
+app.use("/webhook", webhookLimiter);
+app.use("/webhooks", webhookLimiter);
 app.use("/crm/startup-waitlist", waitlistLimiter);
 
 app.use((req, res, next) => {
@@ -413,14 +427,19 @@ app.get("/agent/dashboard/:id", async (req, res) => {
 });
 
 
-app.post("/webhooks/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+app.post("/webhooks/sms", mayaRateLimit, validateTimestamp, verifyTwilioSignature, async (req, res) => {
 
   try {
     const incomingMessage = req.body?.Body;
     const from = req.body?.From;
+    const messageSid = String(req.body?.MessageSid ?? "");
 
-    if (!incomingMessage || !from) {
+    if (!incomingMessage || !from || !messageSid) {
       return res.sendStatus(400);
+    }
+
+    if (isDuplicate(messageSid)) {
+      return res.status(200).json({ status: "duplicate_ignored" });
     }
 
     const result = await routeAgent("chat", {
@@ -439,13 +458,18 @@ app.post("/webhooks/sms", mayaRateLimit, verifyTwilioSignature, async (req, res)
   }
 });
 
-app.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+app.post("/sms", mayaRateLimit, validateTimestamp, verifyTwilioSignature, async (req, res) => {
   try {
     const incomingMessage = req.body?.Body;
     const from = req.body?.From;
+    const messageSid = String(req.body?.MessageSid ?? "");
 
-    if (!incomingMessage || !from) {
+    if (!incomingMessage || !from || !messageSid) {
       return res.sendStatus(400);
+    }
+
+    if (isDuplicate(messageSid)) {
+      return res.status(200).json({ status: "duplicate_ignored" });
     }
 
     const result = await routeAgent("chat", {
@@ -492,41 +516,49 @@ app.post("/voice/outbound", async (req, res) => {
   }
 });
 
-app.post("/voice", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+app.post("/voice", mayaRateLimit, validateTimestamp, verifyTwilioSignature, async (req, res) => {
   const identity = String(req.body?.From ?? req.body?.CallSid ?? "");
+  const callSid = String(req.body?.CallSid ?? "");
 
-  if (!identity) {
+  if (!identity || !callSid) {
     return res.status(400).json({ error: "missing_identity" });
   }
 
-  if (hasSession(identity)) {
-    return res.status(409).json({ error: "session_already_active" });
+  if (isDuplicate(callSid)) {
+    return res.status(200).json({ status: "duplicate_ignored" });
+  }
+
+  if (!acquireLock(callSid)) {
+    return res.status(409).json({ error: "processing" });
   }
 
   try {
+    if (hasSession(identity)) {
+      return res.status(409).json({ error: "session_already_active" });
+    }
+
     startSession(identity);
     logger.info({ event: "call_started", identity });
-  } catch {
-    return res.status(409).json({ error: "session_already_active" });
+
+    const twiml = new VoiceResponse();
+    const gather = twiml.gather({
+      input: ["speech"],
+      action: "/voice/process",
+      speechTimeout: "auto"
+    });
+
+    gather.say(
+      "Hello. This is Maya from Boreal Financial. How can I assist you today?"
+    );
+
+    res.type("text/xml");
+    return res.send(twiml.toString());
+  } finally {
+    releaseLock(callSid);
   }
-
-  const twiml = new VoiceResponse();
-
-  const gather = twiml.gather({
-    input: ["speech"],
-    action: "/voice/process",
-    speechTimeout: "auto"
-  });
-
-  gather.say(
-    "Hello. This is Maya from Boreal Financial. How can I assist you today?"
-  );
-
-  res.type("text/xml");
-  res.send(twiml.toString());
 });
 
-app.post("/voice/process", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+app.post("/voice/process", mayaRateLimit, validateTimestamp, verifyTwilioSignature, async (req, res) => {
   try {
     if (!(await checkServerHealth())) {
       return res.json({
@@ -540,108 +572,127 @@ app.post("/voice/process", mayaRateLimit, verifyTwilioSignature, async (req, res
   }
 
   const speechResult = String(req.body?.SpeechResult ?? "").trim();
-  const from = String(req.body?.From ?? req.body?.CallSid ?? `voice-${Date.now()}`);
-  const twiml = new VoiceResponse();
+  const callSid = String(req.body?.CallSid ?? "");
+  const from = String(req.body?.From ?? callSid ?? `voice-${Date.now()}`);
 
-  if (!speechResult) {
-    const gather = twiml.gather({
-      input: ["speech"],
-      action: "/voice/process",
-      speechTimeout: "auto"
-    });
-
-    gather.say("I didn't catch that. Could you repeat your request?");
-    res.type("text/xml");
-    return res.send(twiml.toString());
+  if (!callSid) {
+    return res.status(400).json({ error: "missing_call_sid" });
   }
 
-  const pendingAction = pendingVoiceActions.get(from);
-  const isConfirm = ["confirm", "confirmed", "yes confirm"].includes(speechResult.toLowerCase());
-
-  if (pendingAction && isConfirm) {
-    const bookingExecution = await executeAction(pendingAction, {
-      mode: "client",
-      sessionId: from,
-      confirmed: true,
-      phone: from
-    });
-    pendingVoiceActions.delete(from);
-    const actionTimeout = pendingVoiceActionTimeouts.get(from);
-    if (actionTimeout) {
-      clearTimeout(actionTimeout);
-      pendingVoiceActionTimeouts.delete(from);
-    }
-    twiml.say(typeof bookingExecution.message === "string"
-      ? bookingExecution.message
-      : "Your request has been confirmed.");
-    await logCall(from, `Caller: ${speechResult}\nMaya: ${twiml.toString()}`);
-    const gather = twiml.gather({
-      input: ["speech"],
-      action: "/voice/process",
-      speechTimeout: "auto"
-    });
-    gather.say("Is there anything else I can help you with?");
-    res.type("text/xml");
-    return res.send(twiml.toString());
+  if (isDuplicate(`${callSid}:voice-process:${speechResult}`)) {
+    return res.status(200).json({ status: "duplicate_ignored" });
   }
 
-  const result = await routeAgent("chat", {
-    message: speechResult,
-    userId: from
-  });
+  if (!acquireLock(callSid)) {
+    return res.status(409).json({ error: "processing" });
+  }
 
-  const action = interpretAction(`${speechResult} ${result?.content ?? ""}`);
-  const escalated = action.type === "transfer";
+  try {
+    const twiml = new VoiceResponse();
 
-  twiml.say(result?.content ?? "Thank you. A specialist will follow up shortly.");
+    if (!speechResult) {
+      const gather = twiml.gather({
+        input: ["speech"],
+        action: "/voice/process",
+        speechTimeout: "auto"
+      });
 
-  if (action.requiresConfirmation) {
-    pendingVoiceActions.set(from, action);
-    const existingTimeout = pendingVoiceActionTimeouts.get(from);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
+      gather.say("I didn't catch that. Could you repeat your request?");
+      res.type("text/xml");
+      return res.send(twiml.toString());
     }
 
-    const timeout = setTimeout(() => {
+    const pendingAction = pendingVoiceActions.get(from);
+    const isConfirm = ["confirm", "confirmed", "yes confirm"].includes(speechResult.toLowerCase());
+
+    if (pendingAction && isConfirm) {
+      const bookingExecution = await executeAction(pendingAction, {
+        mode: "client",
+        sessionId: from,
+        confirmed: true,
+        phone: from
+      });
       pendingVoiceActions.delete(from);
-      pendingVoiceActionTimeouts.delete(from);
-    }, 10 * 60 * 1000);
-
-    pendingVoiceActionTimeouts.set(from, timeout);
-    twiml.say("Please say confirm to proceed.");
-  }
-
-  if (escalated) {
-    if (process.env.TRANSFER_NUMBER) {
-      twiml.say(
-        { voice: "alice" },
-        "Whisper: High value deal. Monthly revenue above 100K."
-      );
-
-      twiml.dial({
-        record: "record-from-answer",
-        action: "/voice/post-call"
-      }, process.env.TRANSFER_NUMBER);
-    } else {
-      twiml.say("A specialist will call you back shortly.");
+      const actionTimeout = pendingVoiceActionTimeouts.get(from);
+      if (actionTimeout) {
+        clearTimeout(actionTimeout);
+        pendingVoiceActionTimeouts.delete(from);
+      }
+      twiml.say(typeof bookingExecution.message === "string"
+        ? bookingExecution.message
+        : "Your request has been confirmed.");
+      await logCall(from, `Caller: ${speechResult}
+Maya: ${twiml.toString()}`);
+      const gather = twiml.gather({
+        input: ["speech"],
+        action: "/voice/process",
+        speechTimeout: "auto"
+      });
+      gather.say("Is there anything else I can help you with?");
+      res.type("text/xml");
+      return res.send(twiml.toString());
     }
-  } else {
-    const gather = twiml.gather({
-      input: ["speech"],
-      action: "/voice/process",
-      speechTimeout: "auto"
+
+    const result = await routeAgent("chat", {
+      message: speechResult,
+      userId: from
     });
-    gather.say("Is there anything else I can help you with?");
+
+    const action = interpretAction(`${speechResult} ${result?.content ?? ""}`);
+    const escalated = action.type === "transfer";
+
+    twiml.say(result?.content ?? "Thank you. A specialist will follow up shortly.");
+
+    if (action.requiresConfirmation) {
+      pendingVoiceActions.set(from, action);
+      const existingTimeout = pendingVoiceActionTimeouts.get(from);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
+      const timeout = setTimeout(() => {
+        pendingVoiceActions.delete(from);
+        pendingVoiceActionTimeouts.delete(from);
+      }, 10 * 60 * 1000);
+
+      pendingVoiceActionTimeouts.set(from, timeout);
+      twiml.say("Please say confirm to proceed.");
+    }
+
+    if (escalated) {
+      if (process.env.TRANSFER_NUMBER) {
+        twiml.say(
+          { voice: "alice" },
+          "Whisper: High value deal. Monthly revenue above 100K."
+        );
+
+        twiml.dial({
+          record: "record-from-answer",
+          action: "/voice/post-call"
+        }, process.env.TRANSFER_NUMBER);
+      } else {
+        twiml.say("A specialist will call you back shortly.");
+      }
+    } else {
+      const gather = twiml.gather({
+        input: ["speech"],
+        action: "/voice/process",
+        speechTimeout: "auto"
+      });
+      gather.say("Is there anything else I can help you with?");
+    }
+
+    await logCall(from, `Caller: ${speechResult}
+Maya: ${result?.content ?? ""}`);
+
+    res.type("text/xml");
+    return res.send(twiml.toString());
+  } finally {
+    releaseLock(callSid);
   }
-
-  await logCall(from, `Caller: ${speechResult}\nMaya: ${result?.content ?? ""}`);
-
-  res.type("text/xml");
-  res.send(twiml.toString());
 });
 
-
-app.post("/voice/post-call", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+app.post("/voice/post-call", mayaRateLimit, validateTimestamp, verifyTwilioSignature, async (req, res) => {
   try {
     const recordingUrl = String(req.body?.RecordingUrl ?? "");
     const callSid = String(req.body?.CallSid ?? "");
@@ -651,7 +702,16 @@ app.post("/voice/post-call", mayaRateLimit, verifyTwilioSignature, async (req, r
       return res.status(400).json({ error: "RecordingUrl and CallSid are required" });
     }
 
-    if (from) {
+    if (isDuplicate(`${callSid}:post-call`)) {
+      return res.status(200).json({ status: "duplicate_ignored" });
+    }
+
+    if (!acquireLock(callSid)) {
+      return res.status(409).json({ error: "processing" });
+    }
+
+    try {
+      if (from) {
       endSession(from);
       pendingVoiceActions.delete(from);
       const timeout = pendingVoiceActionTimeouts.get(from);
@@ -669,7 +729,7 @@ app.post("/voice/post-call", mayaRateLimit, verifyTwilioSignature, async (req, r
     await logCallSummary(callSid, summary, score);
 
     if (process.env.STAFF_SERVER_URL && process.env.MAYA_INTERNAL_TOKEN) {
-      await fetch(`${process.env.STAFF_SERVER_URL}/api/internal/call-summary`, {
+      await retryFetch(`${process.env.STAFF_SERVER_URL}/api/internal/call-summary`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -691,10 +751,13 @@ app.post("/voice/post-call", mayaRateLimit, verifyTwilioSignature, async (req, r
       }
     }
 
-    res.sendStatus(200);
+      return res.sendStatus(200);
+    } finally {
+      releaseLock(callSid);
+    }
   } catch (error) {
     logger.error("Post-call processing failed", { error });
-    res.sendStatus(500);
+    return res.sendStatus(500);
   }
 });
 
