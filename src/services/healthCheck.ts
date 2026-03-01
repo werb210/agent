@@ -1,4 +1,5 @@
 import { AppError } from "../errors/AppError";
+import { retryFetch } from "./retryFetch";
 
 export async function checkServerHealth() {
   const baseUrl = process.env.BF_SERVER_URL;
@@ -11,7 +12,7 @@ export async function checkServerHealth() {
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
-    const res = await fetch(`${baseUrl}/health`, { signal: controller.signal });
+    const res = await retryFetch(`${baseUrl}/health`, { signal: controller.signal });
 
     clearTimeout(timeout);
 
