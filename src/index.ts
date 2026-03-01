@@ -42,7 +42,9 @@ if (process.env.NODE_ENV === "production") {
   "DATABASE_URL",
   "TWILIO_ACCOUNT_SID",
   "TWILIO_AUTH_TOKEN",
-  "TWILIO_PHONE_NUMBER"
+  "TWILIO_PHONE_NUMBER",
+  "PUBLIC_WEBHOOK_URL",
+  "BF_SERVER_URL"
 ].forEach(requireEnvVar);
 
 app.get("/ready", async (_req, res) => {
@@ -74,18 +76,30 @@ async function start() {
   await redis.ping();
   await scheduleJobs();
 
-  setInterval(() => {
+  const retryInterval = setInterval(() => {
     void processRetryQueue();
   }, 30000);
 
-  setInterval(() => {
+  const retentionInterval = setInterval(() => {
     void runRetentionPurge();
   }, 24 * 60 * 60 * 1000);
 
   const port = Number(process.env.PORT || 4000);
-  app.listen(port, () => {
-    logger.info("Maya SMS Agent running", { port });
+  const server = app.listen(port, () => {
+    logger.info({ event: "maya_started", port });
   });
+
+  const shutdown = () => {
+    logger.info("Shutting down Maya gracefully...");
+    clearInterval(retryInterval);
+    clearInterval(retentionInterval);
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
 void start();

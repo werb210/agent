@@ -3,10 +3,12 @@ import { Router } from "express";
 import { prisma } from "../config/db";
 import { generateMayaResponse } from "../voice/mayaConversation";
 import { getSession, updateSession } from "../voice/sessionStore";
+import { verifyTwilioSignature } from "../middleware/verifyTwilio";
+import { mayaRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
+router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const speech = req.body.SpeechResult;
   const callSid = req.body.CallSid;
 

@@ -1,8 +1,10 @@
 import { Router } from "express";
+import { verifyTwilioSignature } from "../middleware/verifyTwilio";
+import { mayaRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.post("/", (_req, res) => {
+router.post("/", mayaRateLimit, verifyTwilioSignature, (_req, res) => {
   const twiml = `
     <Response>
       <Say voice="alice">
