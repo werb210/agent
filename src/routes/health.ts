@@ -1,17 +1,13 @@
-import { Router } from "express";
-import { getQueueLength } from "../queue/queue";
-import { getWorkerStats } from "../queue/worker";
+import { Request, Response, Router } from "express";
+import { queueLength } from "../queue/jobQueue";
 
-export const healthRouter = Router();
-const startedAt = Date.now();
-
-healthRouter.get("/agent/health", (_req, res) => {
-  const workerStats = getWorkerStats();
-
+export function health(_req: Request, res: Response) {
   res.json({
     status: "ok",
-    queue_length: getQueueLength(),
-    active_workers: workerStats.active_workers,
-    uptime: Math.floor((Date.now() - startedAt) / 1000)
+    queueLength: queueLength(),
+    uptime: process.uptime()
   });
-});
+}
+
+export const healthRouter = Router();
+healthRouter.get("/agent/health", health);

@@ -1,5 +1,5 @@
 import { logger } from "../infrastructure/logger";
-import { Job } from "./queue";
+import { Job } from "./jobQueue";
 
 type JobStatus = "started" | "completed" | "failed";
 

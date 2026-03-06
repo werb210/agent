@@ -1,23 +1,29 @@
-import documentOcr from "./documentOcr";
 import bankStatementAnalysis from "./bankStatementAnalysis";
+import documentOcr from "./documentOcr";
 import applicationSummary from "./applicationSummary";
 import offerNotification from "./offerNotification";
 import messageNotification from "./messageNotification";
 
 export const jobHandlers = {
-  document_ocr: documentOcr,
+  bankStatementAnalysis,
+  documentOcr,
+  applicationSummary,
+  offerNotification,
+  messageNotification
+};
+
+export const handlers = {
   bank_statement_analysis: bankStatementAnalysis,
+  document_ocr: documentOcr,
   application_summary: applicationSummary,
   offer_notification: offerNotification,
   message_notification: messageNotification
 } as const;
 
-export const handlers = jobHandlers;
-
-export type JobType = keyof typeof jobHandlers;
+export type JobType = keyof typeof handlers;
 
 export async function runJobHandler(jobType: string, payload: unknown): Promise<void> {
-  const handler = jobHandlers[jobType as JobType] as ((data: unknown) => Promise<void>) | undefined;
+  const handler = handlers[jobType as JobType] as ((data: unknown) => Promise<unknown>) | undefined;
 
   if (!handler) {
     throw new Error(`Unknown job type: ${jobType}`);

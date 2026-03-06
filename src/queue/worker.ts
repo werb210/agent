@@ -1,83 +1,72 @@
 import { runJobHandler } from "../jobs";
-import { dequeueJob, getQueueLength, requeueJob, type Job } from "./queue";
+import { dequeue, requeue, queueLength, type Job } from "./jobQueue";
 import { logJobComplete, logJobFailure, logJobStarted } from "./jobLogger";
 
+const MAX_ATTEMPTS = 3;
+let workerRunning = true;
 let activeWorkers = 0;
-let workerRunning = false;
-let loopTimer: NodeJS.Timeout | null = null;
 
 async function runJob(job: Job): Promise<void> {
   await runJobHandler(job.type, job.payload);
 }
 
-async function workOnce(): Promise<void> {
-  const job = dequeueJob();
-  if (!job) {
+function logJob(status: "completed" | "failed", job: Job, err?: unknown): void {
+  if (status === "completed") {
+    logJobComplete(job);
     return;
   }
 
-  activeWorkers += 1;
+  logJobFailure(job, err);
+}
 
-  if (job.attempts === 0) {
-    logJobStarted(job);
-  }
+export async function workerLoop() {
+  while (workerRunning) {
+    const job = dequeue();
 
-  try {
-    await runJob(job);
-    logJobComplete(job);
-  } catch (err) {
-    job.attempts += 1;
-
-    if (job.attempts < 3) {
-      requeueJob(job);
-    } else {
-      logJobFailure(job, err);
+    if (!job) {
+      await new Promise((r) => setTimeout(r, 500));
+      continue;
     }
-  } finally {
-    activeWorkers -= 1;
+
+    activeWorkers += 1;
+    if (job.attempts === 0) {
+      logJobStarted(job);
+    }
+
+    try {
+      await runJob(job);
+
+      logJob("completed", job);
+    } catch (err) {
+      job.attempts++;
+
+      if (job.attempts < MAX_ATTEMPTS) {
+        requeue(job);
+      } else {
+        logJob("failed", job, err);
+      }
+    } finally {
+      activeWorkers -= 1;
+    }
   }
 }
 
 export function startWorker({ concurrency = 1 }: { concurrency?: number } = {}): void {
-  if (workerRunning) {
-    return;
-  }
-
   workerRunning = true;
 
-  const loop = async () => {
-    if (!workerRunning) {
-      return;
-    }
-
-    const pending = getQueueLength();
-    const available = Math.max(0, concurrency - activeWorkers);
-
-    if (pending > 0 && available > 0) {
-      await Promise.all(Array.from({ length: Math.min(pending, available) }, () => workOnce()));
-    }
-
-    loopTimer = setTimeout(() => {
-      void loop();
-    }, 50);
-    loopTimer.unref();
-  };
-
-  void loop();
+  for (let i = 0; i < concurrency; i++) {
+    void workerLoop();
+  }
 }
 
 export function stopWorker(): void {
   workerRunning = false;
-
-  if (loopTimer) {
-    clearTimeout(loopTimer);
-    loopTimer = null;
-  }
 }
 
-export function getWorkerStats(): { active_workers: number; worker_running: boolean } {
+export function getWorkerStats(): { active_workers: number; worker_running: boolean; queue_length: number } {
   return {
     active_workers: activeWorkers,
-    worker_running: workerRunning
+    worker_running: workerRunning,
+    queue_length: queueLength()
   };
 }

@@ -1,7 +1,19 @@
-import { enqueueJob } from "../queue/queue";
+import crypto from "crypto";
+import { enqueue } from "../queue/jobQueue";
 import { eventBus } from "./eventBus";
 
 let listenersRegistered = false;
+
+function queueEventJob(type: string, entityId: string, payload: unknown): void {
+  enqueue({
+    id: crypto.randomUUID(),
+    type,
+    entityId,
+    payload,
+    attempts: 0,
+    createdAt: Date.now()
+  });
+}
 
 export function registerListeners(): void {
   if (listenersRegistered) {
@@ -11,52 +23,31 @@ export function registerListeners(): void {
   listenersRegistered = true;
 
   eventBus.on("application_created", (event) => {
-    enqueueJob({
-      type: "application_summary",
-      entityId: String(event?.applicationId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
   });
 
   eventBus.on("document_uploaded", (event) => {
     const documentType = String(event?.documentType ?? "").toLowerCase();
-
-    enqueueJob({
-      type: documentType.includes("bank") ? "bank_statement_analysis" : "document_ocr",
-      entityId: String(event?.documentId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob(
+      documentType.includes("bank") ? "bank_statement_analysis" : "document_ocr",
+      String(event?.documentId ?? event?.id ?? ""),
+      event
+    );
   });
 
   eventBus.on("documents_complete", (event) => {
-    enqueueJob({
-      type: "application_summary",
-      entityId: String(event?.applicationId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
   });
 
   eventBus.on("offer_created", (event) => {
-    enqueueJob({
-      type: "offer_notification",
-      entityId: String(event?.offerId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
   });
 
   eventBus.on("offer_accepted", (event) => {
-    enqueueJob({
-      type: "offer_notification",
-      entityId: String(event?.offerId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
   });
 
   eventBus.on("message_received", (event) => {
-    enqueueJob({
-      type: "message_notification",
-      entityId: String(event?.messageId ?? event?.id ?? ""),
-      payload: event
-    });
+    queueEventJob("message_notification", String(event?.messageId ?? event?.id ?? ""), event);
   });
 }
