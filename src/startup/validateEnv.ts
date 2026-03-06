@@ -5,9 +5,15 @@ const REQUIRED = [
 ]
 
 export function validateEnv() {
-  for (const key of REQUIRED) {
-    if (!process.env[key]) {
-      throw new Error(`Missing environment variable: ${key}`)
-    }
+
+  const missing = REQUIRED.filter(v => !process.env[v])
+
+  if (missing.length) {
+
+    console.error("Missing environment variables:", missing.join(","))
+
+    process.exit(1)
+
   }
+
 }

@@ -1,15 +1,18 @@
-import { Router } from "express"
+import express from "express"
 import { queueLength } from "../queue/jobQueue"
 
-const router = Router()
+const router = express.Router()
 
-router.get("/agent/health", (_, res) => {
+const start = Date.now()
+
+router.get("/agent/health", (req, res) => {
+
   res.json({
     status: "ok",
-    queue: queueLength(),
-    uptime: process.uptime()
+    uptime: Date.now() - start,
+    queueDepth: queueLength()
   })
+
 })
 
-export const healthRouter = router
 export default router

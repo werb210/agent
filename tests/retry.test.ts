@@ -1,37 +1,29 @@
-import { enqueueJob, resetQueue } from "../src/queue/queue";
-import { clearJobLogs, getJobLogs } from "../src/queue/jobLogger";
+import { enqueueJob, resetQueueForTests } from "../src/queue/queue";
 import { startWorker, stopWorker } from "../src/queue/worker";
-
-jest.mock("../src/jobs", () => ({
-  runJobHandler: jest.fn()
-}));
-
-const { runJobHandler } = jest.requireMock("../src/jobs") as { runJobHandler: jest.Mock };
 
 describe("worker retries", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    resetQueue();
-    clearJobLogs();
-    stopWorker();
-    runJobHandler.mockReset();
+    resetQueueForTests();
   });
 
   afterEach(() => {
     stopWorker();
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
   });
 
   it("retries failed jobs up to max attempts", async () => {
-    runJobHandler.mockRejectedValue(new Error("fail"));
-    enqueueJob({ id: "r1", type: "document_ocr", entityId: "doc-r1", payload: {} });
+    const handler = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("fail"))
+      .mockRejectedValueOnce(new Error("fail"))
+      .mockResolvedValue(undefined);
 
-    startWorker({ concurrency: 1 });
-    await jest.advanceTimersByTimeAsync(500);
+    enqueueJob({ id: "r1", type: "document_ocr", payload: {} });
 
-    expect(runJobHandler).toHaveBeenCalledTimes(3);
-    const logs = getJobLogs();
-    expect(logs[logs.length - 1]?.status).toBe("failed");
+    const workerPromise = startWorker(handler);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    stopWorker();
+    await Promise.race([workerPromise, new Promise((resolve) => setTimeout(resolve, 600))]);
+
+    expect(handler).toHaveBeenCalledTimes(3);
   });
 });

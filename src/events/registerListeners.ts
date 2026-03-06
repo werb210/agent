@@ -8,9 +8,10 @@ function queueEventJob(type: string, entityId: string, payload: unknown): void {
   enqueue({
     id: crypto.randomUUID(),
     type,
-    entityId,
-    payload,
-    attempts: 0,
+    payload: {
+      ...((payload as Record<string, unknown>) ?? {}),
+      entityId
+    },
     createdAt: Date.now()
   });
 }

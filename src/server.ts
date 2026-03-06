@@ -54,8 +54,8 @@ import { sanitizeString } from "./security/sanitizer";
 import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
 import { checkServerHealth } from "./services/healthCheck";
 import { endSession, hasSession, startSession } from "./services/sessionManager";
-import { getQueueStats } from "./queue/jobQueue";
-import { healthRouter } from "./routes/health";
+import { queueLength } from "./queue/jobQueue";
+import healthRouter from "./routes/health";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -169,12 +169,10 @@ app.get("/health", (_req, res) => {
 app.use(healthRouter);
 
 app.get("/maya/health", async (_req, res) => {
-  const queueStats = getQueueStats();
-
   res.json({
     status: "ok",
-    queue_length: queueStats.queue_length,
-    workers: queueStats.workers
+    queue_length: queueLength(),
+    workers: 1
   });
 });
 
