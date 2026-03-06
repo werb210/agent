@@ -162,10 +162,6 @@ app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
 });
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
 app.use(healthRouter);
 
 app.get("/maya/health", async (_req, res) => {
