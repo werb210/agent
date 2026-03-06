@@ -11,6 +11,7 @@ router.get("/health", (req, res) => {
     status: "ok",
     uptime: process.uptime(),
     queueDepth: metrics.queueDepth,
+    worker: metrics.worker,
     timestamp: metrics.timestamp
   })
 
