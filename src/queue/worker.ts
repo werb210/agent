@@ -1,66 +1,54 @@
-import { runJobHandler } from "../jobs";
-import { dequeue, requeue, queueLength, type Job } from "./jobQueue";
-import { logJobComplete, logJobFailure, logJobStarted } from "./jobLogger";
+import { dequeue, enqueue, queueLength } from "./jobQueue"
+import { runJobHandler } from "../jobs"
+import { logJobComplete, logJobFailure, logJobStarted } from "./jobLogger"
 
-const MAX_ATTEMPTS = 3;
-let workerRunning = true;
-let activeWorkers = 0;
-
-async function runJob(job: Job): Promise<void> {
-  await runJobHandler(job.type, job.payload);
-}
-
-function logJob(status: "completed" | "failed", job: Job, err?: unknown): void {
-  if (status === "completed") {
-    logJobComplete(job);
-    return;
-  }
-
-  logJobFailure(job, err);
-}
+const MAX_ATTEMPTS = 3
+let workerRunning = true
+let activeWorkers = 0
 
 export async function workerLoop() {
   while (workerRunning) {
-    const job = dequeue();
+    const job = dequeue()
 
     if (!job) {
-      await new Promise((r) => setTimeout(r, 500));
-      continue;
+      await new Promise(r => setTimeout(r, 500))
+      continue
     }
 
-    activeWorkers += 1;
+    activeWorkers += 1
     if (job.attempts === 0) {
-      logJobStarted(job);
+      logJobStarted(job)
     }
 
     try {
-      await runJob(job);
-
-      logJob("completed", job);
+      await runJobHandler(job.type, job.payload)
+      logJobComplete(job)
     } catch (err) {
-      job.attempts++;
+      job.attempts++
 
       if (job.attempts < MAX_ATTEMPTS) {
-        requeue(job);
+        console.warn("Retrying job", job.id)
+        enqueue(job)
       } else {
-        logJob("failed", job, err);
+        console.error("Job failed permanently", job.id)
+        logJobFailure(job, err)
       }
     } finally {
-      activeWorkers -= 1;
+      activeWorkers -= 1
     }
   }
 }
 
 export function startWorker({ concurrency = 1 }: { concurrency?: number } = {}): void {
-  workerRunning = true;
+  workerRunning = true
 
   for (let i = 0; i < concurrency; i++) {
-    void workerLoop();
+    void workerLoop()
   }
 }
 
 export function stopWorker(): void {
-  workerRunning = false;
+  workerRunning = false
 }
 
 export function getWorkerStats(): { active_workers: number; worker_running: boolean; queue_length: number } {
@@ -68,5 +56,5 @@ export function getWorkerStats(): { active_workers: number; worker_running: bool
     active_workers: activeWorkers,
     worker_running: workerRunning,
     queue_length: queueLength()
-  };
+  }
 }

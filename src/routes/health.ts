@@ -1,13 +1,15 @@
-import { Request, Response, Router } from "express";
-import { queueLength } from "../queue/jobQueue";
+import { Router } from "express"
+import { queueLength } from "../queue/jobQueue"
 
-export function health(_req: Request, res: Response) {
+const router = Router()
+
+router.get("/agent/health", (_, res) => {
   res.json({
     status: "ok",
-    queueLength: queueLength(),
+    queue: queueLength(),
     uptime: process.uptime()
-  });
-}
+  })
+})
 
-export const healthRouter = Router();
-healthRouter.get("/agent/health", health);
+export const healthRouter = router
+export default router
