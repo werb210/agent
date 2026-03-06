@@ -26,3 +26,5 @@ export async function notifyMessage(payload: MessageNotificationPayload): Promis
     throw new Error(`messageNotification.ts failed: ${response.status}`);
   }
 }
+
+export default notifyMessage;

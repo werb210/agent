@@ -12,15 +12,11 @@ import { processRetryQueue } from "./core/retryWorker";
 import { runRetentionPurge } from "./compliance/purgeJob";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { clearLocks } from "./services/lock.service";
-import { registerSystemEventListeners } from "./events/systemEvents";
+import { registerListeners } from "./events/registerListeners";
+import { validateEnv } from "./startup/validateEnv";
+import { startWorker } from "./queue/worker";
 
-const requiredEnv = ["PORT", "BF_SERVER_URL", "OPENAI_API_KEY", "BF_SERVER_API", "MAYA_SECRET"];
-
-requiredEnv.forEach((key) => {
-  if (!process.env[key]) {
-    throw new AppError("internal_error", 500, `Missing required env var: ${key}`);
-  }
-});
+validateEnv();
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -94,7 +90,8 @@ async function scheduleJobs() {
 
 async function start() {
   registerMayaAgents();
-  registerSystemEventListeners();
+  registerListeners();
+  startWorker({ concurrency: 2 });
   await pool.connect();
   await redis.ping();
   await scheduleJobs();
@@ -109,7 +106,7 @@ async function start() {
 
   const port = Number(process.env.PORT || 4000);
   const server = app.listen(port, () => {
-    logger.info({ event: "maya_started", port });
+    logger.info("Agent service started", { port });
   });
 
   const shutdown = () => {
