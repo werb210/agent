@@ -6,6 +6,12 @@ export type DocumentOcrPayload = {
   documentType?: string;
 };
 
+type OcrResult = {
+  documentType: string;
+  fields: Record<string, string>;
+  confidence: number;
+};
+
 function detectDocumentType(payload: DocumentOcrPayload): string {
   if (payload.documentType) return payload.documentType;
 
@@ -15,27 +21,23 @@ function detectDocumentType(payload: DocumentOcrPayload): string {
   return "general_document";
 }
 
-export async function runDocumentOCR(payload: DocumentOcrPayload): Promise<void> {
+function toStructuredFields(rawText: string): Record<string, string> {
+  return {
+    rawText
+  };
+}
+
+export async function runDocumentOCR(payload: DocumentOcrPayload): Promise<OcrResult> {
   const documentType = detectDocumentType(payload);
-  const result = await extractTextFromDocument(payload.documentUrl);
-  const apiBase = process.env.BF_SERVER_API;
+  const text = await extractTextFromDocument(payload.documentUrl);
 
-  if (!apiBase) {
-    throw new Error("BF_SERVER_API missing");
-  }
+  const result: OcrResult = {
+    documentType,
+    fields: toStructuredFields(text),
+    confidence: text ? 0.9 : 0
+  };
 
-  const response = await fetch(`${apiBase}/documents/ocr-result`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.MAYA_SECRET ?? ""}`
-    },
-    body: JSON.stringify({ documentId: payload.documentId, documentType, result })
-  });
-
-  if (!response.ok) {
-    throw new Error(`documentOcr.ts failed: ${response.status}`);
-  }
+  return result;
 }
 
 export default runDocumentOCR;

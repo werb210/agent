@@ -1,39 +1,50 @@
-import { clearRecentJobs } from "./jobDeduper";
-import { enqueueJob, getQueueLength, resetQueue, type Job } from "./queue";
+import { isDuplicate, clearRecentJobs } from "./jobDeduper";
 import { clearJobLogs } from "./jobLogger";
-import { getWorkerStats, startWorker, stopWorker } from "./worker";
 
-let autoWorkerStarted = false;
+export interface Job {
+  id: string;
+  type: string;
+  entityId?: string;
+  payload: any;
+  attempts: number;
+  createdAt: number;
+}
 
-function ensureWorkerStarted(): void {
-  if (autoWorkerStarted) {
+const queue: Job[] = [];
+
+export function enqueue(job: Job) {
+  if (isDuplicate(job.type, job.entityId)) {
     return;
   }
 
-  startWorker({ concurrency: 2 });
-  autoWorkerStarted = true;
+  queue.push(job);
 }
 
-export async function enqueue(job: Omit<Job, "attempts" | "createdAt"> & Partial<Pick<Job, "attempts" | "createdAt">>): Promise<void> {
-  ensureWorkerStarted();
-  enqueueJob(job);
+export function requeue(job: Job) {
+  queue.push(job);
+}
+
+export function dequeue(): Job | undefined {
+  return queue.shift();
+}
+
+export function queueLength() {
+  return queue.length;
+}
+
+export function getQueueSnapshot(): Job[] {
+  return [...queue];
 }
 
 export function getQueueStats() {
-  const workerStats = getWorkerStats();
-
   return {
-    queue_length: getQueueLength(),
-    active_workers: workerStats.active_workers,
-    workers: 2,
-    running: workerStats.worker_running
+    queue_length: queueLength(),
+    workers: 2
   };
 }
 
 export function resetQueueForTests(): void {
-  resetQueue();
+  queue.length = 0;
   clearRecentJobs();
   clearJobLogs();
-  stopWorker();
-  autoWorkerStarted = false;
 }

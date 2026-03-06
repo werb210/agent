@@ -1,22 +1,25 @@
-const recentJobs = new Map<string, number>();
-const DEDUPE_WINDOW_MS = 30_000;
+export const recentJobs = new Map<string, number>();
 
-export function shouldEnqueue(jobType: string, entityId?: string): boolean {
-  if (!entityId) {
+export function isDuplicate(jobType: string, entityId?: string) {
+  if (!entityId) return false;
+
+  const key = `${jobType}:${entityId}`;
+  const now = Date.now();
+
+  const last = recentJobs.get(key);
+
+  if (last && now - last < 30000) {
     return true;
   }
 
-  const key = `${jobType}:${entityId}`;
-  const last = recentJobs.get(key);
-
-  if (last && Date.now() - last < DEDUPE_WINDOW_MS) {
-    return false;
-  }
-
-  recentJobs.set(key, Date.now());
-  return true;
+  recentJobs.set(key, now);
+  return false;
 }
 
 export function clearRecentJobs(): void {
   recentJobs.clear();
+}
+
+export function shouldEnqueue(jobType: string, entityId?: string): boolean {
+  return !isDuplicate(jobType, entityId);
 }

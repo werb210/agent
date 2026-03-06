@@ -1,22 +1,9 @@
 import crypto from "crypto";
-import { shouldEnqueue } from "./jobDeduper";
+import { enqueue, dequeue, queueLength, requeue, resetQueueForTests, getQueueSnapshot as snapshot, type Job } from "./jobQueue";
 
-export interface Job {
-  id: string;
-  type: string;
-  entityId?: string;
-  payload: unknown;
-  attempts: number;
-  createdAt: number;
-}
-
-const queue: Job[] = [];
+export type { Job };
 
 export function enqueueJob(input: Omit<Job, "id" | "attempts" | "createdAt"> & Partial<Pick<Job, "id" | "attempts" | "createdAt">>): Job | null {
-  if (!shouldEnqueue(input.type, input.entityId)) {
-    return null;
-  }
-
   const job: Job = {
     id: input.id ?? crypto.randomUUID(),
     type: input.type,
@@ -26,26 +13,28 @@ export function enqueueJob(input: Omit<Job, "id" | "attempts" | "createdAt"> & P
     createdAt: input.createdAt ?? Date.now()
   };
 
-  queue.push(job);
-  return job;
+  const before = queueLength();
+  enqueue(job);
+
+  return queueLength() > before ? job : null;
 }
 
 export function dequeueJob(): Job | undefined {
-  return queue.shift();
+  return dequeue();
 }
 
 export function requeueJob(job: Job): void {
-  queue.push(job);
+  requeue(job);
 }
 
 export function getQueueLength(): number {
-  return queue.length;
+  return queueLength();
 }
 
 export function getQueueSnapshot(): Job[] {
-  return [...queue];
+  return snapshot();
 }
 
 export function resetQueue(): void {
-  queue.length = 0;
+  resetQueueForTests();
 }
