@@ -12,8 +12,9 @@ import { processRetryQueue } from "./core/retryWorker";
 import { runRetentionPurge } from "./compliance/purgeJob";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { clearLocks } from "./services/lock.service";
+import { registerSystemEventListeners } from "./events/systemEvents";
 
-const requiredEnv = ["PORT", "BF_SERVER_URL"];
+const requiredEnv = ["PORT", "BF_SERVER_URL", "OPENAI_API_KEY", "BF_SERVER_API", "MAYA_SECRET"];
 
 requiredEnv.forEach((key) => {
   if (!process.env[key]) {
@@ -56,7 +57,9 @@ if (process.env.NODE_ENV === "production") {
   "TWILIO_AUTH_TOKEN",
   "TWILIO_PHONE_NUMBER",
   "PUBLIC_WEBHOOK_URL",
-  "BF_SERVER_URL"
+  "BF_SERVER_URL",
+  "BF_SERVER_API",
+  "MAYA_SECRET"
 ].forEach(requireEnvVar);
 
 app.get("/ready", async (_req, res) => {
@@ -91,6 +94,7 @@ async function scheduleJobs() {
 
 async function start() {
   registerMayaAgents();
+  registerSystemEventListeners();
   await pool.connect();
   await redis.ping();
   await scheduleJobs();

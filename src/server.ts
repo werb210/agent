@@ -54,6 +54,7 @@ import { sanitizeString } from "./security/sanitizer";
 import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
 import { checkServerHealth } from "./services/healthCheck";
 import { endSession, hasSession, startSession } from "./services/sessionManager";
+import { getQueueStats } from "./queue/jobQueue";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -165,12 +166,12 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/maya/health", async (_req, res) => {
+  const queueStats = getQueueStats();
+
   res.json({
-    status: "operational",
-    redis: true,
-    queue: true,
-    llm: true,
-    timestamp: new Date()
+    status: "ok",
+    queue_length: queueStats.queue_length,
+    workers: queueStats.workers
   });
 });
 
