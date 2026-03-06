@@ -51,3 +51,5 @@ export async function generateSummary(payload: ApplicationSummaryPayload): Promi
     throw new Error(`applicationSummary.ts failed: ${response.status}`);
   }
 }
+
+export default generateSummary;

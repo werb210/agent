@@ -55,6 +55,7 @@ import { calculateConfidence as calculateMLConfidence } from "./core/confidenceS
 import { checkServerHealth } from "./services/healthCheck";
 import { endSession, hasSession, startSession } from "./services/sessionManager";
 import { getQueueStats } from "./queue/jobQueue";
+import { healthRouter } from "./routes/health";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -164,6 +165,8 @@ app.get("/", (_, res) => {
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use(healthRouter);
 
 app.get("/maya/health", async (_req, res) => {
   const queueStats = getQueueStats();

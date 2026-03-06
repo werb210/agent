@@ -27,3 +27,5 @@ export async function notifyOffer(payload: OfferNotificationPayload): Promise<vo
     throw new Error(`offerNotification.ts failed: ${response.status}`);
   }
 }
+
+export default notifyOffer;

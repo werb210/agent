@@ -61,3 +61,5 @@ export async function runBankAnalysis(payload: BankAnalysisPayload): Promise<voi
     throw new Error(`bankAnalysis.ts failed: ${response.status}`);
   }
 }
+
+export default runBankAnalysis;

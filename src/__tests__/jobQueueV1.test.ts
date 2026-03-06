@@ -1,5 +1,5 @@
 import { eventBus } from "../events/eventBus";
-import { registerSystemEventListeners } from "../events/systemEvents";
+import { registerListeners } from "../events/registerListeners";
 import { handlers } from "../jobs";
 import { enqueue, getQueueStats, resetQueueForTests } from "../queue/jobQueue";
 import { clearJobLogs, getJobLogs } from "../services/jobLogger";
@@ -24,7 +24,7 @@ describe("maya v1 queue", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    resetQueueForTests();
     jest.useRealTimers();
   });
 
@@ -32,7 +32,7 @@ describe("maya v1 queue", () => {
     runJobHandler.mockResolvedValue(undefined);
 
     await enqueue({ id: "job-1", type: "document_ocr", payload: { id: "d1" }, entityId: "d1" });
-    await jest.runAllTimersAsync();
+    await jest.advanceTimersByTimeAsync(500);
 
     expect(runJobHandler).toHaveBeenCalledWith("document_ocr", { id: "d1" });
     expect(getQueueStats().queue_length).toBe(0);
@@ -43,7 +43,7 @@ describe("maya v1 queue", () => {
     runJobHandler.mockRejectedValue(new Error("fail"));
 
     await enqueue({ id: "job-2", type: "document_ocr", payload: { id: "d2" }, entityId: "d2" });
-    await jest.runAllTimersAsync();
+    await jest.advanceTimersByTimeAsync(500);
 
     expect(runJobHandler).toHaveBeenCalledTimes(3);
     expect(getJobLogs()[0]?.status).toBe("failed");
@@ -60,12 +60,13 @@ describe("maya v1 queue", () => {
   });
 
   it("enqueues jobs for system events", async () => {
-    const spy = jest.spyOn(require("../queue/jobQueue"), "enqueue").mockResolvedValue(undefined);
-    registerSystemEventListeners();
+    const spy = jest.spyOn(require("../queue/queue"), "enqueueJob");
+    registerListeners();
 
     eventBus.emit("document_uploaded", { documentId: "doc-1", documentType: "bank_statement" });
     eventBus.emit("offer_created", { offerId: "off-1" });
 
+    await Promise.resolve();
     await Promise.resolve();
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: "bank_statement_analysis", entityId: "doc-1" }));
