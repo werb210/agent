@@ -1,16 +1,17 @@
-import express from "express"
-import { queueLength } from "../queue/jobQueue"
+import { Router } from "express"
+import { getQueueMetrics } from "../observability/queueMetrics"
 
-const router = express.Router()
+const router = Router()
 
-const start = Date.now()
+router.get("/health", (req, res) => {
 
-router.get("/agent/health", (req, res) => {
+  const metrics = getQueueMetrics()
 
   res.json({
     status: "ok",
-    uptime: Date.now() - start,
-    queueDepth: queueLength()
+    uptime: process.uptime(),
+    queueDepth: metrics.queueDepth,
+    timestamp: metrics.timestamp
   })
 
 })

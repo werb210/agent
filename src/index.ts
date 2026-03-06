@@ -15,6 +15,7 @@ import { clearLocks } from "./services/lock.service";
 import { registerListeners } from "./events/registerListeners";
 import { validateEnv } from "./startup/validateEnv";
 import { startWorker } from "./queue/worker";
+import { setupShutdown } from "./startup/registerShutdown";
 
 validateEnv();
 
@@ -91,6 +92,7 @@ async function scheduleJobs() {
 async function start() {
   registerMayaAgents();
   registerListeners();
+  setupShutdown();
   for (let i = 0; i < 2; i++) {
     void startWorker(async () => {
       // placeholder worker loop for v1 queue wiring
