@@ -2,9 +2,9 @@ import { stopWorker } from "./worker"
 
 export function registerShutdownHooks() {
 
-  const shutdown = async () => {
+  const shutdown = () => {
     console.log("Agent shutdown requested")
-    await stopWorker()
+    stopWorker()
     process.exit(0)
   }
 
