@@ -1,14 +1,12 @@
-import { enqueueJob, getQueueLength, resetQueue } from "../src/queue/queue";
-import { clearRecentJobs } from "../src/queue/jobDeduper";
+import { enqueueJob, getQueueLength, resetQueueForTests } from "../src/queue/queue";
 
 describe("queue", () => {
   beforeEach(() => {
-    resetQueue();
-    clearRecentJobs();
+    resetQueueForTests();
   });
 
   it("enqueues jobs", () => {
-    const job = enqueueJob({ type: "document_ocr", entityId: "doc-1", payload: { ok: true } });
+    const job = enqueueJob({ type: "document_ocr", payload: { ok: true } });
 
     expect(job).not.toBeNull();
     expect(getQueueLength()).toBe(1);

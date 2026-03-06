@@ -1,15 +1,13 @@
 import crypto from "crypto";
-import { enqueue, dequeue, queueLength, requeue, resetQueueForTests, getQueueSnapshot as snapshot, type Job } from "./jobQueue";
+import { enqueue, dequeue, queueLength, snapshot, resetQueue, type Job } from "./jobQueue";
 
 export type { Job };
 
-export function enqueueJob(input: Omit<Job, "id" | "attempts" | "createdAt"> & Partial<Pick<Job, "id" | "attempts" | "createdAt">>): Job | null {
+export function enqueueJob(input: Omit<Job, "id" | "createdAt"> & Partial<Pick<Job, "id" | "createdAt">>): Job | null {
   const job: Job = {
     id: input.id ?? crypto.randomUUID(),
     type: input.type,
-    entityId: input.entityId,
     payload: input.payload,
-    attempts: input.attempts ?? 0,
     createdAt: input.createdAt ?? Date.now()
   };
 
@@ -24,7 +22,7 @@ export function dequeueJob(): Job | undefined {
 }
 
 export function requeueJob(job: Job): void {
-  requeue(job);
+  enqueue(job);
 }
 
 export function getQueueLength(): number {
@@ -35,6 +33,6 @@ export function getQueueSnapshot(): Job[] {
   return snapshot();
 }
 
-export function resetQueue(): void {
-  resetQueueForTests();
+export function resetQueueForTests(): void {
+  resetQueue();
 }

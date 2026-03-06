@@ -14,7 +14,7 @@ import { errorMiddleware } from "./middleware/error.middleware";
 import { clearLocks } from "./services/lock.service";
 import { registerListeners } from "./events/registerListeners";
 import { validateEnv } from "./startup/validateEnv";
-import { workerLoop } from "./queue/worker";
+import { startWorker } from "./queue/worker";
 
 validateEnv();
 
@@ -92,7 +92,9 @@ async function start() {
   registerMayaAgents();
   registerListeners();
   for (let i = 0; i < 2; i++) {
-    void workerLoop();
+    void startWorker(async () => {
+      // placeholder worker loop for v1 queue wiring
+    });
   }
   await pool.connect();
   await redis.ping();

@@ -1,26 +1,18 @@
-const recentJobs = new Map<string, number>()
+const seen: Map<string, number> = new Map()
 
-const DEDUPE_WINDOW = 30000
+const WINDOW = 30000
 
-function toKey(jobTypeOrKey: string, entityId?: string): string {
-  return entityId ? `${jobTypeOrKey}:${entityId}` : jobTypeOrKey
-}
+export function shouldEnqueue(key: string) {
 
-export function shouldEnqueue(jobTypeOrKey: string, entityId?: string): boolean {
-  const key = toKey(jobTypeOrKey, entityId)
   const now = Date.now()
 
-  if (recentJobs.has(key)) {
-    const last = recentJobs.get(key)!
-    if (now - last < DEDUPE_WINDOW) {
-      return false
-    }
+  const last = seen.get(key)
+
+  if (last && now - last < WINDOW) {
+    return false
   }
 
-  recentJobs.set(key, now)
-  return true
-}
+  seen.set(key, now)
 
-export function clearRecentJobs(): void {
-  recentJobs.clear()
+  return true
 }

@@ -1,13 +1,14 @@
-import { dequeue, enqueue, queueLength } from "./jobQueue"
-import { runJobHandler } from "../jobs"
-import { logJobComplete, logJobFailure, logJobStarted } from "./jobLogger"
+import { dequeue } from "./jobQueue"
 
 const MAX_ATTEMPTS = 3
-let workerRunning = true
-let activeWorkers = 0
+let running = true
 
-export async function workerLoop() {
-  while (workerRunning) {
+export async function startWorker(handler: (job: any) => Promise<void>) {
+
+  running = true
+
+  while (running) {
+
     const job = dequeue()
 
     if (!job) {
@@ -15,46 +16,32 @@ export async function workerLoop() {
       continue
     }
 
-    activeWorkers += 1
-    if (job.attempts === 0) {
-      logJobStarted(job)
-    }
+    let attempts = 0
 
-    try {
-      await runJobHandler(job.type, job.payload)
-      logJobComplete(job)
-    } catch (err) {
-      job.attempts++
+    while (attempts < MAX_ATTEMPTS) {
 
-      if (job.attempts < MAX_ATTEMPTS) {
-        console.warn("Retrying job", job.id)
-        enqueue(job)
-      } else {
-        console.error("Job failed permanently", job.id)
-        logJobFailure(job, err)
+      try {
+
+        await handler(job)
+
+        break
+
+      } catch (err) {
+
+        attempts++
+
+        if (attempts >= MAX_ATTEMPTS) {
+          console.error("JOB FAILED", job.id)
+        }
+
       }
-    } finally {
-      activeWorkers -= 1
+
     }
+
   }
+
 }
 
-export function startWorker({ concurrency = 1 }: { concurrency?: number } = {}): void {
-  workerRunning = true
-
-  for (let i = 0; i < concurrency; i++) {
-    void workerLoop()
-  }
-}
-
-export function stopWorker(): void {
-  workerRunning = false
-}
-
-export function getWorkerStats(): { active_workers: number; worker_running: boolean; queue_length: number } {
-  return {
-    active_workers: activeWorkers,
-    worker_running: workerRunning,
-    queue_length: queueLength()
-  }
+export function stopWorker() {
+  running = false
 }
