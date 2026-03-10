@@ -7,7 +7,7 @@ type SessionState = {
 };
 
 export async function getSessionState(sessionId: string): Promise<SessionState> {
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT stage, context
      FROM sessions
      WHERE id::text = $1 OR session_id = $1
@@ -30,7 +30,7 @@ export async function updateSessionState(
   stage: SessionStage,
   context: Record<string, unknown>
 ): Promise<void> {
-  await pool.query(
+  await pool.request(
     `UPDATE sessions
      SET stage = $2,
          context = $3,
@@ -54,7 +54,7 @@ export async function updateSessionState(
           : null;
     const funded = typeof context.funded === "boolean" ? context.funded : false;
 
-    await pool.query(
+    await pool.request(
       `INSERT INTO marketing_sessions (session_id, utm_source, utm_campaign, booked, funded)
        VALUES ($1, $2, $3, true, $4)
        ON CONFLICT (session_id)

@@ -6,7 +6,8 @@ import { logAudit } from "../infrastructure/mayaAudit";
 
 jest.mock("../db", () => ({
   pool: {
-    query: jest.fn()
+    query: jest.fn(),
+    request: jest.fn()
   }
 }));
 
@@ -51,9 +52,9 @@ describe("checkStartupProductLaunch", () => {
     await checkStartupProductLaunch();
 
     expect(sendStartupNotification).toHaveBeenCalledTimes(2);
-    expect((pool.query as jest.Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
+    expect((pool.request as jest.Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
     expect(launchStartupCampaign).toHaveBeenCalledTimes(1);
-    expect((pool.query as jest.Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
+    expect((pool.request as jest.Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
     expect(logAudit).toHaveBeenCalledWith("maya", "startup_product_launch", {
       product_id: "product-1",
       notified: 2

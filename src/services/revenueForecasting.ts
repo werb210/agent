@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function forecastPipelineRevenue() {
-  const res = await pool.query(
+  const res = await pool.request(
     "SELECT probability, requested_amount FROM maya_live_scores"
   );
 

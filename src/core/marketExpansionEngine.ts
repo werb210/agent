@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function identifyExpansionMarkets() {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT industry,
            COUNT(*) FILTER (WHERE funded=true) AS wins,
            COUNT(*) AS total

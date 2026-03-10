@@ -10,7 +10,7 @@ type ChannelPerformanceRow = {
 const CACHE_KEY = "maya:campaign-performance";
 
 export async function recordAttribution(data: any) {
-  await pool.query(
+  await pool.request(
     "INSERT INTO maya_attribution (lead_id, source, medium, campaign, revenue) VALUES ($1,$2,$3,$4,$5)",
     [data.lead_id, data.source, data.medium, data.campaign, data.revenue]
   );

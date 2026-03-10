@@ -176,7 +176,7 @@ async function handleBooking(session: any, requestedISO: string) {
     session.user_email || "client@example.com"
   );
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions
      SET assigned_broker_id = $1,
          stage = 'booked'
@@ -186,7 +186,7 @@ async function handleBooking(session: any, requestedISO: string) {
 
   await transitionSessionState(session.session_id, "booked");
 
-  await pool.query(
+  await pool.request(
     `UPDATE staff_calendar
      SET last_assigned_at = NOW()
      WHERE id = $1`,
@@ -218,7 +218,7 @@ async function structuredQualificationFlow(
   }
 
   if (detectEscalation(userMessage)) {
-    await pool.query(
+    await pool.request(
       `UPDATE sessions
        SET escalation = 'requested', stage = 'escalated'
        WHERE session_id = $1`,
@@ -233,7 +233,7 @@ async function structuredQualificationFlow(
     data[extracted.field] = extracted.value;
   }
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions SET qualification_data = $1 WHERE session_id = $2`,
     [data, session.session_id]
   );
@@ -241,7 +241,7 @@ async function structuredQualificationFlow(
   const missing = REQUIRED_FIELDS.filter((f) => !data[f]);
 
   if (missing.length === 0) {
-    await pool.query(
+    await pool.request(
       `UPDATE sessions
        SET stage = 'qualified', tier = 'warm'
        WHERE session_id = $1`,
@@ -263,7 +263,7 @@ async function structuredQualificationFlow(
     industry: "What industry is your business in?"
   };
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions SET stage = 'qualifying' WHERE session_id = $1`,
     [session.session_id]
   );
@@ -276,13 +276,13 @@ async function structuredQualificationFlow(
 async function ensureSession(sessionId?: string, userPhone?: string) {
   const resolvedSessionId = sessionId ?? uuidv4();
 
-  const existing = await pool.query(
+  const existing = await pool.request(
     "SELECT session_id FROM sessions WHERE session_id = $1 LIMIT 1",
     [resolvedSessionId]
   );
 
   if (existing.rowCount === 0) {
-    await pool.query(
+    await pool.request(
       `INSERT INTO sessions (session_id, task, status, memo, action_data, confidence, user_phone)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [resolvedSessionId, "conversation", "active", JSON.stringify([]), null, null, userPhone ?? null]
@@ -300,7 +300,7 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   confidence: number;
 }> {
   const currentSessionId = await ensureSession(incomingSessionId, userPhone);
-  const sessionResult = await pool.query(
+  const sessionResult = await pool.request(
     `SELECT session_id, qualification_data, stage, user_email
      FROM sessions
      WHERE session_id = $1
@@ -329,7 +329,7 @@ export async function executeChat(message: string, incomingSessionId?: string, u
   const response = await structuredQualificationFlow(session, message);
   const confidence = 0.9;
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions
      SET confidence = $1
      WHERE session_id = $2`,

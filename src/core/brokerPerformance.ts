@@ -20,7 +20,7 @@ export async function calculateBrokerScore(brokerId: string): Promise<number> {
 
   const performance = (closeRate * 0.6) + (avgTicket / 1000000 * 0.4);
 
-  await pool.query(`
+  await pool.request(`
     INSERT INTO maya_broker_scores
     (broker_id, close_rate, avg_ticket, performance_score)
     VALUES ($1,$2,$3,$4)

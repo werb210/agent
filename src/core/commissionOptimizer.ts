@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function optimizeCommission(productType: string) {
-  const stats = await pool.query(
+  const stats = await pool.request(
     `
       SELECT AVG(funding_amount) AS avg_ticket
       FROM sessions
@@ -19,7 +19,7 @@ export async function optimizeCommission(productType: string) {
       ? 0.03
       : 0.035;
 
-  await pool.query(
+  await pool.request(
     `
       INSERT INTO maya_commission_models
       (product_type, optimal_rate)

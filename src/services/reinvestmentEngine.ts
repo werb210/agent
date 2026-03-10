@@ -37,7 +37,7 @@ export async function reinvestRevenue(): Promise<void> {
   const perChannelBudget = reinvestAmount / (channels.length || 1);
 
   for (const channel of channels) {
-    await pool.query(
+    await pool.request(
       `
       INSERT INTO maya_campaigns
       (channel, budget, target_industry, target_region, status, expected_roi)

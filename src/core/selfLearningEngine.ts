@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function retrainModel() {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT funding_amount, time_in_business,
            annual_revenue, funded
     FROM maya_training_data
@@ -23,7 +23,7 @@ export async function retrainModel() {
   revenueWeight = revenueWeight / (data.rowCount || 1);
   tibWeight = tibWeight / (data.rowCount || 1);
 
-  await pool.query(
+  await pool.request(
     `
       INSERT INTO maya_feature_weights (feature, weight)
       VALUES

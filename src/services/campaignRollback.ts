@@ -3,7 +3,7 @@ import { logMayaAction } from "./mayaActionLedger";
 import { AppError } from "../errors/AppError";
 
 export async function snapshotCampaign(campaignId: string, config: unknown) {
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_campaign_snapshots (campaign_id, config)
      VALUES ($1,$2)`,
     [campaignId, config]

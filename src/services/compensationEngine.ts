@@ -1,10 +1,10 @@
 import { pool } from "../db";
 
 export async function calculateBrokerCompensation() {
-  const brokers = await pool.query(`SELECT * FROM staff_calendar`);
+  const brokers = await pool.request(`SELECT * FROM staff_calendar`);
 
   for (const broker of brokers.rows) {
-    const revenueData = await pool.query(
+    const revenueData = await pool.request(
       `
         SELECT SUM(revenue) as total_revenue
         FROM maya_booking_analytics
@@ -23,7 +23,7 @@ export async function calculateBrokerCompensation() {
     const commissionRate = baseRate + performanceBonus;
     const commissionDue = totalRevenue * commissionRate;
 
-    await pool.query(
+    await pool.request(
       `
         INSERT INTO broker_compensation
         (broker_id, month, total_revenue, commission_rate, commission_due)

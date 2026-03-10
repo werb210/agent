@@ -1,21 +1,21 @@
 import { pool } from "../db";
 
 export async function recordImpression(testId: number, variant: string) {
-  await pool.query(
+  await pool.request(
     "UPDATE maya_ab_results SET impressions = impressions + 1 WHERE test_id = $1 AND variant = $2",
     [testId, variant]
   );
 }
 
 export async function recordConversion(testId: number, variant: string) {
-  await pool.query(
+  await pool.request(
     "UPDATE maya_ab_results SET conversions = conversions + 1 WHERE test_id = $1 AND variant = $2",
     [testId, variant]
   );
 }
 
 export async function evaluateWinner(testId: number) {
-  const res = await pool.query(
+  const res = await pool.request(
     "SELECT variant, conversions, impressions FROM maya_ab_results WHERE test_id = $1",
     [testId]
   );

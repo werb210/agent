@@ -18,7 +18,7 @@ router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
     return res.sendStatus(400);
   }
 
-  const session = await pool.query(
+  const session = await pool.request(
     "SELECT id, transcript FROM maya_voice_sessions WHERE phone = $1 AND status = 'active' LIMIT 1",
     [from]
   );
@@ -27,7 +27,7 @@ router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
 
   if (!session.rows.length) {
     sessionId = uuidv4();
-    await pool.query(
+    await pool.request(
       "INSERT INTO maya_voice_sessions (id, phone) VALUES ($1, $2)",
       [sessionId, from]
     );
@@ -43,7 +43,7 @@ router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
     JSON.stringify({ conversation: updatedTranscript })
   );
 
-  await pool.query(
+  await pool.request(
     "UPDATE maya_voice_sessions SET transcript = $1 WHERE id = $2",
     [`${updatedTranscript}\nMaya: ${aiResponse ?? ""}`, sessionId]
   );

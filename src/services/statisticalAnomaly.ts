@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function calculateZScore(deal: any) {
-  const stats = await pool.query(
+  const stats = await pool.request(
     "SELECT AVG(requested_amount) as avg, STDDEV(requested_amount) as std FROM deal_features"
   );
 

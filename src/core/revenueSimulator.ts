@@ -18,7 +18,7 @@ export async function simulateRevenue(input: RevenueSimulationInput): Promise<Re
   const commission = projectedFunding * commissionRate;
   const riskAdjusted = commission * (1 - input.risk_score);
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_revenue_simulations
      (projected_funding, projected_commission, risk_adjusted_projection)
      VALUES ($1,$2,$3)`,

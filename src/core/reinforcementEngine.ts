@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function recordReward(actionType: string, reward: number, metadata: unknown) {
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_rewards (action_type, reward_score, metadata)
      VALUES ($1,$2,$3)`,
     [actionType, reward, metadata]

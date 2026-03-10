@@ -56,7 +56,7 @@ export async function getMLApprovalProbability(payload: any, role: string = "sys
       const contributions = calculateFeatureContributions(payload);
       const summary = generateReasoningSummary(prob, contributions);
 
-      await pool.query(
+      await pool.request(
         `INSERT INTO maya_explanations
          (session_id, model_version, probability, feature_contributions, reasoning_summary)
          VALUES ($1, $2, $3, $4, $5)`,

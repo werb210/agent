@@ -4,20 +4,20 @@ import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function generateRevenueForecast() {
   return safeExecute(async () => {
-    const bookings = await pool.query(`
+    const bookings = await pool.request(`
       SELECT COUNT(*) as total_bookings
       FROM maya_booking_analytics
       WHERE created_at > NOW() - INTERVAL '30 days'
     `);
 
-    const closes = await pool.query(`
+    const closes = await pool.request(`
       SELECT COUNT(*) as total_closes
       FROM maya_booking_analytics
       WHERE closed = true
       AND created_at > NOW() - INTERVAL '30 days'
     `);
 
-    const revenue = await pool.query(`
+    const revenue = await pool.request(`
       SELECT SUM(revenue) as total_revenue
       FROM maya_booking_analytics
       WHERE closed = true
@@ -37,7 +37,7 @@ export async function generateRevenueForecast() {
 
     const confidence = Math.min(closeRate * 2, 0.95);
 
-    await pool.query(
+    await pool.request(
       `
         INSERT INTO maya_revenue_forecast (month, predicted_revenue, predicted_closes, confidence)
         VALUES ($1,$2,$3,$4)

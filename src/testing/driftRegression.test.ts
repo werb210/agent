@@ -1,9 +1,10 @@
 jest.mock("../db", () => ({
   pool: {
-    query: jest
+    request: jest
       .fn()
       .mockResolvedValueOnce({ rows: [{ avg_prob: "0.65" }] })
-      .mockResolvedValueOnce({ rows: [{ avg_prob: "0.55" }] })
+      .mockResolvedValueOnce({ rows: [{ avg_prob: "0.55" }] }),
+    query: jest.fn()
   }
 }));
 

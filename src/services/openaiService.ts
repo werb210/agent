@@ -4,13 +4,17 @@ import { resilientLLM } from "../infrastructure/mayaResilience";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 import { AppError } from "../errors/AppError";
 
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY is required");
+}
+
 type MemoryTurn = {
   user: string;
   assistant: string;
 };
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "sk-placeholder"
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 export type ChatCompletionResult = {

@@ -13,7 +13,7 @@ export async function trackLLMUsage(
   const totalTokens = inputTokens + outputTokens;
   const cost = totalTokens * (pricing[model] || 0.00002);
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_llm_usage (model, tokens_input, tokens_output, estimated_cost)
      VALUES ($1,$2,$3,$4)`,
     [model, inputTokens, outputTokens, cost]

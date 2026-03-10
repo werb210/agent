@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function clearExpiredLiveCalls() {
-  await pool.query(`
+  await pool.request(`
     UPDATE staff_calendar
     SET active_call_until = NULL,
         is_on_call = false

@@ -4,7 +4,7 @@ import { pool } from "../db";
 const router = Router();
 
 router.get("/analytics/bookings", async (_req, res) => {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT
       broker_id,
       COUNT(*) as total_bookings,
@@ -19,7 +19,7 @@ router.get("/analytics/bookings", async (_req, res) => {
 });
 
 router.get("/analytics/forecast", async (_req, res) => {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT * FROM maya_revenue_forecast
     ORDER BY created_at DESC
     LIMIT 6
@@ -29,7 +29,7 @@ router.get("/analytics/forecast", async (_req, res) => {
 });
 
 router.get("/analytics/compensation", async (_req, res) => {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT * FROM broker_compensation
     ORDER BY created_at DESC
   `);
@@ -38,7 +38,7 @@ router.get("/analytics/compensation", async (_req, res) => {
 });
 
 router.get("/analytics/strategy", async (_req, res) => {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT * FROM maya_strategy_plans
     ORDER BY created_at DESC
     LIMIT 6
@@ -48,7 +48,7 @@ router.get("/analytics/strategy", async (_req, res) => {
 });
 
 router.get("/analytics/campaigns", async (_req, res) => {
-  const data = await pool.query(`
+  const data = await pool.request(`
     SELECT * FROM maya_campaigns
     ORDER BY created_at DESC
   `);

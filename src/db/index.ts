@@ -1,4 +1,1 @@
-import { pool } from "../db";
-
-export { pool };
-
+export { pool } from "../db";

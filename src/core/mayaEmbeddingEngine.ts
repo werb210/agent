@@ -19,7 +19,7 @@ export async function storeEmbedding(entityType: string, entityId: string, text:
     throw new AppError("internal_error", 500, "Embedding response was empty.");
   }
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_vector_memory (entity_type, entity_id, embedding, metadata)
      VALUES ($1, $2, $3::float8[], $4)`,
     [entityType, entityId, embedding, { text }]

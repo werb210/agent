@@ -6,7 +6,7 @@ import { getAvailableStaff } from "../staff/staffAvailability";
 import { createBooking } from "../booking/o365BookingService";
 
 export async function handleVoiceInput(sessionId: string, userSpeech: string) {
-  const session = await pool.query(
+  const session = await pool.request(
     "SELECT transcript FROM maya_voice_sessions WHERE id = $1",
     [sessionId]
   );
@@ -37,7 +37,7 @@ export async function handleVoiceInput(sessionId: string, userSpeech: string) {
     updatedTranscript
   );
 
-  await pool.query(
+  await pool.request(
     "UPDATE maya_voice_sessions SET transcript = $1 WHERE id = $2",
     [`${updatedTranscript}\nMaya: ${response ?? ""}`, sessionId]
   );

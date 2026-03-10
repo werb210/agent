@@ -18,7 +18,7 @@ export async function optimizeCampaignBudget(campaignId: string, correlationId?:
     const oldBudget = Number(currentBudgetResult.rows[0]?.budget ?? 0);
     const newBudget = oldBudget * adjustment;
 
-    await pool.query(
+    await pool.request(
       `UPDATE maya_campaigns
        SET budget = $1
        WHERE id=$2`,

@@ -48,7 +48,7 @@ export async function checkStartupProductLaunch(): Promise<void> {
   for (const contact of waitingList.rows) {
     const safeContact = await decryptAndMaskContact(contact, actor, contact.id, false);
     await sendStartupNotification(safeContact);
-    await pool.query(
+    await pool.request(
       `
       UPDATE crm_contacts
       SET startup_notified = true
@@ -62,7 +62,7 @@ export async function checkStartupProductLaunch(): Promise<void> {
 
   await launchStartupCampaign();
 
-  await pool.query(
+  await pool.request(
     `
     INSERT INTO maya_startup_launch_log (product_id, total_notified)
     VALUES ($1,$2)

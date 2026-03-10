@@ -1,9 +1,10 @@
 const queryMock = jest.fn();
 
-jest.mock("pg", () => ({
-  Pool: jest.fn().mockImplementation(() => ({
+jest.mock("../db", () => ({
+  pool: {
+    request: queryMock,
     query: queryMock
-  }))
+  }
 }));
 
 jest.mock("../core/mlClient", () => ({

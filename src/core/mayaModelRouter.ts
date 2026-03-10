@@ -53,7 +53,7 @@ async function logMayaAudit(payload: {
   latencyMs: number;
   success: boolean;
 }) {
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_audit_logs (application_id, user_id, action_type, token_usage, latency_ms, success)
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [

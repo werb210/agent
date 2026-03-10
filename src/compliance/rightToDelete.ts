@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function anonymizeSession(sessionId: string) {
-  await pool.query(
+  await pool.request(
     `
     UPDATE sessions
     SET qualification_data = '{}'::jsonb,

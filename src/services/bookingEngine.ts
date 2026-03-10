@@ -1,4 +1,4 @@
-import { logger } from "../logging/logger";
+import { logger } from "../infrastructure/logger";
 import { createO365Booking } from "./o365Booking";
 import { checkO365Availability } from "./o365Availability";
 import { sendSMS } from "./smsService";

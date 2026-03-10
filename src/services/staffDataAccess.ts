@@ -1,29 +1,9 @@
-import { Pool } from "pg";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
+import { bfServerRequest } from "../integrations/bfServerClient";
 
 export async function getPipelineSummary() {
-
-  const result = await pool.query(`
-    SELECT status, COUNT(*) as count
-    FROM applications
-    GROUP BY status
-  `);
-
-  return result.rows;
+  return bfServerRequest("/api/staff/pipeline", "GET");
 }
 
 export async function getApplicationsByStatus(status: string) {
-
-  const result = await pool.query(`
-    SELECT id, applicant_name, product_type, created_at
-    FROM applications
-    WHERE status = $1
-    ORDER BY created_at DESC
-    LIMIT 20
-  `, [status]);
-
-  return result.rows;
+  return bfServerRequest(`/api/applications/status?status=${encodeURIComponent(status)}`, "GET");
 }

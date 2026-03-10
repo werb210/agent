@@ -2,7 +2,7 @@ import { pool } from "../../db";
 
 export async function getAvailableStaff() {
 
-  const res = await pool.query(
+  const res = await pool.request(
     "SELECT id, phone FROM staff WHERE status = 'online' AND on_call = false LIMIT 1"
   );
 

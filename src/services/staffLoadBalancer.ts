@@ -2,7 +2,7 @@ import { pool } from "../db";
 
 export async function recommendAssignment() {
 
-  const res = await pool.query(
+  const res = await pool.request(
     "SELECT staff_id, COUNT(*) as active_deals FROM deals GROUP BY staff_id"
   );
 

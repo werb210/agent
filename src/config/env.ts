@@ -1,12 +1,21 @@
-import dotenv from "dotenv";
+import { z } from "zod";
 
-export const ENV = process.env.NODE_ENV || "development";
+const envSchema = z.object({
+  OPENAI_API_KEY: z.string().min(1),
+  TWILIO_ACCOUNT_SID: z.string().min(1),
+  TWILIO_AUTH_TOKEN: z.string().min(1),
+  BF_SERVER_URL: z.string().url(),
+  BF_SERVER_TOKEN: z.string().min(1),
+  REDIS_URL: z.string().min(1)
+});
 
-if (ENV !== "production") {
-  dotenv.config({ path: `.env.${ENV}` });
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  throw new Error(`Environment validation failed: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
 }
 
-export const isProd = ENV === "production";
-export const isStaging = ENV === "staging";
-
+export const ENV = parsed.data;
+export const isProd = process.env.NODE_ENV === "production";
+export const isStaging = process.env.NODE_ENV === "staging";
 export const PORT = process.env.PORT || 5000;

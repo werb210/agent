@@ -1,8 +1,5 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 interface LogActionParams {
   sessionId: string;
@@ -14,7 +11,7 @@ interface LogActionParams {
 
 export async function logAction(params: LogActionParams) {
   try {
-    await pool.query(
+    await pool.request(
       `INSERT INTO ai_actions
        (session_id, action_type, requires_confirmation, executed, message)
        VALUES ($1,$2,$3,$4,$5)`,

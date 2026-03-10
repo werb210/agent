@@ -7,7 +7,7 @@ router.get("/", async (_, res) => {
   const deals = await prisma.leadAnalysis.findMany();
 
   const ranked = deals.sort(
-    (a, b) => b.expectedCommission - a.expectedCommission
+    (a: any, b: any) => b.expectedCommission - a.expectedCommission
   );
 
   res.json(ranked);

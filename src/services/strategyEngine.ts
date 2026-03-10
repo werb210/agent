@@ -2,13 +2,13 @@ import { pool } from "../db";
 import { logAudit } from "../infrastructure/mayaAudit";
 
 export async function generateStrategicPlan() {
-  const revenueData = await pool.query(`
+  const revenueData = await pool.request(`
     SELECT SUM(predicted_revenue) as projected
     FROM maya_revenue_forecast
     WHERE created_at > NOW() - INTERVAL '30 days'
   `);
 
-  const marketingData = await pool.query(`
+  const marketingData = await pool.request(`
     SELECT channel, roi, performance_weight
     FROM maya_marketing_metrics
   `);
@@ -30,7 +30,7 @@ export async function generateStrategicPlan() {
 
   const confidence = projectedRevenue > 0 ? 0.8 : 0.5;
 
-  await pool.query(
+  await pool.request(
     `
       INSERT INTO maya_strategy_plans
       (month, strategic_focus, recommended_actions, projected_growth, confidence)

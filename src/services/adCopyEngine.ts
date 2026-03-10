@@ -21,7 +21,7 @@ Provide:
     .map((line: string) => line.trim())
     .filter(Boolean);
 
-  await pool.query(
+  await pool.request(
     `
     INSERT INTO maya_generated_ads (campaign_id, headline, body, cta)
     VALUES ($1,$2,$3,$4)

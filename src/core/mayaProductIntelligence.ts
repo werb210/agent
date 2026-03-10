@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function getAvailableProductCategories(): Promise<string[]> {
-  const result = await pool.query(`
+  const result = await pool.request(`
     SELECT DISTINCT category
     FROM lender_products
     WHERE active = true
@@ -17,7 +17,7 @@ export async function getProductsByCategory(category: string): Promise<Array<{
   term_min: number;
   term_max: number;
 }>> {
-  const result = await pool.query(`
+  const result = await pool.request(`
     SELECT name, interest_rate_min, interest_rate_max, term_min, term_max
     FROM lender_products
     WHERE category = $1

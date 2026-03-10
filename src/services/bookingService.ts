@@ -11,7 +11,7 @@ const twilioClient = twilio(
 );
 
 export async function getActiveStaffSorted() {
-  const result = await pool.query(`
+  const result = await pool.request(`
     SELECT *
     FROM staff_calendar
     WHERE is_active = true

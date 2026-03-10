@@ -1,12 +1,9 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function buildClientContext(sessionId: string) {
   // Example: fetch minimal client data only
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT id, first_name, last_name, status, funding_amount 
      FROM clients 
      WHERE session_id = $1`,

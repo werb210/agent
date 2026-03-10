@@ -26,6 +26,15 @@ export function startMayaWorkers() {
         case "startup-check":
           await checkStartupProductLaunch();
           break;
+        case "transcribeCall":
+        case "summarizeCall":
+        case "scoreCall":
+          logger.info(`${job.name} queued`, {
+            callSid: job.data?.callSid,
+            sessionId: job.data?.sessionId,
+            requestId: job.id
+          });
+          break;
         default:
           logger.info("Unknown job", { name: job.name });
       }

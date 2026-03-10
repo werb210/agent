@@ -1,9 +1,6 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 import { AppError } from "../errors/AppError";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export interface CampaignMetrics {
   source: string;
@@ -92,7 +89,7 @@ export async function executeCampaignAdjustment(
     blockExecution("Adjustment exceeds max_daily_budget_shift_percent");
   }
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_marketing_actions
       (source, previous_budget, new_budget, reason)
      VALUES ($1, $2, $3, $4)`,
@@ -104,7 +101,7 @@ export async function executeCampaignAdjustment(
     ]
   );
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_decisions (session_id, decision_type, confidence, outcome)
      VALUES ($1, $2, $3, $4)`,
     [
@@ -127,7 +124,7 @@ export async function executeCampaignAdjustment(
 }
 
 export async function reverseCampaignAdjustment(actionId: number) {
-  const actionResult = await pool.query(
+  const actionResult = await pool.request(
     `SELECT id, source, previous_budget, new_budget, reason
      FROM maya_marketing_actions
      WHERE id = $1`,
@@ -140,7 +137,7 @@ export async function reverseCampaignAdjustment(actionId: number) {
 
   const action = actionResult.rows[0];
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_marketing_actions
       (source, previous_budget, new_budget, reason)
      VALUES ($1, $2, $3, $4)`,
@@ -152,7 +149,7 @@ export async function reverseCampaignAdjustment(actionId: number) {
     ]
   );
 
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_decisions (session_id, decision_type, confidence, outcome)
      VALUES ($1, $2, $3, $4)`,
     [

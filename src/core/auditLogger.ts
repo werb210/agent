@@ -26,7 +26,7 @@ export async function logAudit({
   newValue,
   metadata
 }: AuditPayload) {
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_audit_log
      (correlation_id, agent_name, action_type, entity_type, entity_id, previous_value, new_value, metadata)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
