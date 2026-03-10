@@ -5,13 +5,13 @@ export async function createLenderDeals(lenderNames: string[], sessionId: string
     return;
   }
 
-  const lenders = await pool.query(
+  const lenders = await pool.request(
     "SELECT id, name FROM lenders WHERE name = ANY($1::text[])",
     [lenderNames]
   );
 
   for (const lender of lenders.rows) {
-    await pool.query(
+    await pool.request(
       `INSERT INTO lender_deals (lender_id, session_id)
        VALUES ($1, $2)
        ON CONFLICT (lender_id, session_id) DO NOTHING`,
@@ -21,7 +21,7 @@ export async function createLenderDeals(lenderNames: string[], sessionId: string
 }
 
 export async function getLenderPortalDeals(email: string) {
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT ld.id,
             ld.session_id,
             ld.status,
@@ -47,7 +47,7 @@ export async function getLenderPortalDeals(email: string) {
 }
 
 export async function uploadTermSheet(lenderDealId: number, fileUrl: string) {
-  await pool.query(
+  await pool.request(
     `UPDATE lender_deals
      SET status = 'TERM_SHEET_UPLOADED'
      WHERE id = $1`,

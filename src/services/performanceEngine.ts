@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function recalculateBrokerPerformance() {
-  const brokers = await pool.query("SELECT * FROM staff_calendar");
+  const brokers = await pool.request("SELECT * FROM staff_calendar");
 
   for (const broker of brokers.rows) {
     const calls = broker.total_calls || 1;
@@ -10,7 +10,7 @@ export async function recalculateBrokerPerformance() {
 
     const performanceScore = (closeRate * 2) + (broker.avg_response_speed || 1);
 
-    await pool.query(
+    await pool.request(
       `
         UPDATE staff_calendar
         SET performance_score = $1,

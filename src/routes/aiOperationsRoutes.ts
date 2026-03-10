@@ -30,7 +30,7 @@ router.post("/maya/run-outbound", async (req, res) => {
 });
 
 router.post("/maya/approve/:id", async (req: any, res) => {
-  await pool.query(
+  await pool.request(
     `UPDATE maya_action_approvals
      SET approved=true, approved_by=$1
      WHERE id=$2`,
@@ -42,8 +42,8 @@ router.post("/maya/approve/:id", async (req: any, res) => {
 });
 
 router.get("/maya/kpi", async (_req, res) => {
-  const kpi = await pool.query(`SELECT * FROM maya_revenue_kpi`);
-  const llmCost = await pool.query(`
+  const kpi = await pool.request(`SELECT * FROM maya_revenue_kpi`);
+  const llmCost = await pool.request(`
     SELECT SUM(estimated_cost) AS total_llm_cost
     FROM maya_llm_usage
   `);

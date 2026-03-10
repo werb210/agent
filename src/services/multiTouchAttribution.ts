@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function multiTouchAttribution(leadId: string) {
-  const res = await pool.query(
+  const res = await pool.request(
     "SELECT source, revenue FROM maya_attribution WHERE lead_id = $1",
     [leadId]
   );

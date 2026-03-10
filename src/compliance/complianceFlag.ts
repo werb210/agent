@@ -5,7 +5,7 @@ export async function flagSessionCompliance(sessionId?: string) {
     return;
   }
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions SET compliance_flag = true WHERE session_id = $1`,
     [sessionId]
   );

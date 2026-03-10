@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function processRetryQueue() {
-  const jobs = await pool.query(`
+  const jobs = await pool.request(`
     SELECT * FROM maya_retry_queue
     WHERE status='pending'
     LIMIT 10
@@ -12,7 +12,7 @@ export async function processRetryQueue() {
       // Example: re-run campaign optimization
       // add switch(job.job_type) for extensibility
 
-      await pool.query(
+      await pool.request(
         `UPDATE maya_retry_queue
          SET status='completed'
          WHERE id=$1`,
@@ -30,13 +30,13 @@ export async function processRetryQueue() {
       const attempts = attemptsResult.rows[0]?.attempts ?? 0;
 
       if (attempts > 5) {
-        await pool.query(
+        await pool.request(
           `INSERT INTO maya_dead_letter (job_type, payload, error)
            VALUES ($1, $2, $3)`,
           [job.job_type, job.payload, error instanceof Error ? error.message : "Unknown error"]
         );
 
-        await pool.query(
+        await pool.request(
           `UPDATE maya_retry_queue
            SET status='dead'
            WHERE id=$1`,

@@ -2,7 +2,6 @@ import "./infrastructure/env";
 import { NextFunction, Request, Response } from "express";
 import { app } from "./server";
 import { mayaQueue } from "./infrastructure/mayaQueue";
-import { pool } from "./config/pool";
 import { AppError } from "./errors/AppError";
 import { redis } from "./infrastructure/redis";
 import { logger } from "./infrastructure/logger";
@@ -49,13 +48,12 @@ if (process.env.NODE_ENV === "production") {
   "OPENAI_API_KEY",
   "ML_SERVICE_URL",
   "ML_INTERNAL_SECRET",
-  "DATABASE_URL",
   "TWILIO_ACCOUNT_SID",
   "TWILIO_AUTH_TOKEN",
   "TWILIO_PHONE_NUMBER",
   "PUBLIC_WEBHOOK_URL",
   "BF_SERVER_URL",
-  "BF_SERVER_API",
+  "BF_SERVER_TOKEN",
   "MAYA_SECRET"
 ].forEach(requireEnvVar);
 
@@ -98,7 +96,6 @@ async function start() {
       // placeholder worker loop for v1 queue wiring
     });
   }
-  await pool.connect();
   await redis.ping();
   await scheduleJobs();
 

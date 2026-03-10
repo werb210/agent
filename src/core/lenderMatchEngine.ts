@@ -7,7 +7,7 @@ export interface PredictivePayload {
 }
 
 export async function predictiveLenderScore(payload: PredictivePayload) {
-  const weights = await pool.query(`
+  const weights = await pool.request(`
     SELECT feature, weight FROM maya_feature_weights
   `);
 

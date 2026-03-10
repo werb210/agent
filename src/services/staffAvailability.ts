@@ -1,11 +1,8 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function getAvailableStaff() {
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT staff_id
      FROM staff_presence
      WHERE is_online = true

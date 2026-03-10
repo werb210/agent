@@ -49,7 +49,7 @@ export async function launchPlatformCampaign(campaignId: string): Promise<void> 
 
   const response = await axios.post("https://api.mockadsplatform.com/campaign", payload);
 
-  await pool.query(
+  await pool.request(
     `
     UPDATE maya_campaigns
     SET platform_campaign_id = $1,

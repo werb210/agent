@@ -1,11 +1,8 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function buildStaffContext(dealId: string) {
-  const deal = await pool.query(
+  const deal = await pool.request(
     `SELECT id, status, funding_amount, tier, funding_score 
      FROM deals 
      WHERE id = $1`,

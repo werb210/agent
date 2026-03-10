@@ -6,7 +6,7 @@ export async function processExcel(filePath: string, campaignName: string) {
 
   const campaignId = uuidv4();
 
-  await pool.query(
+  await pool.request(
     "INSERT INTO maya_campaigns (id, name) VALUES ($1,$2)",
     [campaignId, campaignName]
   );
@@ -23,7 +23,7 @@ export async function processExcel(filePath: string, campaignName: string) {
     const phone = row["Phone"];
 
     // Duplicate detection in CRM
-    const existing = await pool.query(
+    const existing = await pool.request(
       "SELECT id FROM contacts WHERE email = $1 OR phone = $2",
       [email, phone]
     );
@@ -31,7 +31,7 @@ export async function processExcel(filePath: string, campaignName: string) {
     if (existing.rows.length > 0) continue;
 
     // Insert into CRM contacts table
-    await pool.query(
+    await pool.request(
       `INSERT INTO contacts
        (company_name, contact_name, role, email, phone)
        VALUES ($1,$2,$3,$4,$5)`,
@@ -45,7 +45,7 @@ export async function processExcel(filePath: string, campaignName: string) {
     );
 
     // Insert into outbound queue
-    await pool.query(
+    await pool.request(
       `INSERT INTO maya_outbound_queue
        (campaign_id, company_name, contact_name, role, email, phone)
        VALUES ($1,$2,$3,$4,$5,$6)`,

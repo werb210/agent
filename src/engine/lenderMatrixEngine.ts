@@ -1,7 +1,7 @@
 import { pool } from "../config/pool";
 
 export async function evaluateLenders(deal: any) {
-  const result = await pool.query("SELECT * FROM lenders");
+  const result = await pool.request("SELECT * FROM lenders");
 
   const matches: string[] = [];
 
@@ -19,7 +19,7 @@ export async function evaluateLenders(deal: any) {
 }
 
 export async function getLenderMatchesFromMatrix(amount: number, tier: string) {
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT lender_name
      FROM lender_matrix
      WHERE tier = $1

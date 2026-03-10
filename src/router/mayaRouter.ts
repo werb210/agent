@@ -5,7 +5,7 @@ import { handleStaffMode } from "../services/modes/staffMode";
 import { handleMarketingMode } from "../services/modes/marketingMode";
 import { complianceFilter } from "../guardrails/complianceFilter";
 import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
-import { logger } from "../logging/logger";
+import { logger } from "../infrastructure/logger";
 import { logDecision } from "../services/decisionLogger";
 import { logDecisionMemory } from "../services/decisionMemory";
 import { interpretAction } from "../services/actionInterpreter";

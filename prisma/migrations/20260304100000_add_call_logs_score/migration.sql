@@ -1,2 +1,0 @@
-ALTER TABLE call_logs
-ADD COLUMN IF NOT EXISTS score INT;

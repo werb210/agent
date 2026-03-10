@@ -2,7 +2,7 @@ import { pool } from "../db";
 
 export async function detectAnomaly(deal: any) {
 
-  const avg = await pool.query(
+  const avg = await pool.request(
     "SELECT AVG(requested_amount) as avg_amount FROM deal_features"
   );
 

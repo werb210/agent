@@ -14,7 +14,7 @@ export async function routeDeal(sessionId: string) {
     return null;
   }
 
-  await pool.query(
+  await pool.request(
     `
     UPDATE sessions
     SET assigned_broker_id=$1

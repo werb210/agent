@@ -4,7 +4,7 @@ import { logDecision } from "../complianceLogger";
 
 export async function runOutboundCampaign(campaignId: string) {
 
-  const leads = await pool.query(
+  const leads = await pool.request(
     "SELECT * FROM maya_outbound_queue WHERE campaign_id = $1 AND status = 'pending' LIMIT 25",
     [campaignId]
   );
@@ -13,7 +13,7 @@ export async function runOutboundCampaign(campaignId: string) {
 
     await triggerOutboundCall(lead.phone);
 
-    await pool.query(
+    await pool.request(
       "UPDATE maya_outbound_queue SET status = 'called' WHERE id = $1",
       [lead.id]
     );

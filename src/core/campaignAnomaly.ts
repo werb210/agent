@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function detectCampaignAnomaly() {
-  const result = await pool.query(`
+  const result = await pool.request(`
     SELECT AVG(metric_value) as avg
     FROM maya_metrics
     WHERE metric_name='capital_efficiency'

@@ -1,14 +1,14 @@
 import { pool } from "../db";
 
 export async function detectMLDrift() {
-  const recent = await pool.query(`
+  const recent = await pool.request(`
     SELECT AVG(metric_value) as avg_prob
     FROM maya_metrics
     WHERE metric_name='ml_prediction_probability'
     AND created_at > NOW() - INTERVAL '7 days'
   `);
 
-  const historical = await pool.query(`
+  const historical = await pool.request(`
     SELECT AVG(metric_value) as avg_prob
     FROM maya_metrics
     WHERE metric_name='ml_prediction_probability'

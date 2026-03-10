@@ -1,30 +1,31 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { twiml } from "twilio";
-import { pool } from "../db";
 import { handleVoiceInput } from "../services/voice/voiceConversationService";
 import { verifyTwilioSignature } from "../middleware/verifyTwilio";
 import { mayaRateLimit } from "../middleware/rateLimit";
+import { bfServerRequest } from "../integrations/bfServerClient";
 
 const router = Router();
 
 router.post("/voice/inbound", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
-  const callSid = req.body.CallSid;
-  const phone = req.body.From;
+  const callSid = String(req.body.CallSid ?? "");
+  const phone = String(req.body.From ?? "");
   const sessionId = uuidv4();
 
-  await pool.query(
-    "INSERT INTO maya_voice_sessions (id, call_sid, phone) VALUES ($1, $2, $3)",
-    [sessionId, callSid, phone]
-  );
+  await bfServerRequest("/api/calls/log", "POST", { callSid, phone, sessionId, event: "voice_inbound" });
 
   const response = new twiml.VoiceResponse();
-  response.say("Hello, this is Maya from Boreal Financial. How can I help you today?");
-  response.gather({
-    input: ["speech"],
+  response.say("Hello, this is Maya from Boreal Financial.");
+  const gather = response.gather({
+    input: ["speech", "dtmf"],
+    timeout: 5,
+    numDigits: 1,
     action: `/api/voice/respond?sessionId=${sessionId}`,
     method: "POST"
   });
+
+  gather.say("Press 1 to speak to an agent. Press 2 to leave a voicemail. Press 3 to receive an SMS link.");
 
   res.type("text/xml");
   res.send(response.toString());
@@ -32,27 +33,47 @@ router.post("/voice/inbound", mayaRateLimit, verifyTwilioSignature, async (req, 
 
 router.post("/voice/respond", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const sessionId = req.query.sessionId as string;
-  const speech = req.body.SpeechResult;
-
-  const aiResponse = await handleVoiceInput(sessionId, speech);
+  const speech = String(req.body.SpeechResult ?? "");
+  const digits = String(req.body.Digits ?? "");
 
   const response = new twiml.VoiceResponse();
 
-  if (typeof aiResponse === "object" && aiResponse !== null && aiResponse.transfer) {
-    response.say("Please hold while I connect you to a funding specialist.");
-    response.dial(aiResponse.staffPhone);
+  if (digits === "1") {
+    response.say("Connecting you to an agent.");
+    response.dial(process.env.TRANSFER_NUMBER || "");
+  } else if (digits === "2") {
+    response.say("Please leave your voicemail after the beep.");
+    response.record({ action: "/api/voice/voicemail", method: "POST" });
+  } else if (digits === "3") {
+    await bfServerRequest("/api/calls/log", "POST", { sessionId, event: "sms_link_requested" });
+    response.say("We sent you a text with a secure application link.");
   } else {
+    const aiResponse = await handleVoiceInput(sessionId, speech);
     response.say(typeof aiResponse === "string" ? aiResponse : "Could you repeat that?");
   }
 
-  response.gather({
-    input: ["speech"],
+  const gather = response.gather({
+    input: ["speech", "dtmf"],
+    timeout: 5,
+    numDigits: 1,
     action: `/api/voice/respond?sessionId=${sessionId}`,
     method: "POST"
   });
+  gather.say("Press 1 for agent, 2 for voicemail, 3 for SMS link.");
 
   res.type("text/xml");
   res.send(response.toString());
+});
+
+router.post("/voice/voicemail", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
+  const payload = {
+    callSid: String(req.body.CallSid ?? ""),
+    recordingUrl: String(req.body.RecordingUrl ?? ""),
+    from: String(req.body.From ?? "")
+  };
+
+  await bfServerRequest("/api/calls/voicemail", "POST", payload);
+  res.sendStatus(200);
 });
 
 export default router;

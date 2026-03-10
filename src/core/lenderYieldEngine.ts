@@ -32,7 +32,7 @@ export async function calculateLenderYield(lenderId: string) {
 
     const yieldScore = successRate * 0.5 + (1 / (avgTurnaround || 1)) * 0.3 + (avgFunding / 1000000) * 0.2;
 
-    await pool.query(
+    await pool.request(
       `INSERT INTO maya_lender_yield
       (lender_id, avg_funding, avg_turnaround_days, success_rate, yield_score)
       VALUES ($1,$2,$3,$4,$5)

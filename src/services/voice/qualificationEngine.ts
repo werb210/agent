@@ -35,7 +35,7 @@ export async function evaluateQualification(sessionId: string, userSpeech: strin
     escalation = "high_intent";
   }
 
-  await pool.query(
+  await pool.request(
     `UPDATE maya_voice_sessions
      SET qualification_score = qualification_score + $1,
          intent = COALESCE(intent, $2),

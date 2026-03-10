@@ -7,7 +7,6 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "staging", "production"]),
   PORT: z.string(),
-  DATABASE_URL: z.string(),
   REDIS_URL: z.string(),
   TWILIO_ACCOUNT_SID: z.string(),
   TWILIO_AUTH_TOKEN: z.string(),
@@ -29,7 +28,6 @@ function buildTestEnv(): any {
   return {
     NODE_ENV: "test",
     PORT: process.env.PORT ?? "0",
-    DATABASE_URL: process.env.DATABASE_URL ?? "postgres://test:test@localhost:5432/test",
     REDIS_URL: process.env.REDIS_URL ?? "redis://localhost:6379",
     TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ?? "test",
     TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ?? "test",

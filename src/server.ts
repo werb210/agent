@@ -19,8 +19,6 @@ import { extractTextFromDocument } from "./engine/ocrEngine";
 import { interpretAction } from "./services/actionInterpreter";
 import { executeAction } from "./services/actionExecutor";
 import { logCall, logCallSummary } from "./services/callLogger";
-import { scoreCall } from "./engine/callScoringEngine";
-import { transcribeAudio, summarizeFundingCall } from "./services/openaiService";
 import { sendSMS } from "./services/smsService";
 import aiOperationsRoutes from "./routes/aiOperationsRoutes";
 import adminUploadRoutes from "./routes/adminUploadRoutes";
@@ -32,12 +30,12 @@ import mayaSandbox from "./routes/mayaSandbox";
 import { ENV } from "./infrastructure/env";
 import { isProd } from "./config/env";
 import { logger } from "./infrastructure/logger";
+import { mayaQueue } from "./infrastructure/mayaQueue";
 import { verifyTwilioSignature } from "./middleware/verifyTwilio";
 import { validateTimestamp } from "./middleware/validateTimestamp";
 import { mayaRateLimit } from "./middleware/rateLimit";
 import { isDuplicate } from "./services/idempotency.service";
 import { acquireLock, releaseLock } from "./services/lock.service";
-import { retryFetch } from "./services/retryFetch";
 import { strategicDecision } from "./core/strategicEngine";
 import { calculateBrokerScore } from "./core/brokerPerformance";
 import { generateRiskHeatmap } from "./core/portfolioRisk";
@@ -218,12 +216,12 @@ app.post("/maya/brokers/:brokerId/score", async (req, res) => {
 });
 
 app.get("/maya/executive-dashboard", async (_req, res) => {
-  const simulations = await pool.query(`
+  const simulations = await pool.request(`
     SELECT COALESCE(SUM(risk_adjusted_projection), 0) AS forecasted_revenue
     FROM maya_revenue_simulations
   `);
 
-  const topBrokers = await pool.query(`
+  const topBrokers = await pool.request(`
     SELECT broker_id, performance_score
     FROM maya_broker_scores
     ORDER BY performance_score DESC
@@ -258,7 +256,7 @@ app.get("/maya/observability", async (_req, res) => {
   const drift = await detectMLDrift();
   const anomaly = await detectCampaignAnomaly();
 
-  const errorCount = await pool.query(`
+  const errorCount = await pool.request(`
     SELECT COUNT(*) FROM maya_metrics
     WHERE metric_name='system_error'
     AND created_at > NOW() - INTERVAL '24 hours'
@@ -274,7 +272,7 @@ app.get("/maya/observability", async (_req, res) => {
 app.get("/maya/audit/:entityId", async (req, res) => {
   const { entityId } = req.params;
 
-  const logs = await pool.query(
+  const logs = await pool.request(
     `SELECT * FROM maya_audit_log
      WHERE entity_id=$1
      ORDER BY created_at DESC`,
@@ -295,7 +293,7 @@ app.get("/maya/intelligence", async (_req, res) => {
 });
 
 async function getExplanation(sessionId: string) {
-  const result = await pool.query(
+  const result = await pool.request(
     `SELECT * FROM maya_explanations
      WHERE session_id = $1
      ORDER BY created_at DESC
@@ -351,7 +349,7 @@ app.get("/dashboard/:sessionId", async (req, res) => {
 });
 
 app.get("/admin/pipeline", async (_req, res) => {
-  const result = await pool.query("SELECT data FROM sessions");
+  const result = await pool.request("SELECT data FROM sessions");
   res.json(result.rows.map((r) => r.data));
 });
 
@@ -720,33 +718,14 @@ app.post("/voice/post-call", mayaRateLimit, validateTimestamp, verifyTwilioSigna
       logger.info({ event: "call_ended", identity: from, callSid });
     }
 
-    const transcript = await transcribeAudio(recordingUrl);
-    const summary = await summarizeFundingCall(transcript);
-    const score = scoreCall(summary);
+    await mayaQueue.add("transcribeCall", { callSid, recordingUrl, from });
+    await mayaQueue.add("summarizeCall", { callSid });
+    await mayaQueue.add("scoreCall", { callSid });
 
-    await logCallSummary(callSid, summary, score);
-
-    if (process.env.STAFF_SERVER_URL && process.env.MAYA_INTERNAL_TOKEN) {
-      await retryFetch(`${process.env.STAFF_SERVER_URL}/api/internal/call-summary`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-maya-token": process.env.MAYA_INTERNAL_TOKEN
-        },
-        body: JSON.stringify({
-          summary,
-          score,
-          callSid
-        })
-      });
-    }
+    await logCallSummary(callSid, "queued_for_processing", 0);
 
     if (from) {
-      if (score < 40) {
-        await sendSMS(from, "Thanks for your time today. We'll follow up with next steps shortly.");
-      } else if (score <= 70) {
-        await sendSMS(from, "Thanks for speaking with Maya. We will schedule a callback to continue your funding review.");
-      }
+      await sendSMS(from, "Thanks for your time today. Your call is being processed and we will follow up shortly.");
     }
 
       return res.sendStatus(200);

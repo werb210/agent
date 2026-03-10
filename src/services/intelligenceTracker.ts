@@ -1,11 +1,8 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function updateMetric(metric: string, value: number) {
-  await pool.query(
+  await pool.request(
     `
     INSERT INTO maya_intelligence (metric, value)
     VALUES ($1, $2)
@@ -17,7 +14,7 @@ export async function updateMetric(metric: string, value: number) {
 export async function increaseWeightForCluster(cluster: string, increment = 0.05) {
   const metric = `cluster_weight:${cluster}`;
 
-  await pool.query(
+  await pool.request(
     `
     INSERT INTO maya_intelligence (metric, value)
     VALUES ($1, $2)

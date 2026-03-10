@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function rankLendersBayesian(payload: any) {
-  const lenders = await pool.query(`
+  const lenders = await pool.request(`
     SELECT lender_id, yield_score
     FROM maya_lender_yield
   `);

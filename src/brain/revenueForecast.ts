@@ -17,7 +17,7 @@ export async function forecastMonthlyRevenue(): Promise<RevenueForecast> {
 
   const deals = await prisma.leadAnalysis.findMany();
 
-  const totalExpected = deals.reduce((sum, d) => sum + d.expectedCommission, 0);
+  const totalExpected = deals.reduce((sum: number, d: any) => sum + d.expectedCommission, 0);
 
   const projectedFundRate = 0.35;
   const projectedRevenue = totalExpected * projectedFundRate;

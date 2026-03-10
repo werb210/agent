@@ -1,7 +1,7 @@
 import { pool } from "../db";
 
 export async function adjustMarketingAllocation() {
-  const channels = await pool.query(`SELECT * FROM maya_marketing_metrics`);
+  const channels = await pool.request(`SELECT * FROM maya_marketing_metrics`);
 
   for (const channel of channels.rows) {
     const roi = channel.roi || 0;
@@ -11,7 +11,7 @@ export async function adjustMarketingAllocation() {
 
     const newWeight = performanceWeight * learningFactor;
 
-    await pool.query(
+    await pool.request(
       `
         UPDATE maya_marketing_metrics
         SET performance_weight = $1,

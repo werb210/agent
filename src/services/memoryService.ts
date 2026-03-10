@@ -6,7 +6,7 @@ type MemoryTurn = {
 };
 
 export const appendMemory = async (sessionId: string, user: string, assistant: string) => {
-  const existing = await pool.query("SELECT memo FROM sessions WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1", [
+  const existing = await pool.request("SELECT memo FROM sessions WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1", [
     sessionId
   ]);
 
@@ -15,7 +15,7 @@ export const appendMemory = async (sessionId: string, user: string, assistant: s
 
   memory.push({ user, assistant });
 
-  await pool.query(
+  await pool.request(
     `UPDATE sessions
      SET memo = $1
      WHERE id = (
@@ -29,7 +29,7 @@ export const appendMemory = async (sessionId: string, user: string, assistant: s
 };
 
 export const getMemory = async (sessionId: string): Promise<MemoryTurn[]> => {
-  const result = await pool.query("SELECT memo FROM sessions WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1", [sessionId]);
+  const result = await pool.request("SELECT memo FROM sessions WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1", [sessionId]);
   const raw = result.rows[0]?.memo;
   return raw ? JSON.parse(raw) : [];
 };

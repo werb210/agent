@@ -4,35 +4,33 @@ const baseLogger = pino({
   level: process.env.LOG_LEVEL || "info"
 });
 
-type LogMeta = Record<string, unknown> | undefined;
-
-function logWithMeta(level: "info" | "error" | "warn", message: unknown, meta?: LogMeta) {
-  if (typeof message === "string") {
-    if (meta) {
-      baseLogger[level](meta, message);
+export const logger = {
+  info(message: unknown, meta?: Record<string, unknown>) {
+    if (typeof message === "string") {
+      baseLogger.info(meta ?? {}, message);
       return;
     }
-
-    baseLogger[level](message);
-    return;
-  }
-
-  if (meta) {
-    baseLogger[level]({ value: message, ...meta });
-    return;
-  }
-
-  baseLogger[level]({ value: message });
-}
-
-export const logger = {
-  info(message: unknown, meta?: LogMeta) {
-    logWithMeta("info", message, meta);
+    baseLogger.info({ ...meta, value: message });
   },
-  warn(message: unknown, meta?: LogMeta) {
-    logWithMeta("warn", message, meta);
+  warn(message: unknown, meta?: Record<string, unknown>) {
+    if (typeof message === "string") {
+      baseLogger.warn(meta ?? {}, message);
+      return;
+    }
+    baseLogger.warn({ ...meta, value: message });
   },
-  error(message: unknown, meta?: LogMeta) {
-    logWithMeta("error", message, meta);
+  debug(message: unknown, meta?: Record<string, unknown>) {
+    if (typeof message === "string") {
+      baseLogger.debug(meta ?? {}, message);
+      return;
+    }
+    baseLogger.debug({ ...meta, value: message });
+  },
+  error(message: unknown, meta?: Record<string, unknown>) {
+    if (typeof message === "string") {
+      baseLogger.error(meta ?? {}, message);
+      return;
+    }
+    baseLogger.error({ ...meta, value: message });
   }
 };

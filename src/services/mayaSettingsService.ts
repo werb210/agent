@@ -1,12 +1,9 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 export async function getMayaSettings() {
 
-  const result = await pool.query(
+  const result = await pool.request(
     "SELECT * FROM maya_settings ORDER BY id DESC LIMIT 1"
   );
 

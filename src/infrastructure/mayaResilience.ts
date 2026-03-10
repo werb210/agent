@@ -1,5 +1,5 @@
 import { MayaTaskType, runMayaLLM } from "../core/mayaModelRouter";
-import { logger } from "../logging/logger";
+import { logger } from "../infrastructure/logger";
 
 type ResilientOptions = {
   responseFormat?: {

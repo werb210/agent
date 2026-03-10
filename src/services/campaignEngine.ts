@@ -11,7 +11,7 @@ import { AppError } from "../errors/AppError";
 export async function launchAutonomousCampaigns() {
   enforceKillSwitch();
   const maxBudget = Number(ENV.MAYA_MAX_CAMPAIGN_BUDGET || 50000);
-  const strategy = await pool.query(`
+  const strategy = await pool.request(`
     SELECT * FROM maya_strategy_plans
     ORDER BY created_at DESC
     LIMIT 1

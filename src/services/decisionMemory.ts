@@ -1,8 +1,5 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 interface DecisionMemoryInput {
   sessionId: string;
@@ -12,7 +9,7 @@ interface DecisionMemoryInput {
 }
 
 export async function logDecisionMemory(input: DecisionMemoryInput) {
-  await pool.query(
+  await pool.request(
     `INSERT INTO maya_decisions (session_id, decision_type, confidence, outcome)
      VALUES ($1, $2, $3, $4)`,
     [input.sessionId, input.decisionType, input.confidence, input.outcome]

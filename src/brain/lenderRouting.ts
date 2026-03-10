@@ -7,7 +7,7 @@ export async function recommendLenders(
 ) {
   const lenders = await prisma.lender.findMany();
 
-  const scored = lenders.map((l) => {
+  const scored = lenders.map((l: any) => {
     const industryFit = l.preferredIndustry === industry ? 20 : 0;
     const amountFit = amount >= l.minAmount && amount <= l.maxAmount ? 20 : 0;
 
@@ -16,5 +16,5 @@ export async function recommendLenders(
     return { lender: l.name, score };
   });
 
-  return scored.sort((a, b) => b.score - a.score);
+  return scored.sort((a: any, b: any) => b.score - a.score);
 }

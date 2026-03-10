@@ -1,9 +1,6 @@
-import { Pool } from "pg";
+import { pool } from "../db";
 import { CURRENT_AUTONOMY_LEVEL } from "../config/autonomy";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
 
 interface LogParams {
   sessionId: string;
@@ -17,7 +14,7 @@ interface LogParams {
 
 export async function logDecision(params: LogParams) {
   try {
-    await pool.query(
+    await pool.request(
       `INSERT INTO ai_decisions
        (session_id, mode, message, reply, confidence, escalated, violation_detected, autonomy_level)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,

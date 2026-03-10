@@ -8,7 +8,7 @@ export type FullClientContext = {
 };
 
 export async function loadFullClientContext(phone: string): Promise<FullClientContext | null> {
-  const client = await pool.query(
+  const client = await pool.request(
     "SELECT * FROM crm_contacts WHERE phone = $1 LIMIT 1",
     [phone]
   );
@@ -20,17 +20,17 @@ export async function loadFullClientContext(phone: string): Promise<FullClientCo
   const contact = client.rows[0] as Record<string, unknown>;
   const contactId = contact.id as string | number;
 
-  const applications = await pool.query(
+  const applications = await pool.request(
     "SELECT * FROM applications WHERE contact_id = $1",
     [contactId]
   );
 
-  const documents = await pool.query(
+  const documents = await pool.request(
     "SELECT * FROM documents WHERE contact_id = $1",
     [contactId]
   );
 
-  const notes = await pool.query(
+  const notes = await pool.request(
     "SELECT * FROM notes WHERE contact_id = $1",
     [contactId]
   );
@@ -44,7 +44,7 @@ export async function loadFullClientContext(phone: string): Promise<FullClientCo
 }
 
 export async function storeConversationMemory(sessionId: string, data: unknown): Promise<void> {
-  await pool.query(
+  await pool.request(
     "UPDATE sessions SET data = $1 WHERE id = $2",
     [data, sessionId]
   );
