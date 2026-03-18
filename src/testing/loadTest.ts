@@ -1,8 +1,14 @@
-import autocannon from "autocannon";
+const autocannon = require("autocannon") as (options: {
+  url: string;
+  connections: number;
+  duration: number;
+}) => Promise<unknown>;
 
 export async function runLoadTest() {
+  const url = process.env.LOAD_TEST_URL ?? "http://localhost:5000/health";
+
   const result = await autocannon({
-    url: "http://localhost:4000/health",
+    url,
     connections: 50,
     duration: 10
   });
