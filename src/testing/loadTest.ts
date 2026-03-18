@@ -1,10 +1,16 @@
-import http from "http";
-import autocannon from "autocannon";
+const autocannon = require("autocannon") as (options: {
+  url: string;
+  connections: number;
+  duration: number;
+}) => Promise<unknown>;
 
-async function withEphemeralHealthServer<T>(callback: (url: string) => Promise<T>): Promise<T> {
-  const server = http.createServer((_req, res) => {
-    res.statusCode = 200;
-    res.end("ok");
+export async function runLoadTest() {
+  const url = process.env.LOAD_TEST_URL ?? "http://localhost:5000/health";
+
+  const result = await autocannon({
+    url,
+    connections: 50,
+    duration: 10
   });
 
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
