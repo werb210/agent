@@ -28,12 +28,17 @@ export class CircuitBreaker {
       }
     }
 
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
     try {
       const result = await Promise.race([
         fn(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), this.options.timeout)
-        )
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error("Timeout")), this.options.timeout);
+          if (typeof timeoutHandle.unref === "function") {
+            timeoutHandle.unref();
+          }
+        })
       ]);
 
       this.failures = 0;
@@ -48,6 +53,10 @@ export class CircuitBreaker {
       }
 
       throw err;
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 }
