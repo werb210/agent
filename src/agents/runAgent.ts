@@ -8,8 +8,29 @@ async function executeFlow(input: MayaAgentPayload) {
 }
 
 export async function runAgent(input: unknown) {
-  const validatedInput = validateInput<MayaAgentPayload>(input);
-  const result = await executeFlow(validatedInput);
-  const validatedOutput = validateOutput({ result });
-  return validatedOutput;
+  const globalState = globalThis as typeof globalThis & { __AGENT_RUNNING__?: boolean };
+  if (globalState.__AGENT_RUNNING__) {
+    throw new Error("AGENT_ALREADY_RUNNING");
+  }
+  globalState.__AGENT_RUNNING__ = true;
+
+  let stepCount = 0;
+  try {
+    const validatedInput = validateInput<MayaAgentPayload>(input);
+
+    stepCount += 1;
+    if (stepCount > 10) {
+      throw new Error("MAX_AGENT_STEPS_EXCEEDED");
+    }
+
+    const finalOutput = await executeFlow(validatedInput);
+    if (!finalOutput || typeof finalOutput !== "object") {
+      throw new Error("INVALID_FINAL_OUTPUT");
+    }
+
+    const validatedOutput = validateOutput({ success: true, result: finalOutput as unknown as Record<string, unknown> });
+    return validatedOutput;
+  } finally {
+    globalState.__AGENT_RUNNING__ = false;
+  }
 }

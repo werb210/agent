@@ -20,7 +20,7 @@ export const tools = [
     }
   },
   {
-    name: "updateCRMRecord",
+    name: "updateCRM",
     description: "Update CRM contact/application metadata.",
     parameters: {
       type: "object",
@@ -41,18 +41,6 @@ export const tools = [
         message: { type: "string" }
       },
       required: ["phone", "message"]
-    }
-  },
-  {
-    name: "transferCall",
-    description: "Transfer active call to a live agent.",
-    parameters: {
-      type: "object",
-      properties: {
-        callSid: { type: "string" },
-        reason: { type: "string" }
-      },
-      required: ["callSid"]
     }
   }
 ] as const;
