@@ -24,6 +24,6 @@ export async function logAction(params: LogActionParams) {
       ]
     );
   } catch (err) {
-    console.error("Action logging error:", err);
+    throw err;
   }
 }

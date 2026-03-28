@@ -3,7 +3,7 @@ import { validatePerformance } from "./performanceCheck";
 
 export async function preDeployValidation() {
   if (process.env.NODE_ENV !== "production" && !process.env.LOAD_TEST_URL) {
-    console.log("Skipping load test: set LOAD_TEST_URL to enable predeploy load validation.");
+    console.info("Skipping load test: set LOAD_TEST_URL to enable predeploy load validation.");
     return;
   }
 
@@ -11,7 +11,7 @@ export async function preDeployValidation() {
   validatePerformance(loadResult);
 
   if (process.env.NODE_ENV !== "production") {
-    console.log("Pre-deployment validation passed.");
+    console.info("Pre-deployment validation passed.");
   }
 }
 

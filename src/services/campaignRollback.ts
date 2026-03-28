@@ -26,7 +26,7 @@ export async function rollbackCampaign(campaignId: string) {
 
   // push config back to Google/Facebook API
   if (process.env.NODE_ENV !== "production") {
-    console.log("Rollback applied", config);
+    console.info("Rollback applied", config);
   }
   await logMayaAction("campaign_rollback", { campaignId, config }, "executed");
 }

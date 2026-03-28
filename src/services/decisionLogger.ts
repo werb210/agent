@@ -30,6 +30,6 @@ export async function logDecision(params: LogParams) {
       ]
     );
   } catch (err) {
-    console.error("Decision logging error:", err);
+    throw err;
   }
 }

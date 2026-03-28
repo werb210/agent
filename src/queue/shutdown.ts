@@ -3,7 +3,7 @@ import { stopWorker } from "./worker"
 export function registerShutdownHooks() {
 
   const shutdown = () => {
-    console.log("Agent shutdown requested")
+    console.info("Agent shutdown requested")
     stopWorker()
     process.exit(0)
   }

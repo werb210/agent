@@ -21,7 +21,7 @@ export async function detectRevenueAnomalies(): Promise<void> {
 
   if (anomalies.length > 0) {
     if (process.env.NODE_ENV !== "production") {
-      console.log("Revenue anomaly detected.");
+      console.info("Revenue anomaly detected.");
     }
   }
 }
