@@ -1,57 +1,27 @@
-import { AxiosRequestConfig, Method } from "axios";
 import { logger } from "../infrastructure/logger";
-import api from "../lib/api";
+import { apiRequest } from "../lib/api";
 
 type Primitive = string | number | boolean | null | undefined;
 type RequestPayload = Primitive | Record<string, unknown> | Array<unknown>;
 
-type ApiEnvelope<T = any> = {
-  success: boolean;
-  error?: string;
-  data: T;
-};
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
 
-export async function bfServerRequest(
-  path: string,
-  method: Method,
-  body?: RequestPayload
-): Promise<any> {
+export async function bfServerRequest(path: string, method: HttpMethod, body?: RequestPayload): Promise<any> {
   const logMeta = { path, method };
 
   logger.info("api_call_start", logMeta);
 
   try {
-    const request: AxiosRequestConfig = {
-      url: path,
-      method
-    };
-
-    if (method.toUpperCase() === "GET") {
-      request.params = body as Record<string, unknown> | undefined;
-    } else {
-      request.data = body;
-    }
-
-    const response = await api.request<ApiEnvelope>(request);
-    const data = response.data;
-
-    if (!data || typeof data.success !== "boolean") {
-      throw new Error("Invalid API contract");
-    }
-
-    if (!data.success) {
-      throw new Error(data.error || "API request failed");
-    }
-
-    logger.info("api_call_success", { ...logMeta, status: response.status });
+    const data = await apiRequest(path, method, body);
+    logger.info("api_call_success", logMeta);
     logger.info("api_call_end", { ...logMeta, outcome: "success" });
-    return data.data;
-  } catch (error) {
+    return data;
+  } catch (err) {
     logger.error("api_call_failure", {
       ...logMeta,
-      error: error instanceof Error ? error.message : String(error)
+      error: err instanceof Error ? err.message : String(err)
     });
     logger.info("api_call_end", { ...logMeta, outcome: "failure" });
-    throw error;
+    throw err;
   }
 }
