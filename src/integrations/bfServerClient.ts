@@ -1,7 +1,6 @@
 import { AxiosRequestConfig, Method } from "axios";
 import { logger } from "../infrastructure/logger";
 import api from "../lib/api";
-import { withRetry } from "../lib/retry";
 
 type Primitive = string | number | boolean | null | undefined;
 type RequestPayload = Primitive | Record<string, unknown> | Array<unknown>;
@@ -22,30 +21,31 @@ export async function bfServerRequest(
   logger.info("api_call_start", logMeta);
 
   try {
-    const data = await withRetry(async (): Promise<any> => {
-      const request: AxiosRequestConfig = {
-        url: path,
-        method
-      };
+    const request: AxiosRequestConfig = {
+      url: path,
+      method
+    };
 
-      if (method.toUpperCase() === "GET") {
-        request.params = body as Record<string, unknown> | undefined;
-      } else {
-        request.data = body;
-      }
+    if (method.toUpperCase() === "GET") {
+      request.params = body as Record<string, unknown> | undefined;
+    } else {
+      request.data = body;
+    }
 
-      const response = await api.request<ApiEnvelope>(request);
+    const response = await api.request<ApiEnvelope>(request);
+    const data = response.data;
 
-      if (!response.data.success) {
-        throw new Error(response.data.error || "Upstream API reported failure");
-      }
+    if (!data || typeof data.success !== "boolean") {
+      throw new Error("Invalid API contract");
+    }
 
-      logger.info("api_call_success", { ...logMeta, status: response.status });
-      return response.data.data;
-    });
+    if (!data.success) {
+      throw new Error(data.error || "API request failed");
+    }
 
+    logger.info("api_call_success", { ...logMeta, status: response.status });
     logger.info("api_call_end", { ...logMeta, outcome: "success" });
-    return data;
+    return data.data;
   } catch (error) {
     logger.error("api_call_failure", {
       ...logMeta,

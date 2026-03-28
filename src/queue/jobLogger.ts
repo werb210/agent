@@ -23,7 +23,7 @@ export function logJobStarted(job: Job): JobLog {
   };
 
   logs.push(log);
-  console.log(log);
+  console.info(log);
   logger.info("job_started", log);
   return log;
 }
@@ -35,7 +35,7 @@ export function logJobComplete(job: Job): void {
   if (log) {
     log.status = "completed";
     log.finished_at = finished;
-    console.log(log);
+    console.info(log);
     logger.info("job_completed", log);
     return;
   }
@@ -49,7 +49,7 @@ export function logJobComplete(job: Job): void {
   };
 
   logs.push(fallback);
-  console.log(fallback);
+  console.info(fallback);
   logger.info("job_completed", fallback);
 }
 
@@ -62,7 +62,7 @@ export function logJobFailure(job: Job, error: unknown): void {
     log.status = "failed";
     log.finished_at = finished;
     log.error = message;
-    console.log(log);
+    console.info(log);
     logger.error("job_failed", log);
     return;
   }
@@ -77,7 +77,7 @@ export function logJobFailure(job: Job, error: unknown): void {
   };
 
   logs.push(fallback);
-  console.log(fallback);
+  console.info(fallback);
   logger.error("job_failed", fallback);
 }
 

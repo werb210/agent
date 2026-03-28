@@ -16,7 +16,7 @@ export async function predictChurn(): Promise<void> {
 
     if (daysInactive > 30) {
       if (process.env.NODE_ENV !== "production") {
-        console.log("Potential churn risk:", client.contact_id);
+        console.info("Potential churn risk:", client.contact_id);
       }
     }
   }

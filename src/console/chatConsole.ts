@@ -53,8 +53,8 @@ async function sendMessage(sessionId: string, message: string) {
 
 async function startConsole() {
   if (process.env.NODE_ENV !== "production") {
-    console.log("Maya AI Console Started");
-    console.log("Type 'exit' to quit\n");
+    console.info("Maya AI Console Started");
+    console.info("Type 'exit' to quit\n");
   }
 
   const sessionId = "dev-session";
@@ -74,9 +74,9 @@ async function startConsole() {
       const result = await sendMessage(sessionId, input);
 
       if (process.env.NODE_ENV !== "production") {
-        console.log("\nMaya:", result.result.content);
-        console.log("Confidence:", result.confidence);
-        console.log("----\n");
+        console.info("\nMaya:", result.result.content);
+        console.info("Confidence:", result.confidence);
+        console.info("----\n");
       }
     } catch (err: any) {
       console.error("Error:", err.response?.data || err.message);

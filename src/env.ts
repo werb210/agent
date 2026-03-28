@@ -1,7 +1,5 @@
-const required = ["AGENT_API_TOKEN"];
+const token = process.env.AGENT_API_TOKEN;
 
-required.forEach((key) => {
-  if (!process.env[key]) {
-    throw new Error(`Missing env var: ${key}`);
-  }
-});
+if (!token) {
+  throw new Error("Missing AGENT_API_TOKEN");
+}
