@@ -1,21 +1,32 @@
+import axios, { AxiosRequestConfig, AxiosResponse, Method } from "axios";
+
 export async function retryFetch(
   url: string,
-  options: RequestInit,
+  options: AxiosRequestConfig = {},
   retries = 3
-): Promise<Response> {
+): Promise<AxiosResponse> {
+  const method = (options.method || "GET") as Method;
+
   for (let i = 0; i < retries; i += 1) {
     try {
-      const res = await fetch(url, options);
+      const response = await axios.request({
+        url,
+        method,
+        data: options.data,
+        headers: options.headers,
+        params: options.params,
+        validateStatus: () => true
+      });
 
-      if (res.ok) {
-        return res;
+      if (response.status >= 200 && response.status < 300) {
+        return response;
       }
 
-      if (res.status >= 500) {
+      if (response.status >= 500) {
         continue;
       }
 
-      return res;
+      return response;
     } catch (error) {
       if (i === retries - 1) {
         throw error;

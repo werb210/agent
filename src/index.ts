@@ -1,3 +1,4 @@
+import "./env";
 import "./infrastructure/env";
 import { NextFunction, Request, Response } from "express";
 import { app } from "./server";

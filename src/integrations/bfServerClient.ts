@@ -1,22 +1,28 @@
 import { AxiosRequestConfig, Method } from "axios";
 import { logger } from "../infrastructure/logger";
-import { apiClient } from "../lib/apiClient";
+import api from "../lib/api";
 import { withRetry } from "../lib/retry";
 
 type Primitive = string | number | boolean | null | undefined;
 type RequestPayload = Primitive | Record<string, unknown> | Array<unknown>;
 
+type ApiEnvelope<T = any> = {
+  success: boolean;
+  error?: string;
+  data: T;
+};
+
 export async function bfServerRequest(
   path: string,
   method: Method,
   body?: RequestPayload
-) {
+): Promise<any> {
   const logMeta = { path, method };
 
   logger.info("api_call_start", logMeta);
 
   try {
-    const data = await withRetry(async () => {
+    const data = await withRetry(async (): Promise<any> => {
       const request: AxiosRequestConfig = {
         url: path,
         method
@@ -28,9 +34,14 @@ export async function bfServerRequest(
         request.data = body;
       }
 
-      const response = await apiClient.request(request);
+      const response = await api.request<ApiEnvelope>(request);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || "Upstream API reported failure");
+      }
+
       logger.info("api_call_success", { ...logMeta, status: response.status });
-      return response.data;
+      return response.data.data;
     });
 
     logger.info("api_call_end", { ...logMeta, outcome: "success" });

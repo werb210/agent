@@ -1,5 +1,6 @@
 import { acquireLock, clearLocks, releaseLock } from "../services/lock.service";
 import { clearProcessedIds, isDuplicate } from "../services/idempotency.service";
+import axios from "axios";
 import { retryFetch } from "../services/retryFetch";
 
 describe("v1 hardening primitives", () => {
@@ -27,20 +28,13 @@ describe("v1 hardening primitives", () => {
   });
 
   it("retries transient upstream failures", async () => {
-    const fetchMock = jest.fn<Promise<Response>, [string, RequestInit?]>()
-      .mockResolvedValueOnce({ ok: false, status: 500 } as Response)
-      .mockResolvedValueOnce({ ok: true, status: 200 } as Response);
+    const requestSpy = jest.spyOn(axios, "request")
+      .mockResolvedValueOnce({ status: 500 } as any)
+      .mockResolvedValueOnce({ status: 200 } as any);
 
-    const originalFetch = global.fetch;
-    global.fetch = fetchMock as unknown as typeof fetch;
+    const response = await retryFetch("http://example.com", { method: "GET" }, 3);
 
-    try {
-      const response = await retryFetch("http://example.com", { method: "GET" }, 3);
-
-      expect(response.ok).toBe(true);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(response.status).toBe(200);
+    expect(requestSpy).toHaveBeenCalledTimes(2);
   });
 });
