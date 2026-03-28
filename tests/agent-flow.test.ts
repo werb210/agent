@@ -27,7 +27,7 @@ describe("agent deterministic flow", () => {
     runMayaAgents.mockResolvedValue(expected);
 
     const { runAgent } = await import("../src/agents/runAgent");
-    await expect(runAgent({ leadId: "123" })).resolves.toEqual(expected);
+    await expect(runAgent({ leadId: "123" })).resolves.toEqual({ result: expected });
   });
 
   it("invalid input throws", async () => {
@@ -35,13 +35,10 @@ describe("agent deterministic flow", () => {
     await expect(runAgent(undefined)).rejects.toThrow("Missing input");
   });
 
-  it("tool failure bubbles up as explicit failure payload", async () => {
+  it("tool failure throws and bubbles up", async () => {
     bfServerRequest.mockRejectedValue(new Error("tool failed"));
 
-    await expect(executeTool("scheduleAppointment", { name: "Test", phone: "123" })).resolves.toEqual({
-      success: false,
-      error: "tool failed"
-    });
+    await expect(executeTool("scheduleAppointment", { name: "Test", phone: "123" })).rejects.toThrow("tool failed");
   });
 
   it("API failure bubbles up", () => {

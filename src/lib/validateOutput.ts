@@ -1,10 +1,10 @@
-export function validateOutput<T extends Record<string, unknown>>(output: T | unknown): T {
-  if (!output) {
-    throw new Error("Empty output");
+export function validateOutput<T extends object>(output: T | unknown): T {
+  if (!output || typeof output !== "object") {
+    throw new Error("Invalid output structure");
   }
 
-  if (typeof output !== "object") {
-    throw new Error("Invalid output");
+  if (!(output as { result?: unknown }).result) {
+    throw new Error("Missing result field");
   }
 
   return output as T;

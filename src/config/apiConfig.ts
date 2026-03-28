@@ -6,9 +6,5 @@ if (!token) {
 
 export const apiConfig = {
   baseUrl: "https://server.boreal.financial",
-  token,
-  retry: {
-    maxAttempts: 3,
-    baseDelayMs: 250
-  }
+  token
 } as const;

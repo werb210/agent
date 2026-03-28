@@ -27,46 +27,53 @@ export type ToolExecutionResult = {
   error?: string;
 };
 
+function assertToolResult(result: unknown): asserts result is ToolExecutionResult {
+  if (!result || typeof result !== "object") {
+    throw new Error("Invalid tool response");
+  }
+
+  if (!("success" in result)) {
+    throw new Error("Missing success field");
+  }
+
+  if ((result as ToolExecutionResult).success !== true && (result as ToolExecutionResult).success !== false) {
+    throw new Error("Invalid success value");
+  }
+}
+
 export async function executeTool(name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
   logger.info("tool_call_start", { toolName: name });
 
-  try {
-    let data: unknown;
+  let data: unknown;
 
-    switch (name) {
-      case "createLead": {
-        if (!isCreateLeadPayload(params)) {
-          throw new Error("Invalid createLead payload");
-        }
-        data = await bfServerRequest("/api/crm/createLead", "POST", params);
-        break;
+  switch (name) {
+    case "createLead": {
+      if (!isCreateLeadPayload(params)) {
+        throw new Error("Invalid createLead payload");
       }
-      case "scheduleAppointment":
-        data = await bfServerRequest("/api/applications/create", "POST", params);
-        break;
-      case "updateCRMRecord":
-        data = await bfServerRequest("/api/crm/contacts", "POST", params);
-        break;
-      case "sendSMS":
-        data = await bfServerRequest("/api/calls/log", "POST", { type: "sms", ...params });
-        break;
-      case "transferCall":
-        data = await bfServerRequest("/api/calls/log", "POST", { type: "transfer", ...params });
-        break;
-      default:
-        throw new Error(`Unsupported tool: ${name}`);
+      data = await bfServerRequest("/api/crm/createLead", "POST", params);
+      break;
     }
-
-    logger.info("tool_call_success", { toolName: name });
-    logger.info("tool_call_end", { toolName: name, outcome: "success" });
-    return { success: true, data };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error("tool_call_failure", {
-      toolName: name,
-      error: errorMessage
-    });
-    logger.info("tool_call_end", { toolName: name, outcome: "failure" });
-    return { success: false, error: errorMessage };
+    case "scheduleAppointment":
+      data = await bfServerRequest("/api/applications/create", "POST", params);
+      break;
+    case "updateCRMRecord":
+      data = await bfServerRequest("/api/crm/contacts", "POST", params);
+      break;
+    case "sendSMS":
+      data = await bfServerRequest("/api/calls/log", "POST", { type: "sms", ...params });
+      break;
+    case "transferCall":
+      data = await bfServerRequest("/api/calls/log", "POST", { type: "transfer", ...params });
+      break;
+    default:
+      throw new Error(`Unsupported tool: ${name}`);
   }
+
+  const result: ToolExecutionResult = { success: true, data };
+  assertToolResult(result);
+
+  logger.info("tool_call_success", { toolName: name });
+  logger.info("tool_call_end", { toolName: name, outcome: "success" });
+  return result;
 }
