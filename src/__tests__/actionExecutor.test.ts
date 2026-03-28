@@ -52,15 +52,9 @@ describe("executeAction governance", () => {
       auto_outbound_enabled: false
     });
 
-    const result = await executeAction(
-      { type: "follow_up", requiresConfirmation: false },
-      {}
-    );
-
-    expect(result).toEqual({
-      success: false,
-      message: "Action execution is currently disabled."
-    });
+    await expect(
+      executeAction({ type: "follow_up", requiresConfirmation: false }, {})
+    ).rejects.toThrow("Action execution is currently disabled.");
   });
 
   it("blocks booking when disabled", async () => {
@@ -73,15 +67,12 @@ describe("executeAction governance", () => {
       auto_outbound_enabled: false
     });
 
-    const result = await executeAction(
-      { type: "book", requiresConfirmation: false },
-      { startISO: "2026-03-03T10:00:00Z", endISO: "2026-03-03T10:30:00Z" }
-    );
-
-    expect(result).toEqual({
-      success: false,
-      message: "Booking is currently disabled."
-    });
+    await expect(
+      executeAction(
+        { type: "book", requiresConfirmation: false },
+        { startISO: "2026-03-03T10:00:00Z", endISO: "2026-03-03T10:30:00Z" }
+      )
+    ).rejects.toThrow("Booking is currently disabled.");
     expect(mockedHandleBooking).not.toHaveBeenCalled();
   });
 
@@ -95,15 +86,9 @@ describe("executeAction governance", () => {
       auto_outbound_enabled: false
     });
 
-    const result = await executeAction(
-      { type: "transfer", requiresConfirmation: false },
-      {}
-    );
-
-    expect(result).toEqual({
-      success: false,
-      message: "Transfer is currently disabled."
-    });
+    await expect(
+      executeAction({ type: "transfer", requiresConfirmation: false }, {})
+    ).rejects.toThrow("Transfer is currently disabled.");
   });
 
   it("requires confirmation when configured", async () => {
@@ -116,15 +101,9 @@ describe("executeAction governance", () => {
       auto_outbound_enabled: false
     });
 
-    const result = await executeAction(
-      { type: "transfer", requiresConfirmation: true },
-      { confirmed: false }
-    );
-
-    expect(result).toEqual({
-      success: false,
-      message: "Confirmation required."
-    });
+    await expect(
+      executeAction({ type: "transfer", requiresConfirmation: true }, { confirmed: false })
+    ).rejects.toThrow("Confirmation required.");
   });
 
   it("executes booking when governance checks pass", async () => {

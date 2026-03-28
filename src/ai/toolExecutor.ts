@@ -1,6 +1,12 @@
 import { logger } from "../infrastructure/logger";
 import { bfServerRequest } from "../integrations/bfServerClient";
 
+export type ToolExecutionResult = {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+};
+
 function isCreateLeadPayload(params: Record<string, unknown>): boolean {
   const name = params.name;
   const phone = params.phone;
@@ -21,23 +27,17 @@ function isCreateLeadPayload(params: Record<string, unknown>): boolean {
   return true;
 }
 
-export type ToolExecutionResult = {
-  success: boolean;
-  data?: unknown;
-  error?: string;
-};
-
 function assertToolResult(result: unknown): asserts result is ToolExecutionResult {
-  if (!result || typeof result !== "object") {
-    throw new Error("Invalid tool response");
+  if (typeof result !== "object" || result === null) {
+    throw new Error("Tool must return object");
   }
 
-  if (!("success" in result)) {
-    throw new Error("Missing success field");
+  if (typeof (result as ToolExecutionResult).success !== "boolean") {
+    throw new Error("Tool must return boolean success");
   }
 
-  if ((result as ToolExecutionResult).success !== true && (result as ToolExecutionResult).success !== false) {
-    throw new Error("Invalid success value");
+  if ((result as ToolExecutionResult).success !== true) {
+    throw new Error((result as ToolExecutionResult).error || "Tool execution failed");
   }
 }
 

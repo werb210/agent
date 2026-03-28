@@ -1,38 +1,23 @@
 import { MayaAction } from "../types/actions";
 import { handleBooking } from "./bookingEngine";
 import { getMayaSettings } from "./mayaSettingsService";
-import {
-  getPipelineSummary,
-  getApplicationsByStatus
-} from "./staffDataAccess";
+import { getPipelineSummary, getApplicationsByStatus } from "./staffDataAccess";
 import { triggerOutboundCall } from "./outboundIntelligence";
 import { logAudit } from "../infrastructure/mayaAudit";
 
-export async function executeAction(
-  action: MayaAction,
-  context: any
-) {
+export async function executeAction(action: MayaAction, context: any) {
   const settings = await getMayaSettings();
 
   if (settings.autonomy_level === 0) {
-    return {
-      success: false,
-      message: "Action execution is currently disabled."
-    };
+    throw new Error("Action execution is currently disabled.");
   }
 
   if (action.type === "book" && !settings.allow_booking) {
-    return {
-      success: false,
-      message: "Booking is currently disabled."
-    };
+    throw new Error("Booking is currently disabled.");
   }
 
   if (action.type === "transfer" && !settings.allow_transfer) {
-    return {
-      success: false,
-      message: "Transfer is currently disabled."
-    };
+    throw new Error("Transfer is currently disabled.");
   }
 
   if (settings.autonomy_level >= 4) {
@@ -41,9 +26,7 @@ export async function executeAction(
     }
 
     if (action.type === "transfer" && settings.allow_transfer) {
-      const leadValue = Number(
-        context.requestedAmount ?? context.leadValue ?? 0
-      );
+      const leadValue = Number(context.requestedAmount ?? context.leadValue ?? 0);
 
       if (leadValue >= settings.high_value_threshold) {
         context.immediateTransfer = true;
@@ -51,36 +34,21 @@ export async function executeAction(
     }
   }
 
-  if (
-    settings.require_confirmation &&
-    action.requiresConfirmation &&
-    !context.confirmed
-  ) {
-    return {
-      success: false,
-      message: "Confirmation required."
-    };
+  if (settings.require_confirmation && action.requiresConfirmation && !context.confirmed) {
+    throw new Error("Confirmation required.");
   }
 
-  if (
-    settings.auto_outbound_enabled &&
-    context.lead?.score > 75 &&
-    context.lead?.phone
-  ) {
+  if (settings.auto_outbound_enabled && context.lead?.score > 75 && context.lead?.phone) {
     triggerOutboundCall(context.lead.phone);
   }
 
   switch (action.type) {
-
     case "book":
       if (!context.startISO || !context.endISO) {
-        return {
-          success: false,
-          message: "Please provide a valid time to book."
-        };
+        throw new Error("Please provide a valid time to book.");
       }
 
-      return await handleBooking({
+      return handleBooking({
         startISO: context.startISO,
         endISO: context.endISO,
         phone: context.phone
@@ -102,10 +70,7 @@ export async function executeAction(
 
     case "staff_pipeline_summary": {
       if (context.mode !== "staff") {
-        return {
-          success: false,
-          message: "I can’t share internal pipeline data in client mode."
-        };
+        throw new Error("I can’t share internal pipeline data in client mode.");
       }
 
       const summary = await getPipelineSummary();
@@ -118,19 +83,13 @@ export async function executeAction(
 
     case "staff_applications_by_status": {
       if (context.mode !== "staff") {
-        return {
-          success: false,
-          message: "I can’t share internal pipeline data in client mode."
-        };
+        throw new Error("I can’t share internal pipeline data in client mode.");
       }
 
       const status = context.status ?? action.payload?.status;
 
       if (!status) {
-        return {
-          success: false,
-          message: "Please provide a valid status."
-        };
+        throw new Error("Please provide a valid status.");
       }
 
       const apps = await getApplicationsByStatus(status);

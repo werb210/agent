@@ -7,7 +7,7 @@ async function executeFlow(input: MayaAgentPayload) {
   return runMayaAgents(input);
 }
 
-export async function runAgent(input: any) {
+export async function runAgent(input: unknown) {
   const validatedInput = validateInput<MayaAgentPayload>(input);
   const result = await executeFlow(validatedInput);
   const validatedOutput = validateOutput({ result });

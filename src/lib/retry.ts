@@ -1,9 +1,5 @@
 const MAX_RETRIES = 3;
-const BASE_DELAY = 100;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const DELAY = 100;
 
 export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let i = 0; i < MAX_RETRIES; i += 1) {
@@ -14,7 +10,7 @@ export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
         throw e;
       }
 
-      await sleep(BASE_DELAY * (i + 1));
+      await new Promise((resolve) => setTimeout(resolve, DELAY));
     }
   }
 
