@@ -21,31 +21,37 @@ function isCreateLeadPayload(params: Record<string, unknown>): boolean {
   return true;
 }
 
-export async function executeTool(name: string, params: Record<string, unknown>) {
+export type ToolExecutionResult = {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+};
+
+export async function executeTool(name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
   logger.info("tool_call_start", { toolName: name });
 
   try {
-    let result: unknown;
+    let data: unknown;
 
     switch (name) {
       case "createLead": {
         if (!isCreateLeadPayload(params)) {
           throw new Error("Invalid createLead payload");
         }
-        result = await bfServerRequest("/api/crm/createLead", "POST", params);
+        data = await bfServerRequest("/api/crm/createLead", "POST", params);
         break;
       }
       case "scheduleAppointment":
-        result = await bfServerRequest("/api/applications/create", "POST", params);
+        data = await bfServerRequest("/api/applications/create", "POST", params);
         break;
       case "updateCRMRecord":
-        result = await bfServerRequest("/api/crm/contacts", "POST", params);
+        data = await bfServerRequest("/api/crm/contacts", "POST", params);
         break;
       case "sendSMS":
-        result = await bfServerRequest("/api/calls/log", "POST", { type: "sms", ...params });
+        data = await bfServerRequest("/api/calls/log", "POST", { type: "sms", ...params });
         break;
       case "transferCall":
-        result = await bfServerRequest("/api/calls/log", "POST", { type: "transfer", ...params });
+        data = await bfServerRequest("/api/calls/log", "POST", { type: "transfer", ...params });
         break;
       default:
         throw new Error(`Unsupported tool: ${name}`);
@@ -53,13 +59,14 @@ export async function executeTool(name: string, params: Record<string, unknown>)
 
     logger.info("tool_call_success", { toolName: name });
     logger.info("tool_call_end", { toolName: name, outcome: "success" });
-    return result;
+    return { success: true, data };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error("tool_call_failure", {
       toolName: name,
-      error: error instanceof Error ? error.message : String(error)
+      error: errorMessage
     });
     logger.info("tool_call_end", { toolName: name, outcome: "failure" });
-    throw error;
+    return { success: false, error: errorMessage };
   }
 }
