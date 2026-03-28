@@ -3,7 +3,7 @@ import readline from "readline-sync";
 import crypto from "crypto";
 import { AppError } from "../errors/AppError";
 
-const AGENT_URL = "http://localhost:4000/ai/execute";
+const AGENT_URL = process.env.AGENT_URL || "http://127.0.0.1:4000/ai/execute";
 const rawSecret = process.env.AGENT_SHARED_SECRET;
 const rawInternalKey = process.env.AGENT_INTERNAL_KEY;
 

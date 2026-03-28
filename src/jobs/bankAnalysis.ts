@@ -1,3 +1,5 @@
+import { bfServerRequest } from "../integrations/bfServerClient";
+
 export type Transaction = {
   amount: number;
   description?: string;
@@ -38,28 +40,12 @@ export async function runBankAnalysis(payload: BankAnalysisPayload): Promise<voi
     nsf_count: nsfEvents.length
   };
 
-  const apiBase = process.env.BF_SERVER_API;
-  if (!apiBase) {
-    throw new Error("BF_SERVER_API missing");
-  }
-
-  const response = await fetch(`${apiBase}/api/banking/analysis`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.MAYA_SECRET ?? ""}`
-    },
-    body: JSON.stringify({
-      applicationId: payload.applicationId,
-      statementId: payload.statementId,
-      transactions,
-      summary
-    })
+  await bfServerRequest("/api/banking/analysis", "POST", {
+    applicationId: payload.applicationId,
+    statementId: payload.statementId,
+    transactions,
+    summary
   });
-
-  if (!response.ok) {
-    throw new Error(`bankAnalysis.ts failed: ${response.status}`);
-  }
 }
 
 export default runBankAnalysis;

@@ -1,5 +1,5 @@
-import axios from "axios";
 import { pool } from "../db";
+import { bfServerRequest } from "../integrations/bfServerClient";
 
 type CampaignRow = {
   id: string;
@@ -47,7 +47,7 @@ export async function launchPlatformCampaign(campaignId: string): Promise<void> 
     cta: adData.cta
   };
 
-  const response = await axios.post("https://api.mockadsplatform.com/campaign", payload);
+  const response = await bfServerRequest("/api/marketing/campaign", "POST", payload);
 
   await pool.request(
     `

@@ -28,7 +28,7 @@ function buildTestEnv(): any {
   return {
     NODE_ENV: "test",
     PORT: process.env.PORT ?? "0",
-    REDIS_URL: process.env.REDIS_URL ?? "redis://localhost:6379",
+    REDIS_URL: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",
     TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ?? "test",
     TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ?? "test",
     TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER ?? "+10000000000",

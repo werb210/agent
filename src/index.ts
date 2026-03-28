@@ -52,8 +52,7 @@ if (process.env.NODE_ENV === "production") {
   "TWILIO_AUTH_TOKEN",
   "TWILIO_PHONE_NUMBER",
   "PUBLIC_WEBHOOK_URL",
-  "BF_SERVER_URL",
-  "BF_SERVER_TOKEN",
+  "AGENT_API_TOKEN",
   "MAYA_SECRET"
 ].forEach(requireEnvVar);
 

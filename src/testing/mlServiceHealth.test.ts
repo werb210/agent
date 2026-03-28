@@ -3,7 +3,7 @@ import axios from "axios";
 jest.mock("axios");
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
-const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
+const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 describe("ML Service Health", () => {
   it("should reach model-health endpoint", async () => {
