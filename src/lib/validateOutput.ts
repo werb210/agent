@@ -1,15 +1,27 @@
-export function validateOutput<T extends object>(output: T | unknown): T {
-  if (!output || typeof output !== "object") {
-    throw new Error("Invalid output");
+export type ToolResult = {
+  success: true;
+  result: Record<string, unknown>;
+};
+
+export function validateOutput(result: unknown): ToolResult {
+  if (!result || typeof result !== "object") {
+    throw new Error("INVALID_TOOL_RESULT");
   }
 
-  if (!("result" in output)) {
-    throw new Error("Missing result");
+  if (!("success" in result) || !("result" in result)) {
+    throw new Error("INVALID_TOOL_RESULT");
   }
 
-  if ((output as { result: unknown }).result === undefined || (output as { result: unknown }).result === null) {
-    throw new Error("Empty result");
+  const resultCandidate = result as Record<string, unknown>;
+  const keys = Object.keys(resultCandidate);
+
+  if (keys.length !== 2 || !keys.includes("success") || !keys.includes("result")) {
+    throw new Error("INVALID_TOOL_RESULT");
   }
 
-  return output as T;
+  if (resultCandidate.success !== true || typeof resultCandidate.result !== "object" || resultCandidate.result === null) {
+    throw new Error("INVALID_TOOL_RESULT");
+  }
+
+  return resultCandidate as ToolResult;
 }

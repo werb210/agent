@@ -19,6 +19,16 @@ if rg "Promise\\.all" src; then
   exit 1
 fi
 
+if rg "setTimeout\\(" src/ai src/agents src/lib; then
+  echo "FAIL: timer-based retries not allowed"
+  exit 1
+fi
+
+if rg "Math\\.random\\(" src/ai src/agents src/lib; then
+  echo "FAIL: randomness not allowed in api layer"
+  exit 1
+fi
+
 if rg "\\?\\." src/lib/validateOutput.ts; then
   echo "FAIL: optional chaining not allowed in output validation"
   exit 1

@@ -27,12 +27,12 @@ describe("agent deterministic flow", () => {
     runMayaAgents.mockResolvedValue(expected);
 
     const { runAgent } = await import("../src/agents/runAgent");
-    await expect(runAgent({ leadId: "123" })).resolves.toEqual({ result: expected });
+    await expect(runAgent({ intent: "qualifyLead", leadId: "123" })).resolves.toEqual({ success: true, result: expected });
   });
 
   it("invalid input throws", async () => {
     const { runAgent } = await import("../src/agents/runAgent");
-    await expect(runAgent(undefined)).rejects.toThrow("Missing input");
+    await expect(runAgent(undefined)).rejects.toThrow("INVALID_AGENT_INPUT");
   });
 
   it("tool failure throws and bubbles up", async () => {

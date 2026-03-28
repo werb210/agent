@@ -2,10 +2,13 @@ import { logger } from "../infrastructure/logger";
 import { bfServerRequest } from "../integrations/bfServerClient";
 
 export type ToolExecutionResult = {
-  success: boolean;
-  data?: unknown;
-  error?: string;
+  success: true;
+  result: Record<string, unknown>;
 };
+
+type ToolName = "createLead" | "scheduleAppointment" | "sendSMS" | "updateCRM";
+
+const allowedTools: ToolName[] = ["createLead", "scheduleAppointment", "sendSMS", "updateCRM"];
 
 function isCreateLeadPayload(params: Record<string, unknown>): boolean {
   const name = params.name;
@@ -28,52 +31,76 @@ function isCreateLeadPayload(params: Record<string, unknown>): boolean {
 }
 
 function assertToolResult(result: unknown): asserts result is ToolExecutionResult {
-  if (typeof result !== "object" || result === null) {
-    throw new Error("Tool must return object");
+  if (!result || typeof result !== "object") {
+    throw new Error("INVALID_TOOL_RESULT");
   }
 
-  if (typeof (result as ToolExecutionResult).success !== "boolean") {
-    throw new Error("Tool must return boolean success");
+  if (!("success" in result) || !("result" in result)) {
+    throw new Error("INVALID_TOOL_RESULT");
   }
 
-  if ((result as ToolExecutionResult).success !== true) {
-    throw new Error((result as ToolExecutionResult).error || "Tool execution failed");
+  const resultRecord = result as Record<string, unknown>;
+  const keys = Object.keys(resultRecord);
+  if (keys.length !== 2 || !keys.includes("success") || !keys.includes("result")) {
+    throw new Error("INVALID_TOOL_RESULT");
+  }
+
+  if (resultRecord.success !== true || typeof resultRecord.result !== "object" || resultRecord.result === null) {
+    throw new Error("INVALID_TOOL_RESULT");
+  }
+
+  if (resultRecord.result == null) {
+    throw new Error("EMPTY_TOOL_RESULT");
   }
 }
 
 export async function executeTool(name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
-  logger.info("tool_call_start", { toolName: name });
-
-  let data: unknown;
-
-  switch (name) {
-    case "createLead": {
-      if (!isCreateLeadPayload(params)) {
-        throw new Error("Invalid createLead payload");
-      }
-      data = await bfServerRequest("/api/crm/createLead", "POST", params);
-      break;
-    }
-    case "scheduleAppointment":
-      data = await bfServerRequest("/api/applications/create", "POST", params);
-      break;
-    case "updateCRMRecord":
-      data = await bfServerRequest("/api/crm/contacts", "POST", params);
-      break;
-    case "sendSMS":
-      data = await bfServerRequest("/api/calls/log", "POST", { type: "sms", ...params });
-      break;
-    case "transferCall":
-      data = await bfServerRequest("/api/calls/log", "POST", { type: "transfer", ...params });
-      break;
-    default:
-      throw new Error(`Unsupported tool: ${name}`);
+  const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
+  if (globalState.__TOOL_RUNNING__) {
+    throw new Error("PARALLEL_TOOL_EXECUTION_BLOCKED");
   }
 
-  const result: ToolExecutionResult = { success: true, data };
-  assertToolResult(result);
+  if (!allowedTools.includes(name as ToolName)) {
+    throw new Error(`INVALID_TOOL: ${name}`);
+  }
 
-  logger.info("tool_call_success", { toolName: name });
-  logger.info("tool_call_end", { toolName: name, outcome: "success" });
-  return result;
+  logger.info("tool_call_start", { toolName: name });
+
+  const toolMap: Record<ToolName, (toolParams: Record<string, unknown>) => Promise<unknown>> = {
+    createLead: async (toolParams) => {
+      if (!isCreateLeadPayload(toolParams)) {
+        throw new Error("Invalid createLead payload");
+      }
+
+      return bfServerRequest("/api/crm/createLead", "POST", toolParams);
+    },
+    scheduleAppointment: async (toolParams) => bfServerRequest("/api/applications/create", "POST", toolParams),
+    sendSMS: async (toolParams) => bfServerRequest("/api/calls/log", "POST", { type: "sms", ...toolParams }),
+    updateCRM: async (toolParams) => bfServerRequest("/api/crm/contacts", "POST", toolParams)
+  };
+
+  const tool = toolMap[name as ToolName];
+  if (!tool) {
+    throw new Error("UNKNOWN_TOOL");
+  }
+
+  globalState.__TOOL_RUNNING__ = true;
+  try {
+    const toolResponse = await tool(params);
+    if (!toolResponse || typeof toolResponse !== "object") {
+      throw new Error("EMPTY_TOOL_RESULT");
+    }
+
+    const result: ToolExecutionResult = {
+      success: true,
+      result: toolResponse as Record<string, unknown>
+    };
+    assertToolResult(result);
+
+    logger.info("tool_call_success", { toolName: name });
+    logger.info("tool_call_end", { toolName: name, outcome: "success" });
+    return result;
+  } finally {
+    globalState.__TOOL_RUNNING__ = false;
+  }
 }
