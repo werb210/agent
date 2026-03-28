@@ -4,8 +4,7 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1),
   TWILIO_ACCOUNT_SID: z.string().min(1),
   TWILIO_AUTH_TOKEN: z.string().min(1),
-  BF_SERVER_URL: z.string().url(),
-  BF_SERVER_TOKEN: z.string().min(1),
+  AGENT_API_TOKEN: z.string().min(1),
   REDIS_URL: z.string().min(1)
 });
 

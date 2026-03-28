@@ -1,3 +1,5 @@
+import { bfServerRequest } from "../integrations/bfServerClient";
+
 export type BankStatementPayload = {
   applicationId: string;
   statementId?: string;
@@ -22,13 +24,5 @@ function analyze(payload: BankStatementPayload) {
 export default async function bankStatementAnalysis(payload: BankStatementPayload): Promise<void> {
   const result = analyze(payload);
 
-  const response = await fetch(`${process.env.BF_SERVER_API}/api/analysis/bank`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(result)
-  });
-
-  if (!response.ok) {
-    throw new Error(`bankStatementAnalysis.ts failed: ${response.status}`);
-  }
+  await bfServerRequest("/api/analysis/bank", "POST", result);
 }

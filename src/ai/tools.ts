@@ -1,16 +1,10 @@
+import { createLeadSchema } from "../tools/schemas";
+
 export const tools = [
   {
     name: "createLead",
     description: "Create a CRM lead record in BF-Server.",
-    parameters: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        phone: { type: "string" },
-        company: { type: "string" }
-      },
-      required: ["name", "phone"]
-    }
+    parameters: createLeadSchema
   },
   {
     name: "scheduleAppointment",

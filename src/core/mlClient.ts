@@ -10,7 +10,7 @@ import { generateReasoningSummary } from "./generateExplanation";
 import { pool } from "../db";
 import { AppError } from "../errors/AppError";
 
-const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
+const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 export const mlBreaker = new CircuitBreaker({
   timeout: 3000,

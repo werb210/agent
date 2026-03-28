@@ -1,5 +1,4 @@
-import axios from "axios";
-import { AppError } from "../errors/AppError";
+import { bfServerRequest } from "../integrations/bfServerClient";
 
 type ApplicationContext = {
   revenue?: number;
@@ -84,12 +83,5 @@ export function hasRequiredApplicationFields(context: ApplicationContext): boole
 }
 
 export async function createDraftApplication(context: ApplicationContext): Promise<unknown> {
-  const baseUrl = process.env.STAFF_SERVER_URL;
-
-  if (!baseUrl) {
-    throw new AppError("internal_error", 500, "STAFF_SERVER_URL is not configured.");
-  }
-
-  const response = await axios.post(`${baseUrl}/api/applications/create-draft`, context);
-  return response.data;
+  return bfServerRequest("/api/applications/create-draft", "POST", context);
 }
