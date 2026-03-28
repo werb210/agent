@@ -1,6 +1,7 @@
-import axios, { AxiosError, AxiosRequestConfig, Method } from "axios";
+import axios, { AxiosRequestConfig, Method } from "axios";
 import { apiConfig } from "../config/apiConfig";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
+import { withRetry } from "./retry";
 
 const api = axios.create({
   baseURL: apiConfig.baseUrl
@@ -16,45 +17,6 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
-  const { maxAttempts, baseDelayMs } = apiConfig.retry;
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      if (attempt === maxAttempts) {
-        break;
-      }
-
-      const backoffMs = baseDelayMs * 2 ** (attempt - 1);
-      await sleep(backoffMs);
-    }
-  }
-
-  throw lastError;
-}
-
-function isRetryable(config: AxiosRequestConfig | undefined, err: AxiosError): boolean {
-  if (!config) {
-    return false;
-  }
-
-  const method = String(config.method ?? "GET").toUpperCase();
-  const status = err.response?.status;
-  const isRetryableMethod = ["GET", "HEAD", "OPTIONS"].includes(method);
-  const isRetryableStatus = typeof status === "number" && status >= 500;
-
-  return isRetryableMethod || isRetryableStatus;
-}
 
 export async function apiRequest<T = unknown>(
   path: string,
@@ -75,15 +37,12 @@ export async function apiRequest<T = unknown>(
       requestConfig.data = body;
     }
 
-    try {
-      const response = await api.request<ApiResponseEnvelope<T>>(requestConfig);
-      return assertApiResponse<T>(response.data);
-    } catch (error) {
-      if (axios.isAxiosError(error) && isRetryable(requestConfig, error)) {
-        throw error;
-      }
+    const response = await api.request<ApiResponseEnvelope<T>>(requestConfig);
 
-      throw error;
+    if (!response || typeof response !== "object") {
+      throw new Error("Invalid API response");
     }
+
+    return assertApiResponse<T>(response.data);
   });
 }

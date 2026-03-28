@@ -37,7 +37,7 @@ describe("v1 hardening primitives", () => {
       }
 
       return "ok";
-    }, 3);
+    });
 
     expect(result).toBe("ok");
     expect(attempts).toBe(2);

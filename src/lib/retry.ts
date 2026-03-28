@@ -1,25 +1,22 @@
+const MAX_RETRIES = 3;
+const BASE_DELAY = 100;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
-  const cappedAttempts = Math.min(maxAttempts, 3);
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= cappedAttempts; attempt += 1) {
+export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let i = 0; i < MAX_RETRIES; i += 1) {
     try {
       return await fn();
-    } catch (error) {
-      lastError = error;
-
-      if (attempt === cappedAttempts) {
-        break;
+    } catch (e) {
+      if (i === MAX_RETRIES - 1) {
+        throw e;
       }
 
-      const backoffMs = 250 * 2 ** (attempt - 1);
-      await sleep(backoffMs);
+      await sleep(BASE_DELAY * (i + 1));
     }
   }
 
-  throw lastError;
+  throw new Error("Retry execution exhausted unexpectedly");
 }

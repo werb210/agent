@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if rg "fetch\(" src; then
-  echo "❌ fetch() is forbidden in src"
+FETCH_COUNT=$( (rg "fetch\\(" src || true) | wc -l | tr -d ' ')
+AXIOS_COUNT=$( (rg "axios.create" src || true) | wc -l | tr -d ' ')
+
+if [ "$FETCH_COUNT" -ne 0 ]; then
+  echo "FAIL: fetch usage detected"
   exit 1
 fi
 
-count=$(rg "axios.create" src | wc -l | tr -d ' ')
-if [[ "$count" != "1" ]]; then
-  echo "❌ Expected exactly one axios.create in src, found $count"
+if [ "$AXIOS_COUNT" -ne 1 ]; then
+  echo "FAIL: must have exactly one axios instance"
   exit 1
 fi
 
-echo "✅ API guard checks passed"
+echo "PASS: API guard checks passed"
