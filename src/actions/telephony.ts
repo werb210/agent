@@ -1,17 +1,5 @@
-import api from "../lib/api";
-
-type ApiEnvelope<T> = {
-  success: boolean;
-  error?: string;
-  data: T;
-};
+import { apiRequest } from "../lib/api";
 
 export const getTelephonyToken = async () => {
-  const { data: response } = await api.get<ApiEnvelope<any>>("/api/telephony/token");
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to get telephony token");
-  }
-
-  return response.data;
+  return apiRequest<any>("/api/telephony/token", "GET");
 };
