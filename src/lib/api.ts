@@ -1,36 +1,42 @@
 import axios, { AxiosError, AxiosRequestConfig, Method } from "axios";
+import { apiConfig } from "../config/apiConfig";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
 
-const BASE_URL = "https://server.boreal.financial";
-
-if (!process.env.AGENT_API_TOKEN) {
-  throw new Error("Missing AGENT_API_TOKEN");
-}
-
 const api = axios.create({
-  baseURL: BASE_URL
+  baseURL: apiConfig.baseUrl
 });
 
 api.interceptors.request.use((config) => {
   if (config.headers && typeof (config.headers as any).set === "function") {
-    (config.headers as any).set("Authorization", `Bearer ${process.env.AGENT_API_TOKEN}`);
+    (config.headers as any).set("Authorization", `Bearer ${apiConfig.token}`);
   } else {
     config.headers = (config.headers || {}) as any;
-    (config.headers as any).Authorization = `Bearer ${process.env.AGENT_API_TOKEN}`;
+    (config.headers as any).Authorization = `Bearer ${apiConfig.token}`;
   }
 
   return config;
 });
 
-export async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  const { maxAttempts, baseDelayMs } = apiConfig.retry;
   let lastError: unknown;
 
-  for (let i = 0; i < retries; i++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       return await fn();
-    } catch (err) {
-      lastError = err;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === maxAttempts) {
+        break;
+      }
+
+      const backoffMs = baseDelayMs * 2 ** (attempt - 1);
+      await sleep(backoffMs);
     }
   }
 
@@ -72,12 +78,12 @@ export async function apiRequest<T = unknown>(
     try {
       const response = await api.request<ApiResponseEnvelope<T>>(requestConfig);
       return assertApiResponse<T>(response.data);
-    } catch (err) {
-      if (axios.isAxiosError(err) && isRetryable(requestConfig, err)) {
-        throw err;
+    } catch (error) {
+      if (axios.isAxiosError(error) && isRetryable(requestConfig, error)) {
+        throw error;
       }
 
-      throw err;
+      throw error;
     }
   });
 }
