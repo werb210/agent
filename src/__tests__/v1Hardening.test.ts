@@ -15,9 +15,10 @@ describe("v1 hardening primitives", () => {
   });
 
   it("allows only one concurrent lock holder", async () => {
-    const attempts = await Promise.all(
-      Array.from({ length: 100 }, () => Promise.resolve(acquireLock("call-2")))
-    );
+    const attempts: boolean[] = [];
+    for (let i = 0; i < 100; i += 1) {
+      attempts.push(acquireLock("call-2"));
+    }
 
     expect(attempts.filter(Boolean)).toHaveLength(1);
     expect(attempts.filter((value) => !value)).toHaveLength(99);

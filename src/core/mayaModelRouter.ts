@@ -116,7 +116,7 @@ export async function runMayaLLM(task: MayaTaskType, prompt: string, options: Ma
       ...options.meta,
       tokenUsage: 0,
       latencyMs: Date.now() - startedAt,
-      success: false
+      success: Boolean(0)
     });
     if (String(error).includes("token_limit_exceeded")) {
       throw new AppError("token_limit_exceeded", 400, "token_limit_exceeded");

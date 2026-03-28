@@ -14,4 +14,14 @@ if [ "$AXIOS_COUNT" -ne 1 ]; then
   exit 1
 fi
 
+if rg "Promise\\.all" src; then
+  echo "FAIL: parallel execution not allowed"
+  exit 1
+fi
+
+if rg "\\?\\." src/lib/validateOutput.ts; then
+  echo "FAIL: optional chaining not allowed in output validation"
+  exit 1
+fi
+
 echo "PASS: API guard checks passed"
