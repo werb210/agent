@@ -45,16 +45,18 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
-[
-  "OPENAI_API_KEY",
-  "ML_SERVICE_URL",
-  "ML_INTERNAL_SECRET",
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_PHONE_NUMBER",
-  "PUBLIC_WEBHOOK_URL",
-  "MAYA_SECRET"
-].forEach(requireEnvVar);
+if (process.env.NODE_ENV === "production") {
+  [
+    "OPENAI_API_KEY",
+    "ML_SERVICE_URL",
+    "ML_INTERNAL_SECRET",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_PHONE_NUMBER",
+    "PUBLIC_WEBHOOK_URL",
+    "MAYA_SECRET"
+  ].forEach(requireEnvVar);
+}
 
 app.get("/ready", async (_req, res) => {
   res.json({ status: "ready" });
@@ -87,6 +89,11 @@ async function scheduleJobs() {
 }
 
 async function start() {
+  const port = Number(process.env.PORT || 4000);
+  const server = app.listen(port, () => {
+    logger.info("Agent service started", { port });
+  });
+
   registerMayaAgents();
   registerListeners();
   setupShutdown();
@@ -95,8 +102,12 @@ async function start() {
       // placeholder worker loop for v1 queue wiring
     });
   }
-  await redis.ping();
-  await scheduleJobs();
+  try {
+    await redis.ping();
+    await scheduleJobs();
+  } catch (err) {
+    logger.warn("Skipping queue startup due to missing services", { err });
+  }
 
   const retryInterval = setInterval(() => {
     void processRetryQueue();
@@ -105,11 +116,6 @@ async function start() {
   const retentionInterval = setInterval(() => {
     void runRetentionPurge();
   }, 24 * 60 * 60 * 1000);
-
-  const port = Number(process.env.PORT || 4000);
-  const server = app.listen(port, () => {
-    logger.info("Agent service started", { port });
-  });
 
   const shutdown = () => {
     logger.info("Shutting down Maya gracefully...");

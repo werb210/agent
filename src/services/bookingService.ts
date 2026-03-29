@@ -5,10 +5,16 @@ import twilio from "twilio";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+function getTwilioClient() {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials are not configured");
+  }
+
+  return twilio(sid, token);
+}
 
 export async function getActiveStaffSorted() {
   const result = await pool.request(`
@@ -126,6 +132,8 @@ export async function confirmBookingSMS(
   staffEmail: string,
   startISO: string
 ) {
+  const twilioClient = getTwilioClient();
+
   await twilioClient.messages.create({
     to: phone,
     from: process.env.TWILIO_PHONE_NUMBER!,
