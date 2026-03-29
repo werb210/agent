@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
 import morgan from "morgan";
@@ -92,7 +92,7 @@ const webhookLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => String(req.body?.From ?? req.body?.CallSid ?? req.body?.MessageSid ?? req.ip ?? "unknown")
+  keyGenerator: (req) => String(req.body?.From ?? req.body?.CallSid ?? req.body?.MessageSid ?? ipKeyGenerator(req.ip ?? ""))
 });
 
 const waitlistLimiter = rateLimit({

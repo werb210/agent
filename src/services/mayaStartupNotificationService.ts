@@ -10,10 +10,16 @@ type StartupNotificationContact = {
   phone: string | null;
 };
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+function getTwilioClient() {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials are not configured");
+  }
+
+  return twilio(sid, token);
+}
 
 export async function sendStartupNotification(contact: StartupNotificationContact): Promise<void> {
   enforceKillSwitch();
@@ -26,6 +32,8 @@ Reply START to begin your application.
 `;
 
   if (contact.phone) {
+    const client = getTwilioClient();
+
     await client.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE_NUMBER,

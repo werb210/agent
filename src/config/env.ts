@@ -49,3 +49,17 @@ export function getAgentToken() {
 
   return token || "dev-token";
 }
+
+export function getEnv(name: string, fallback?: string): string {
+  const value = process.env[name];
+
+  if (!value) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`Missing required env var: ${name}`);
+    }
+    console.warn(`[ENV WARNING] ${name} missing, using fallback`);
+    return fallback || "dev";
+  }
+
+  return value;
+}
