@@ -1,3 +1,12 @@
-import { getAgentToken } from "./config/env";
+try {
+  const { getAgentToken } = require("./config/env");
 
-getAgentToken();
+  getAgentToken();
+} catch (err) {
+  if (process.env.NODE_ENV === "production") {
+    throw err;
+  } else {
+    const error = err as Error;
+    console.warn("Boot fallback active:", error.message);
+  }
+}

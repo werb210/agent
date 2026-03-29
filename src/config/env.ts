@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const SAFE_FALLBACKS = {
+  OPENAI_API_KEY: "dev-key",
+  TWILIO_ACCOUNT_SID: "dev-sid",
+  TWILIO_AUTH_TOKEN: "dev-token",
+  REDIS_URL: "redis://localhost:6379"
+} as const;
+
 const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1),
   TWILIO_ACCOUNT_SID: z.string().min(1),
@@ -7,13 +14,28 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1)
 });
 
-const parsed = envSchema.safeParse(process.env);
+const envWithFallbacks = {
+  ...process.env,
+  ...((process.env.NODE_ENV === "production" ? {} : SAFE_FALLBACKS) as Record<string, string>)
+};
+
+const parsed = envSchema.safeParse(envWithFallbacks);
 
 if (!parsed.success) {
-  throw new Error(`Environment validation failed: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`Environment validation failed: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+  } else {
+    console.warn("Missing env var, using safe fallback");
+  }
 }
 
-export const ENV = parsed.data;
+export const ENV = parsed.success
+  ? parsed.data
+  : envSchema.parse({
+      ...SAFE_FALLBACKS,
+      ...process.env
+    });
+
 export const isProd = process.env.NODE_ENV === "production";
 export const isStaging = process.env.NODE_ENV === "staging";
 export const PORT = process.env.PORT || 5000;
