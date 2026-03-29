@@ -1,5 +1,3 @@
-const token = process.env.AGENT_API_TOKEN;
+import { getAgentToken } from "./config/env";
 
-if (!token) {
-  throw new Error("Missing AGENT_API_TOKEN");
-}
+getAgentToken();

@@ -1,10 +1,6 @@
-const token = process.env.AGENT_API_TOKEN;
-
-if (!token) {
-  throw new Error("Missing AGENT_API_TOKEN");
-}
+import { getAgentToken } from "./env";
 
 export const apiConfig = {
   baseUrl: "https://server.boreal.financial",
-  token
+  token: getAgentToken()
 } as const;
