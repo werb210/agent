@@ -54,6 +54,8 @@ import { checkServerHealth } from "./services/healthCheck";
 import { endSession, hasSession, startSession } from "./services/sessionManager";
 import { queueLength } from "./queue/jobQueue";
 import healthRouter from "./routes/health";
+import { getCallEvents } from "./lib/eventStore";
+import { getState } from "./lib/conversationState";
 
 export const app = express();
 const pendingVoiceActions = new Map<string, ReturnType<typeof interpretAction>>();
@@ -167,6 +169,24 @@ app.get("/maya/health", async (_req, res) => {
     status: "ok",
     queue_length: queueLength(),
     workers: 1
+  });
+});
+
+app.get("/internal/call/:callId", async (req, res) => {
+  const callId = String(req.params.callId ?? "");
+  if (!callId) {
+    return res.status(400).json({ error: "callId is required" });
+  }
+
+  const [events, state] = await Promise.all([
+    getCallEvents(callId),
+    getState(callId)
+  ]);
+
+  return res.json({
+    callId,
+    events,
+    state
   });
 });
 

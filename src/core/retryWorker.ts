@@ -1,5 +1,7 @@
 import { pool } from "../db";
 
+const MAX_RETRIES = 10;
+
 export async function processRetryQueue() {
   const jobs = await pool.request(`
     SELECT * FROM maya_retry_queue
@@ -8,6 +10,19 @@ export async function processRetryQueue() {
   `);
 
   for (const job of jobs.rows) {
+    const retryCount = Number(job.retry_count ?? job.attempts ?? 0);
+    if (retryCount >= MAX_RETRIES) {
+      console.error("Maya dead-letter abandoned", job.id);
+      await pool.request(
+        `UPDATE maya_retry_queue
+         SET status='dead'
+         WHERE id=$1`,
+        [job.id]
+      );
+
+      continue;
+    }
+
     try {
       // Example: re-run campaign optimization
       // add switch(job.job_type) for extensibility
@@ -29,7 +44,7 @@ export async function processRetryQueue() {
 
       const attempts = attemptsResult.rows[0]?.attempts ?? 0;
 
-      if (attempts > 5) {
+      if (attempts >= MAX_RETRIES) {
         await pool.request(
           `INSERT INTO maya_dead_letter (job_type, payload, error)
            VALUES ($1, $2, $3)`,
