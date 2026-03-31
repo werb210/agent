@@ -1,3 +1,4 @@
+import "dotenv/config";
 try {
   const { getAgentToken } = require("./config/env");
 
