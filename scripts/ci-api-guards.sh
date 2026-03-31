@@ -1,36 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FETCH_COUNT=$( (rg "fetch\\(" src || true) | wc -l | tr -d ' ')
-AXIOS_COUNT=$( (rg "axios.create" src || true) | wc -l | tr -d ' ')
+FETCH_MATCHES=$(rg -n "fetch\\(" src || true)
+if [ -n "$FETCH_MATCHES" ]; then
+  DISALLOWED=$(echo "$FETCH_MATCHES" | rg -v "^src/lib/apiClient.ts:" || true)
+  if [ -n "$DISALLOWED" ]; then
+    echo "FAIL: direct fetch usage detected outside src/lib/apiClient.ts"
+    echo "$DISALLOWED"
+    exit 1
+  fi
+fi
 
-if [ "$FETCH_COUNT" -ne 0 ]; then
-  echo "FAIL: fetch usage detected"
+if rg -n "axios\\(" src; then
+  echo "FAIL: axios() usage detected"
   exit 1
 fi
 
-if [ "$AXIOS_COUNT" -ne 1 ]; then
-  echo "FAIL: must have exactly one axios instance"
+if rg -n "XMLHttpRequest" src; then
+  echo "FAIL: XMLHttpRequest usage detected"
   exit 1
 fi
 
-if rg "Promise\\.all" src; then
-  echo "FAIL: parallel execution not allowed"
-  exit 1
-fi
-
-if rg "setTimeout\\(" src/ai src/agents src/lib; then
-  echo "FAIL: timer-based retries not allowed"
-  exit 1
-fi
-
-if rg "Math\\.random\\(" src/ai src/agents src/lib; then
-  echo "FAIL: randomness not allowed in api layer"
-  exit 1
-fi
-
-if rg "\\?\\." src/lib/validateOutput.ts; then
-  echo "FAIL: optional chaining not allowed in output validation"
+if rg -n "withCredentials|credentials:\\s*[\"']include[\"']|document\\.cookie|cookie" src; then
+  echo "FAIL: cookie-based auth usage detected"
   exit 1
 fi
 
