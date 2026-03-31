@@ -1,4 +1,3 @@
-import { enforceStartupAuth } from "../app/bootstrap";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
 import { apiRequest as baseApiRequest } from "./apiClient";
 import { withRetry } from "./retry";
@@ -24,8 +23,6 @@ export async function apiRequest<T = unknown>(
   body?: unknown,
   config: { headers?: HeadersInit } = {}
 ): Promise<T> {
-  enforceStartupAuth();
-
   return withRetry(async () => {
     const normalizedMethod = method.toUpperCase();
     const endpoint = normalizedMethod === "GET" && body && typeof body === "object"
