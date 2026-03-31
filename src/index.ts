@@ -16,6 +16,7 @@ import { registerListeners } from "./events/registerListeners";
 import { validateEnv } from "./startup/validateEnv";
 import { startWorker } from "./queue/worker";
 import { setupShutdown } from "./startup/registerShutdown";
+import { ensureDurableConversationTables } from "./lib/durableTables";
 
 validateEnv();
 
@@ -93,6 +94,8 @@ async function start() {
   const server = app.listen(port, () => {
     logger.info("Agent service started", { port });
   });
+
+  await ensureDurableConversationTables();
 
   registerMayaAgents();
   registerListeners();

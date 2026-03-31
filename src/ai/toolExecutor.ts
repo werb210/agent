@@ -1,14 +1,15 @@
 import { logger } from "../infrastructure/logger";
 import { bfServerRequest } from "../integrations/bfServerClient";
+import { executeTool as executeWithDurability } from "../lib/toolExecutor";
 
 export type ToolExecutionResult = {
   success: true;
   result: Record<string, unknown>;
 };
 
-type ToolName = "createLead" | "scheduleAppointment" | "sendSMS" | "updateCRM";
+type ToolName = "createLead" | "scheduleAppointment" | "sendSMS" | "sendEmail" | "updateCRMRecord";
 
-const allowedTools: ToolName[] = ["createLead", "scheduleAppointment", "sendSMS", "updateCRM"];
+const allowedTools: ToolName[] = ["createLead", "scheduleAppointment", "sendSMS", "sendEmail", "updateCRMRecord"];
 
 function isCreateLeadPayload(params: Record<string, unknown>): boolean {
   const name = params.name;
@@ -54,7 +55,7 @@ function assertToolResult(result: unknown): asserts result is ToolExecutionResul
   }
 }
 
-export async function executeTool(name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
+export async function executeTool(callId: string, name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
   const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
   if (globalState.__TOOL_RUNNING__) {
     throw new Error("PARALLEL_TOOL_EXECUTION_BLOCKED");
@@ -64,7 +65,7 @@ export async function executeTool(name: string, params: Record<string, unknown>)
     throw new Error(`INVALID_TOOL: ${name}`);
   }
 
-  logger.info("tool_call_start", { toolName: name });
+  logger.info("tool_call_start", { toolName: name, callId });
 
   const toolMap: Record<ToolName, (toolParams: Record<string, unknown>) => Promise<unknown>> = {
     createLead: async (toolParams) => {
@@ -76,7 +77,8 @@ export async function executeTool(name: string, params: Record<string, unknown>)
     },
     scheduleAppointment: async (toolParams) => bfServerRequest("/api/applications/create", "POST", toolParams),
     sendSMS: async (toolParams) => bfServerRequest("/api/calls/log", "POST", { type: "sms", ...toolParams }),
-    updateCRM: async (toolParams) => bfServerRequest("/api/crm/contacts", "POST", toolParams)
+    sendEmail: async (toolParams) => bfServerRequest("/api/calls/log", "POST", { type: "email", ...toolParams }),
+    updateCRMRecord: async (toolParams) => bfServerRequest("/api/crm/contacts", "POST", toolParams)
   };
 
   const tool = toolMap[name as ToolName];
@@ -86,7 +88,7 @@ export async function executeTool(name: string, params: Record<string, unknown>)
 
   globalState.__TOOL_RUNNING__ = true;
   try {
-    const toolResponse = await tool(params);
+    const toolResponse = await executeWithDurability(callId, name, params, async () => tool(params));
     if (!toolResponse || typeof toolResponse !== "object") {
       throw new Error("EMPTY_TOOL_RESULT");
     }
@@ -97,8 +99,8 @@ export async function executeTool(name: string, params: Record<string, unknown>)
     };
     assertToolResult(result);
 
-    logger.info("tool_call_success", { toolName: name });
-    logger.info("tool_call_end", { toolName: name, outcome: "success" });
+    logger.info("tool_call_success", { toolName: name, callId });
+    logger.info("tool_call_end", { toolName: name, callId, outcome: "success" });
     return result;
   } finally {
     globalState.__TOOL_RUNNING__ = false;

@@ -20,7 +20,7 @@ export const tools = [
     }
   },
   {
-    name: "updateCRM",
+    name: "updateCRMRecord",
     description: "Update CRM contact/application metadata.",
     parameters: {
       type: "object",
@@ -41,6 +41,19 @@ export const tools = [
         message: { type: "string" }
       },
       required: ["phone", "message"]
+    }
+  },
+  {
+    name: "sendEmail",
+    description: "Send an email to a contact.",
+    parameters: {
+      type: "object",
+      properties: {
+        email: { type: "string" },
+        subject: { type: "string" },
+        body: { type: "string" }
+      },
+      required: ["email", "subject", "body"]
     }
   }
 ] as const;
