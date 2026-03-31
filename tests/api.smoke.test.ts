@@ -1,11 +1,9 @@
-process.env.API_TOKEN = process.env.API_TOKEN || "test-token";
-
 const fetchMock = jest.fn(async (url: string, config: RequestInit) => {
   if (url === "https://boreal-staff-server.azurewebsites.net/api/health" && String(config.method).toUpperCase() === "GET") {
     return {
       ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({
+      status: 200,
+      text: async () => JSON.stringify({
         success: true,
         data: { status: "ok" }
       })
@@ -15,8 +13,7 @@ const fetchMock = jest.fn(async (url: string, config: RequestInit) => {
   return {
     ok: false,
     status: 500,
-    text: async () => "not found",
-    headers: { get: () => "text/plain" }
+    text: async () => "not found"
   } as unknown as Response;
 });
 
@@ -27,9 +24,9 @@ describe("api smoke", () => {
   });
 
   it("calls BF endpoint and validates response envelope", async () => {
-    const { apiRequest } = await import("../src/lib/api");
+    const { bfServerRequest } = await import("../src/integrations/bfServerClient");
 
-    await expect(apiRequest<{ status: string }>("/api/health", "GET")).resolves.toEqual({ status: "ok" });
+    await expect(bfServerRequest("/api/health", "GET")).resolves.toEqual({ status: "ok" });
     expect(fetchMock).toHaveBeenCalledWith(
       "https://boreal-staff-server.azurewebsites.net/api/health",
       expect.objectContaining({

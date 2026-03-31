@@ -1,13 +1,14 @@
 import "dotenv/config";
-try {
-  const { getAgentToken } = require("./config/env");
+import { enforceAuthReady, setRuntimeToken } from "./lib/token";
 
-  getAgentToken();
-} catch (err) {
+const token = process.env.API_TOKEN || process.env.AGENT_API_TOKEN;
+
+if (!token) {
   if (process.env.NODE_ENV === "production") {
-    throw err;
-  } else {
-    const error = err as Error;
-    console.warn("Boot fallback active:", error.message);
+    throw new Error("[APP BLOCKED] TOKEN NOT READY");
   }
+  console.warn("Boot fallback active: API token missing in non-production environment");
+} else {
+  setRuntimeToken(token);
+  enforceAuthReady();
 }

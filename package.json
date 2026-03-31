@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
     "console": "ts-node-dev --respawn --transpile-only src/console/chatConsole.ts",
-    "build": "tsc",
+    "build": "bash scripts/check-legacy-token.sh && tsc",
     "start": "node dist/index.js",
-    "test": "jest --runInBand --detectOpenHandles --passWithNoTests --testPathIgnorePatterns=/dist/",
+    "test": "bash scripts/check-legacy-token.sh && jest --runInBand --detectOpenHandles --passWithNoTests --testPathIgnorePatterns=/dist/",
     "worker": "ts-node-dev --respawn --transpile-only src/infrastructure/mayaWorker.ts",
     "predeploy": "ts-node src/testing/preDeployCheck.ts",
     "lint": "tsc --noEmit",

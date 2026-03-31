@@ -1,5 +1,5 @@
-import { apiRequest } from "../lib/api";
+import { bfServerRequest } from "../integrations/bfServerClient";
 
 export const getTelephonyToken = async () => {
-  return apiRequest<any>("/api/telephony/token", "GET");
+  return bfServerRequest("/api/telephony/token", "GET");
 };

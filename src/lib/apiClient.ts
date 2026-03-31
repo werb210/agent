@@ -1,47 +1,52 @@
 import { API_BASE_URL } from "../config/api";
+import { getTokenOrFail } from "./token";
 
 const REQUEST_TIMEOUT_MS = 10000;
 
-function buildHeaders(headers?: HeadersInit): Headers {
-  return new Headers(headers ?? {});
-}
-
-export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = process.env.API_TOKEN || process.env.AGENT_API_TOKEN;
-
-  if (!token) {
-    throw new Error("NO API TOKEN — AUTH FLOW BROKEN");
+export async function apiRequest(path: string, options: RequestInit = {}): Promise<any> {
+  if (!path.startsWith("/api/")) {
+    throw new Error(`[API BLOCKED] INVALID PATH: ${path}`);
   }
+
+  const token = getTokenOrFail();
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const headers = buildHeaders(options.headers);
+    const headers = new Headers(options.headers ?? {});
 
-    if (!headers.has("Content-Type") && options.body) {
+    if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 
+    headers.delete("Authorization");
     headers.set("Authorization", `Bearer ${token}`);
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
       signal: options.signal ?? controller.signal
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`[API ERROR] ${response.status} ${text}`);
+    console.log("[REQ]", options.method || "GET", path);
+    console.log("[STATUS]", res.status);
+
+    if (res.status === 401) {
+      throw new Error("[AUTH FAILURE] TOKEN INVALID");
     }
 
-    const contentType = response.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
-      return response.json();
+    if (!res.ok) {
+      throw new Error(`[API ERROR] ${res.status}`);
     }
 
-    return response.text();
+    const text = await res.text();
+
+    if (!text) {
+      throw new Error("[API ERROR] EMPTY RESPONSE");
+    }
+
+    return JSON.parse(text);
   } finally {
     clearTimeout(timeout);
   }

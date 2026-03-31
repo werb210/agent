@@ -16,8 +16,10 @@ import { registerListeners } from "./events/registerListeners";
 import { validateEnv } from "./startup/validateEnv";
 import { startWorker } from "./queue/worker";
 import { setupShutdown } from "./startup/registerShutdown";
+import { enforceAuthReady } from "./lib/token";
 
 validateEnv();
+enforceAuthReady();
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
