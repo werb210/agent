@@ -1,4 +1,3 @@
-import axios from "axios";
 import OpenAI, { toFile } from "openai";
 import { calculateConfidence } from "../core/mayaConfidence";
 import { resilientLLM } from "../infrastructure/mayaResilience";
@@ -58,12 +57,13 @@ ${message}
 }
 
 export async function transcribeAudio(recordingUrl: string): Promise<string> {
-  const response = await axios.get<ArrayBuffer>(recordingUrl, { responseType: "arraybuffer" });
-  if (response.status < 200 || response.status >= 300) {
+  const response = await fetch(recordingUrl);
+  if (!response.ok) {
     throw new AppError("upstream_error", response.status, `Unable to download recording for transcription: ${response.status}`);
   }
 
-  const audioBuffer = Buffer.from(response.data);
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = Buffer.from(arrayBuffer);
   const audioFile = await toFile(audioBuffer, "call-recording.wav", { type: "audio/wav" });
 
   const transcription = await openai.audio.transcriptions.create({

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { createCorrelationId, logAudit } from "./auditLogger";
 import { CircuitBreaker } from "./circuitBreaker";
 import { requireCapability } from "../security/capabilityGuard";
@@ -29,11 +28,21 @@ export async function getMLApprovalProbability(payload: any, role: string = "sys
   try {
     return await mlBreaker.execute(async () => {
       const start = Date.now();
-      const response = await axios.post(`${ML_URL}/predict-nn`, payload, {
-        headers: { "X-Internal-Secret": process.env.ML_INTERNAL_SECRET }
+      const response = await fetch(`${ML_URL}/predict-nn`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Secret": process.env.ML_INTERNAL_SECRET ?? ""
+        },
+        body: JSON.stringify(payload)
       });
 
-      const prob = response.data.approval_probability;
+      if (!response.ok) {
+        throw new Error(`ML service returned ${response.status}`);
+      }
+
+      const data = (await response.json()) as { approval_probability: number };
+      const prob = data.approval_probability;
 
       await recordMetric(
         "ml_prediction_probability",

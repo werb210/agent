@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export async function checkO365Availability(
   startISO: string,
   endISO: string
@@ -9,22 +7,29 @@ export async function checkO365Availability(
     return false;
   }
 
-  const { data } = await axios.post(
+  const response = await fetch(
     "https://graph.microsoft.com/v1.0/me/calendar/getSchedule",
     {
-      schedules: ["me"],
-      startTime: { dateTime: startISO, timeZone: "America/Toronto" },
-      endTime: { dateTime: endISO, timeZone: "America/Toronto" },
-      availabilityViewInterval: 30
-    },
-    {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.O365_TOKEN}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        schedules: ["me"],
+        startTime: { dateTime: startISO, timeZone: "America/Toronto" },
+        endTime: { dateTime: endISO, timeZone: "America/Toronto" },
+        availabilityViewInterval: 30,
+      }),
     }
   );
 
+  if (!response.ok) return false;
+
+  const data = (await response.json()) as {
+    value?: Array<{ availabilityView?: string }>;
+  };
+
   if (!data.value?.length) return false;
-  return /^0+$/.test(data.value[0].availabilityView);
+  return /^0+$/.test(data.value[0].availabilityView ?? "");
 }

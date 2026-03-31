@@ -1,4 +1,3 @@
-import axios from "axios";
 import { AppError } from "../errors/AppError";
 
 export async function createO365Booking(startISO: string, endISO: string, subject: string) {
@@ -6,20 +5,22 @@ export async function createO365Booking(startISO: string, endISO: string, subjec
     throw new AppError("internal_error", 500, "O365 token missing");
   }
 
-  const { data } = await axios.post(
-    "https://graph.microsoft.com/v1.0/me/events",
-    {
+  const response = await fetch("https://graph.microsoft.com/v1.0/me/events", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.O365_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
       subject,
       start: { dateTime: startISO, timeZone: "America/Toronto" },
       end: { dateTime: endISO, timeZone: "America/Toronto" }
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.O365_TOKEN}`,
-        "Content-Type": "application/json"
-      }
-    }
-  );
+    })
+  });
 
-  return data;
+  if (!response.ok) {
+    throw new AppError("upstream_error", response.status, "Failed to create O365 event");
+  }
+
+  return response.json();
 }
