@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export async function createBooking(phone: string) {
 
   // Placeholder until Azure fully active

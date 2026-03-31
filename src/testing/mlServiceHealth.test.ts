@@ -1,22 +1,21 @@
-import axios from "axios";
-
-jest.mock("axios");
-
-const mockedAxios = axios as jest.Mocked<typeof axios>;
 const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 describe("ML Service Health", () => {
   it("should reach model-health endpoint", async () => {
-    mockedAxios.get.mockResolvedValueOnce({
+    const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
       status: 200,
-      data: { model_loaded: true }
-    } as any);
+      json: async () => ({ model_loaded: true }),
+    } as Response);
 
-    const response = await axios.get(`${ML_URL}/model-health`, {
-      headers: { "X-Internal-Secret": process.env.ML_INTERNAL_SECRET }
+    const response = await fetch(`${ML_URL}/model-health`, {
+      headers: { "X-Internal-Secret": process.env.ML_INTERNAL_SECRET ?? "" }
     });
 
+    const data = await response.json();
     expect(response.status).toBe(200);
-    expect(response.data).toEqual(expect.objectContaining({ model_loaded: true }));
+    expect(data).toEqual(expect.objectContaining({ model_loaded: true }));
+
+    fetchSpy.mockRestore();
   });
 });

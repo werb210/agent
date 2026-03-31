@@ -1,4 +1,3 @@
-import axios from "axios";
 import readline from "readline-sync";
 import crypto from "crypto";
 import { AppError } from "../errors/AppError";
@@ -44,11 +43,23 @@ async function sendMessage(sessionId: string, message: string) {
   const bodyString = JSON.stringify(payload);
   payload.auth.signature = sign(bodyString);
 
-  const response = await axios.post(AGENT_URL, payload, {
-    timeout: 30000
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
+  const response = await fetch(AGENT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal: controller.signal,
   });
 
-  return response.data;
+  clearTimeout(timeout);
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 async function startConsole() {
@@ -78,8 +89,9 @@ async function startConsole() {
         console.info("Confidence:", result.confidence);
         console.info("----\n");
       }
-    } catch (err: any) {
-      console.error("Error:", err.response?.data || err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Error:", message);
     }
   }
 }

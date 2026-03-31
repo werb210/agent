@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Router } from "express";
 import { prisma } from "../config/db";
 import { generateMayaResponse } from "../voice/mayaConversation";
@@ -39,11 +38,17 @@ router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   });
 
   if (highValue) {
-    await axios.post(process.env.SERVER_ESCALATION_WEBHOOK!, {
-      revenue: session.revenue,
-      industry: session.industry,
-      urgency: session.urgency
-    });
+    if (process.env.SERVER_ESCALATION_WEBHOOK) {
+      await fetch(process.env.SERVER_ESCALATION_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenue: session.revenue,
+          industry: session.industry,
+          urgency: session.urgency
+        })
+      });
+    }
 
     const twiml = `
       <Response>
@@ -59,12 +64,18 @@ router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   }
 
   if (bookingIntent) {
-    await axios.post(process.env.BOOKING_WEBHOOK!, {
-      revenue: session.revenue,
-      amount: session.amount,
-      industry: session.industry,
-      urgency: session.urgency
-    });
+    if (process.env.BOOKING_WEBHOOK) {
+      await fetch(process.env.BOOKING_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenue: session.revenue,
+          amount: session.amount,
+          industry: session.industry,
+          urgency: session.urgency
+        })
+      });
+    }
 
     const twiml = `
       <Response>

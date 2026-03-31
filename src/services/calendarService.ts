@@ -1,5 +1,4 @@
 import { Client } from "@microsoft/microsoft-graph-client";
-import axios from "axios";
 import { DateTime } from "luxon";
 
 const TIMEZONE = "America/Edmonton";
@@ -13,14 +12,22 @@ const getClient = () => {
 
   return Client.init({
     authProvider: async (done: (error: Error | null, accessToken: string | null) => void) => {
-      const { data } = await axios.post(tokenEndpoint, new URLSearchParams({
+      const body = new URLSearchParams({
         client_id: process.env.O365_CLIENT_ID!,
         client_secret: process.env.O365_CLIENT_SECRET!,
         scope: "https://graph.microsoft.com/.default",
         grant_type: "client_credentials"
-      }), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      }) as { data: { access_token: string } };
+      });
+      const tokenResponse = await fetch(tokenEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      if (!tokenResponse.ok) {
+        done(new Error(`Token request failed with status ${tokenResponse.status}`), null);
+        return;
+      }
+      const data = (await tokenResponse.json()) as { access_token: string };
       done(null, data.access_token);
     }
   });

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { getGraphToken } from "./msAuth";
 import { pool } from "../db";
 import twilio from "twilio";
@@ -36,20 +35,29 @@ export async function checkAvailability(
 ) {
   const token = await getGraphToken();
 
-  const response = await axios.post(
+  const response = await fetch(
     `${GRAPH_BASE}/users/${email}/calendar/getSchedule`,
     {
-      schedules: [email],
-      startTime: { dateTime: startISO, timeZone: timezone },
-      endTime: { dateTime: endISO, timeZone: timezone },
-      availabilityViewInterval: 30
-    },
-    {
-      headers: { Authorization: `Bearer ${token}` }
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        schedules: [email],
+        startTime: { dateTime: startISO, timeZone: timezone },
+        endTime: { dateTime: endISO, timeZone: timezone },
+        availabilityViewInterval: 30
+      })
     }
   );
 
-  return response.data.value[0].availabilityView;
+  if (!response.ok) {
+    throw new Error(`Availability check failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { value: Array<{ availabilityView: string }> };
+  return data.value[0].availabilityView;
 }
 
 export async function findTopAvailableSlots(
@@ -101,9 +109,13 @@ export async function createCalendarEvent(
 ) {
   const token = await getGraphToken();
 
-  const response = await axios.post(
-    `${GRAPH_BASE}/users/${email}/events`,
-    {
+  const response = await fetch(`${GRAPH_BASE}/users/${email}/events`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
       subject: "Boreal Strategy Call",
       start: { dateTime: startISO, timeZone: timezone },
       end: { dateTime: endISO, timeZone: timezone },
@@ -118,13 +130,14 @@ export async function createCalendarEvent(
       ],
       isOnlineMeeting: true,
       onlineMeetingProvider: "teamsForBusiness"
-    },
-    {
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
+    })
+  });
 
-  return response.data;
+  if (!response.ok) {
+    throw new Error(`Create event failed: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export async function confirmBookingSMS(
