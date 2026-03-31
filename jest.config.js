@@ -1,10 +1,6 @@
-const tsJestPath = require.resolve("ts-jest");
-
-/** @type {import("jest").Config} **/
+/** @type {import("jest").Config} */
 module.exports = {
-  setupFiles: [],
+  preset: "ts-jest",
   testEnvironment: "node",
-  transform: {
-    "^.+\\.tsx?$": [tsJestPath, {}],
-  },
+  setupFiles: ["<rootDir>/tests/jest.setup.ts"]
 };

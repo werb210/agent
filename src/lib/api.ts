@@ -1,6 +1,6 @@
 import { AxiosRequestConfig, Method } from "axios";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
-import { apiRequest as baseApiRequest } from "./apiClient";
+import { apiClient } from "./apiClient";
 import { withRetry } from "./retry";
 
 function toQueryString(params: Record<string, unknown>): string {
@@ -38,7 +38,7 @@ export async function apiRequest<T = unknown>(
       payload = JSON.stringify(body);
     }
 
-    const data = await baseApiRequest(endpoint, {
+    const data = await apiClient(endpoint, {
       method: normalizedMethod,
       headers,
       body: payload
