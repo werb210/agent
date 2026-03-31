@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "./api";
 import { getAgentToken } from "./env";
 
 export const apiConfig = {
-  baseUrl: "https://server.boreal.financial",
+  baseUrl: API_BASE_URL,
   token: getAgentToken()
 } as const;

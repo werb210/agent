@@ -41,10 +41,10 @@ export const isStaging = process.env.NODE_ENV === "staging";
 export const PORT = process.env.PORT || 5000;
 
 export function getAgentToken() {
-  const token = process.env.AGENT_API_TOKEN;
+  const token = process.env.API_TOKEN || process.env.AGENT_API_TOKEN;
 
   if (!token && process.env.NODE_ENV === "production") {
-    throw new Error("AGENT_API_TOKEN is required in production");
+    throw new Error("API_TOKEN is required in production");
   }
 
   return token || "dev-token";

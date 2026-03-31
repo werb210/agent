@@ -1,22 +1,22 @@
-import axios, { AxiosRequestConfig, Method } from "axios";
-import { apiConfig } from "../config/apiConfig";
+import { AxiosRequestConfig, Method } from "axios";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
+import { apiRequest as baseApiRequest } from "./apiClient";
 import { withRetry } from "./retry";
 
-const api = axios.create({
-  baseURL: apiConfig.baseUrl
-});
+function toQueryString(params: Record<string, unknown>): string {
+  const search = new URLSearchParams();
 
-api.interceptors.request.use((config) => {
-  if (config.headers && typeof (config.headers as any).set === "function") {
-    (config.headers as any).set("Authorization", `Bearer ${apiConfig.token}`);
-  } else {
-    config.headers = (config.headers || {}) as any;
-    (config.headers as any).Authorization = `Bearer ${apiConfig.token}`;
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "undefined" || value === null) {
+      continue;
+    }
+
+    search.set(key, String(value));
   }
 
-  return config;
-});
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
 
 export async function apiRequest<T = unknown>(
   path: string,
@@ -25,24 +25,29 @@ export async function apiRequest<T = unknown>(
   config: AxiosRequestConfig = {}
 ): Promise<T> {
   return withRetry(async () => {
-    const requestConfig: AxiosRequestConfig = {
-      ...config,
-      url: path,
-      method
-    };
+    const normalizedMethod = method.toUpperCase();
+    const endpoint = normalizedMethod === "GET" && body && typeof body === "object"
+      ? `${path}${toQueryString(body as Record<string, unknown>)}`
+      : path;
 
-    if (method.toUpperCase() === "GET") {
-      requestConfig.params = body as Record<string, unknown> | undefined;
-    } else if (typeof body !== "undefined") {
-      requestConfig.data = body;
+    const headers = new Headers((config.headers as HeadersInit | undefined) ?? {});
+    let payload: BodyInit | undefined;
+
+    if (normalizedMethod !== "GET" && typeof body !== "undefined") {
+      headers.set("Content-Type", "application/json");
+      payload = JSON.stringify(body);
     }
 
-    const response = await api.request<ApiResponseEnvelope<T>>(requestConfig);
+    const data = await baseApiRequest(endpoint, {
+      method: normalizedMethod,
+      headers,
+      body: payload
+    });
 
-    if (!response || typeof response !== "object") {
+    if (!data || typeof data !== "object") {
       throw new Error("Invalid API response");
     }
 
-    return assertApiResponse<T>(response.data);
+    return assertApiResponse<T>(data as ApiResponseEnvelope<T>);
   });
 }
