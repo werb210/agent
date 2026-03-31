@@ -43,7 +43,11 @@ router.post("/chat", chatLimiter, requireMayaAuth, async (req, res) => {
     const aiResult = await generateMayaResponse(message);
 
     if (!aiResult.success) {
-      const statusCode = aiResult.message === "ai_timeout" ? 504 : 500;
+      const statusCode = aiResult.message === "ai_timeout"
+        ? 504
+        : aiResult.message === "ai_not_configured"
+          ? 503
+          : 500;
       logger.warn("maya_chat_ai_failure", {
         outcome: aiResult.message,
         durationMs: Date.now() - start,
