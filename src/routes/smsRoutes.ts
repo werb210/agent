@@ -7,6 +7,8 @@ import { logDecision } from "../services/complianceLogger";
 import { sanitizeString } from "../security/sanitizer";
 import { verifyTwilioSignature } from "../middleware/verifyTwilio";
 import { mayaRateLimit } from "../middleware/rateLimit";
+import { saveEvent } from "../lib/eventStore";
+import { getState, saveState } from "../lib/conversationState";
 
 const router = Router();
 
@@ -38,6 +40,25 @@ router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
   const previousTranscript = session.rows[0]?.transcript || "";
   const updatedTranscript = `${previousTranscript}\nUser: ${body}`;
 
+  await saveEvent({
+    callId: sessionId,
+    type: "user_message",
+    payload: { text: body }
+  });
+
+  const existingState = await getState(sessionId);
+  let state: Record<string, unknown> = {
+    sessionId,
+    channel: "sms",
+    transcript: updatedTranscript,
+    lastUserMessage: body
+  };
+
+  if (existingState) {
+    state = { ...(existingState as Record<string, unknown>), transcript: updatedTranscript, lastUserMessage: body };
+  }
+  await saveState(sessionId, state);
+
   const aiResponse = await runAI(
     "You are Maya, a professional funding assistant.",
     JSON.stringify({ conversation: updatedTranscript })
@@ -47,6 +68,15 @@ router.post("/sms", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
     "UPDATE maya_voice_sessions SET transcript = $1 WHERE id = $2",
     [`${updatedTranscript}\nMaya: ${aiResponse ?? ""}`, sessionId]
   );
+
+  await saveEvent({
+    callId: sessionId,
+    type: "assistant_message",
+    payload: { text: aiResponse ?? "Thank you. We will follow up shortly." }
+  });
+
+  state = { ...state, lastAssistantMessage: aiResponse ?? "Thank you. We will follow up shortly." };
+  await saveState(sessionId, state);
 
   await logDecision("sms_response", { body }, { aiResponse }, "SMS test mode response");
 
