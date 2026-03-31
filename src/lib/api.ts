@@ -18,14 +18,14 @@ function toQueryString(params: Record<string, unknown>): string {
   return query ? `?${query}` : "";
 }
 
-enforceStartupAuth();
-
 export async function apiRequest<T = unknown>(
   path: string,
   method: string,
   body?: unknown,
   config: { headers?: HeadersInit } = {}
 ): Promise<T> {
+  enforceStartupAuth();
+
   return withRetry(async () => {
     const normalizedMethod = method.toUpperCase();
     const endpoint = normalizedMethod === "GET" && body && typeof body === "object"
