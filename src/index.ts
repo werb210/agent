@@ -1,4 +1,6 @@
-import "./env";
+import dotenv from "dotenv";
+dotenv.config();
+
 import "./infrastructure/env";
 import { NextFunction, Request, Response } from "express";
 import { app } from "./server";
@@ -19,6 +21,10 @@ import { setupShutdown } from "./startup/registerShutdown";
 import { ensureDurableConversationTables } from "./lib/durableTables";
 
 validateEnv();
+
+if (!process.env.PORT) {
+  process.env.PORT = "4000";
+}
 
 process.on("unhandledRejection", (err) => {
   logger.error("Unhandled Rejection", { err });
@@ -90,7 +96,7 @@ async function scheduleJobs() {
 }
 
 async function start() {
-  const port = Number(process.env.PORT || 4000);
+  const port = Number(process.env.PORT || "4000");
   const server = app.listen(port, () => {
     logger.info("Agent service started", { port });
   });
