@@ -2,6 +2,7 @@ import express from "express";
 import request from "supertest";
 import mayaRouter from "../src/routes/maya";
 import { generateMayaResponse } from "../src/ai";
+import { resetMayaChatRateLimiter } from "../src/middleware/rateLimit";
 
 jest.mock("../src/ai", () => ({
   generateMayaResponse: jest.fn(),
@@ -20,6 +21,7 @@ describe("maya route production hardening", () => {
   beforeEach(() => {
     mockedGenerateMayaResponse.mockReset();
     process.env.MAYA_API_KEY = "test-api-key";
+    resetMayaChatRateLimiter();
   });
 
   it("rejects invalid payload", async () => {
@@ -56,7 +58,6 @@ describe("maya route production hardening", () => {
       lastResponse = await request(app)
         .post("/maya/chat")
         .set("x-api-key", "test-api-key")
-        .set("x-forwarded-for", "2.2.2.2")
         .send({ message: `hello ${i}` });
     }
 
@@ -79,8 +80,7 @@ describe("maya route production hardening", () => {
 
     const response = await request(app)
       .post("/maya/chat")
-      .set("x-session-token", "session-123")
-      .set("x-forwarded-for", "9.9.9.9")
+      .set("x-api-key", "test-api-key")
       .send({ message: "hello" });
 
     expect(response.status).toBe(200);
