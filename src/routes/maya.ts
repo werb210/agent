@@ -1,27 +1,33 @@
-import { Router } from "express";
-import rateLimit from "express-rate-limit";
+import { NextFunction, Request, Response, Router } from "express";
 import { generateMayaResponse } from "../ai";
 import { logger } from "../infrastructure/logger";
 import { triggerMayaIntegrations } from "../integrations/mayaIntegrations";
 import { requireMayaAuth } from "../middleware/mayaAuth";
+import { mayaChatRateLimit } from "../middleware/rateLimit";
 
 const router = Router();
 const MAX_MESSAGE_LENGTH = 2000;
 
-const chatLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: "rate_limited",
-  },
-});
-
-router.post("/chat", chatLimiter, requireMayaAuth, async (req, res) => {
-  const start = Date.now();
+function validateMayaChatRequest(req: Request, res: Response, next: NextFunction) {
   const rawMessage = req.body?.message;
+
+  if (typeof rawMessage !== "string") {
+    return res.status(400).json({ success: false, message: "invalid_input" });
+  }
+
+  const message = rawMessage.trim();
+
+  if (!message || message.length > MAX_MESSAGE_LENGTH) {
+    return res.status(400).json({ success: false, message: "invalid_input" });
+  }
+
+  req.body.message = message;
+  return next();
+}
+
+router.post("/chat", validateMayaChatRequest, requireMayaAuth, mayaChatRateLimit, async (req, res) => {
+  const start = Date.now();
+  const rawMessage = req.body.message;
   const safePreview = typeof rawMessage === "string" ? rawMessage.slice(0, 120) : "[non-string]";
 
   logger.info("maya_chat_request", {
@@ -30,15 +36,7 @@ router.post("/chat", chatLimiter, requireMayaAuth, async (req, res) => {
   });
 
   try {
-    if (typeof rawMessage !== "string") {
-      return res.status(400).json({ success: false, message: "invalid_input" });
-    }
-
-    const message = rawMessage.trim();
-
-    if (!message || message.length > MAX_MESSAGE_LENGTH) {
-      return res.status(400).json({ success: false, message: "invalid_input" });
-    }
+    const message = rawMessage;
 
     const aiResult = await generateMayaResponse(message);
 
