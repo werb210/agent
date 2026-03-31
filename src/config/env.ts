@@ -57,5 +57,5 @@ export function getEnv(name: string, fallback?: string): string {
 export const API_BASE = "/api";
 
 if (!API_BASE) {
-  throw new Error("[CONFIG ERROR] API BASE MISSING");
+  throw new Error("[ENV ERROR]");
 }

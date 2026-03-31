@@ -18,7 +18,7 @@ export function getTokenOrFail(): string {
   const token = getStorageOrFail().getItem("token");
 
   if (!token || token === "undefined" || token === "null" || token.trim() === "") {
-    throw new Error("[AUTH BLOCK] INVALID TOKEN");
+    throw new Error("[AUTH BLOCK]");
   }
 
   return token;

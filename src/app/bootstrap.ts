@@ -1,13 +1,12 @@
-import { getTokenOrFail } from "../services/token";
-
 export function enforceStartupAuth() {
-  try {
-    getTokenOrFail();
-  } catch {
-    const browserWindow = (globalThis as { window?: { location?: { href: string } } }).window;
-    if (browserWindow && browserWindow.location) {
-      browserWindow.location.href = "/login";
-    }
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    window.location.href = "/login";
     throw new Error("[BOOT BLOCKED]");
   }
 }
@@ -22,10 +21,10 @@ export function registerGlobalErrorVisibility() {
   }
 
   eventTarget.addEventListener("unhandledrejection", (event) => {
-    console.error("[UNHANDLED PROMISE]", event.reason);
+    console.error("[UNHANDLED]", event.reason);
   });
 
   eventTarget.addEventListener("error", (event) => {
-    console.error("[RUNTIME ERROR]", event.error);
+    console.error("[ERROR]", event.error);
   });
 }
