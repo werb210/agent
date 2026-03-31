@@ -1,4 +1,4 @@
-process.env.API_TOKEN = process.env.API_TOKEN || "test-token";
+import { setRuntimeToken } from "../src/lib/token";
 
 const fetchMock = jest.fn(async (url: string, config: RequestInit) => {
   if (url === "https://boreal-staff-server.azurewebsites.net/api/health" && String(config.method).toUpperCase() === "GET") {
@@ -24,6 +24,7 @@ describe("api smoke", () => {
   beforeEach(() => {
     fetchMock.mockClear();
     (global as any).fetch = fetchMock;
+    setRuntimeToken("test-token");
   });
 
   it("calls BF endpoint and validates response envelope", async () => {
