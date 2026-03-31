@@ -1,17 +1,32 @@
 import OpenAI from "openai";
-import { ENV } from "./env";
+import { ENV, openaiEnabled } from "./env";
 
-const client = new OpenAI({
-  apiKey: ENV.OPENAI_API_KEY,
-});
+let openaiClient: OpenAI | null = null;
+
+export function getOpenAI() {
+  if (!openaiEnabled || !ENV.OPENAI_API_KEY) {
+    return null;
+  }
+
+  openaiClient ??= new OpenAI({
+    apiKey: ENV.OPENAI_API_KEY,
+  });
+
+  return openaiClient;
+}
 
 const AI_TIMEOUT_MS = 12_000;
 
 export type MayaResponseResult =
   | { success: true; reply: string }
-  | { success: false; message: "ai_timeout" | "internal_error" };
+  | { success: false; message: "ai_not_configured" | "ai_timeout" | "internal_error" };
 
 export async function generateMayaResponse(input: string): Promise<MayaResponseResult> {
+  const client = getOpenAI();
+  if (!client) {
+    return { success: false, message: "ai_not_configured" };
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
