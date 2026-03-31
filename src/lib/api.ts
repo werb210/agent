@@ -1,6 +1,6 @@
-import { AxiosRequestConfig, Method } from "axios";
+import { enforceStartupAuth } from "../app/bootstrap";
 import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
-import { apiClient } from "./apiClient";
+import { apiRequest as baseApiRequest } from "./apiClient";
 import { withRetry } from "./retry";
 
 function toQueryString(params: Record<string, unknown>): string {
@@ -18,11 +18,13 @@ function toQueryString(params: Record<string, unknown>): string {
   return query ? `?${query}` : "";
 }
 
+enforceStartupAuth();
+
 export async function apiRequest<T = unknown>(
   path: string,
-  method: Method,
+  method: string,
   body?: unknown,
-  config: AxiosRequestConfig = {}
+  config: { headers?: HeadersInit } = {}
 ): Promise<T> {
   return withRetry(async () => {
     const normalizedMethod = method.toUpperCase();
@@ -30,7 +32,7 @@ export async function apiRequest<T = unknown>(
       ? `${path}${toQueryString(body as Record<string, unknown>)}`
       : path;
 
-    const headers = new Headers((config.headers as HeadersInit | undefined) ?? {});
+    const headers = new Headers(config.headers ?? {});
     let payload: BodyInit | undefined;
 
     if (normalizedMethod !== "GET" && typeof body !== "undefined") {
@@ -38,7 +40,7 @@ export async function apiRequest<T = unknown>(
       payload = JSON.stringify(body);
     }
 
-    const data = await apiClient(endpoint, {
+    const data = await baseApiRequest(endpoint, {
       method: normalizedMethod,
       headers,
       body: payload
