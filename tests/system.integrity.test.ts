@@ -25,13 +25,13 @@ describe("system integrity", () => {
   });
 
   it("invalid tool throws", async () => {
-    await expect(executeTool("transferCall", { callSid: "abc" })).rejects.toThrow("INVALID_TOOL: transferCall");
+    await expect(executeTool("test-call-id", "transferCall", { callSid: "abc" })).rejects.toThrow("INVALID_TOOL: transferCall");
   });
 
   it("parallel execution throws", async () => {
     const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
     globalState.__TOOL_RUNNING__ = true;
-    await expect(executeTool("sendSMS", { phone: "123", message: "hello" })).rejects.toThrow(
+    await expect(executeTool("test-call-id", "sendSMS", { phone: "123", message: "hello" })).rejects.toThrow(
       "PARALLEL_TOOL_EXECUTION_BLOCKED"
     );
   });
@@ -44,7 +44,8 @@ describe("system integrity", () => {
     const { bfServerRequest } = jest.requireMock("../src/integrations/bfServerClient") as {
       bfServerRequest: jest.Mock;
     };
+    bfServerRequest.mockReset();
     bfServerRequest.mockResolvedValueOnce(null);
-    await expect(executeTool("scheduleAppointment", { name: "A", phone: "1" })).rejects.toThrow("EMPTY_TOOL_RESULT");
+    await expect(executeTool("test-call-id", "scheduleAppointment", { name: "A", phone: "1" })).rejects.toThrow("EMPTY_TOOL_RESULT");
   });
 });

@@ -38,7 +38,7 @@ describe("agent deterministic flow", () => {
   it("tool failure throws and bubbles up", async () => {
     bfServerRequest.mockRejectedValue(new Error("tool failed"));
 
-    await expect(executeTool("scheduleAppointment", { name: "Test", phone: "123" })).rejects.toThrow("tool failed");
+    await expect(executeTool("test-call-id", "scheduleAppointment", { name: "Test", phone: "123" })).rejects.toThrow("tool failed");
   });
 
   it("API failure bubbles up", () => {
