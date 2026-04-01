@@ -6,15 +6,9 @@ export async function fetchToken() {
 }
 
 export async function startCall(payload: { to: string }) {
-  return apiRequest(ENDPOINTS.callStart, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiRequest(ENDPOINTS.callStart, "POST", payload);
 }
 
 export async function sendStatus(payload: { callId: string; status: string }) {
-  return apiRequest(ENDPOINTS.voiceStatus, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiRequest(ENDPOINTS.voiceStatus, "POST", payload);
 }
