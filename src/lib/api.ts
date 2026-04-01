@@ -1,4 +1,4 @@
-import { apiRequest as baseApiRequest } from "./apiClient";
+import { apiRequest as baseApiRequest, type ApiMethod } from "./apiClient";
 import { withRetry } from "./retry";
 
 function toQueryString(params: Record<string, unknown>): string {
@@ -18,13 +18,13 @@ function toQueryString(params: Record<string, unknown>): string {
 
 export async function apiRequest<T = unknown>(
   path: string,
-  method: string,
+  method: ApiMethod,
   body?: unknown,
   _config: { headers?: HeadersInit } = {}
 ): Promise<T> {
   void _config;
   return withRetry(async () => {
-    const normalizedMethod = method.toUpperCase();
+    const normalizedMethod = method;
     const endpoint = normalizedMethod === "GET" && body && typeof body === "object"
       ? `${path}${toQueryString(body as Record<string, unknown>)}`
       : path;
