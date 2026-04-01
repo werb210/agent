@@ -7,7 +7,7 @@
     "dev": "NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
     "console": "ts-node-dev --respawn --transpile-only src/console/chatConsole.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "PORT=8080 node dist/index.js",
     "test": "jest --runInBand",
     "worker": "ts-node-dev --respawn --transpile-only src/infrastructure/mayaWorker.ts",
     "predeploy": "ts-node src/testing/preDeployCheck.ts",
