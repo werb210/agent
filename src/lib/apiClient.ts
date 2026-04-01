@@ -8,16 +8,29 @@ if (!API_BASE && process.env.NODE_ENV !== "test") {
 }
 
 export async function apiRequest(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+  if (!path.startsWith("/api/")) {
+    throw new Error("[INVALID PATH]");
+  }
+
+  const fetchFn = globalThis.fetch as typeof fetch;
+
+  if (!fetchFn) {
+    throw new Error("[INVALID PATH]");
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    Authorization: "***" // force override last
+  };
+
+  const res = await fetchFn(`${API_BASE}${path}`, {
     ...options,
+    headers,
   });
 
   if (res.status === 401) {
-    throw new Error("auth_expired");
+    throw new Error("[AUTH FAIL]");
   }
 
   if (!res.ok) {
