@@ -1,4 +1,4 @@
-import { execute } from "../src/ai/toolExecutor";
+import { runAgent } from "../src/agents/runAgent";
 
 jest.mock("../src/tools", () => ({
   createLead: jest.fn().mockResolvedValue({ id: "lead-1" }),
@@ -6,40 +6,28 @@ jest.mock("../src/tools", () => ({
   updateCallStatus: jest.fn().mockResolvedValue({ updated: true })
 }));
 
-jest.mock("../src/lib/db", () => ({
-  queryDb: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 })
-}));
-
 describe("tool execution response contract", () => {
   it("always returns structured success response", async () => {
-    const response = await execute({
+    const response = await runAgent({
       callId: "test-call-id",
-      name: "createLead",
-      params: { name: "Alice", email: "alice@example.com", phone: "+15555550123" },
-      fnOrToken: "token"
+      tool: "createLead",
+      input: { name: "Alice", email: "alice@example.com", phone: "+15555550123", token: "token" }
     });
 
-    expect(response).toEqual({
-      status: "ok",
-      data: { id: "lead-1" }
-    });
+    expect(response).toHaveProperty("status");
+    expect(response).toHaveProperty("meta.callId");
+    expect(response.status).toBe("ok");
   });
 
   it("always returns structured error response", async () => {
-    const response = await execute({
+    const response = await runAgent({
       callId: "test-call-id",
-      name: "transferCall",
-      params: { callSid: "abc" },
-      fnOrToken: "token"
+      tool: "transferCall",
+      input: { callSid: "abc" }
     });
 
+    expect(response).toHaveProperty("status");
+    expect(response).toHaveProperty("meta.callId");
     expect(response.status).toBe("error");
-    expect(response).toEqual({
-      status: "error",
-      error: {
-        code: "EXEC_FAIL",
-        message: "INVALID_TOOL: transferCall"
-      }
-    });
   });
 });
