@@ -13,7 +13,7 @@ describe("system integrity", () => {
   });
 
   it("invalid tool returns execution error", async () => {
-    const response = await runAgent({ callId: "test-call-id", tool: "transferCall", input: { callSid: "abc" } });
+    const response = await runAgent({ callId: "sys-int-call-id-1", tool: "transferCall", input: { callSid: "abc" } });
     expect(response).toHaveProperty("status");
     expect(response).toHaveProperty("meta.callId");
     expect(response.status).toBe("error");

@@ -16,9 +16,10 @@ describe("agent deterministic flow", () => {
   });
 
   it("valid input returns valid output", async () => {
+    startCall.mockResolvedValue({ scheduled: true });
     const { runAgent } = await import("../src/agents/runAgent");
     const response = await runAgent({
-      callId: "test-call-id",
+      callId: "test-call-id-1",
       tool: "startCall",
       input: { to: "+15555550123", token: "token" }
     });
@@ -38,7 +39,7 @@ describe("agent deterministic flow", () => {
     const { runAgent } = await import("../src/agents/runAgent");
 
     const response = await runAgent({
-      callId: "test-call-id",
+      callId: "test-call-id-2",
       tool: "startCall",
       input: { to: "+15555550123", token: "token" }
     });

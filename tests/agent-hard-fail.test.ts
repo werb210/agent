@@ -7,7 +7,7 @@ describe("agent hard failures", () => {
 
   it("fails unknown tools deterministically", async () => {
     const result = await runAgent({
-      callId: "call-1",
+      callId: "agent-hard-fail-call-1",
       tool: "missingTool",
       input: {}
     });
