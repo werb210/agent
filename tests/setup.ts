@@ -40,3 +40,8 @@ beforeAll(() => {
 
   saveToken(token);
 });
+
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});

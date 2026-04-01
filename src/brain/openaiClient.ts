@@ -1,39 +1,45 @@
 import type { ChatCompletionMessageParam } from "openai/resources";
 import { resilientLLM } from "../infrastructure/mayaResilience";
-import { AppError } from "../errors/AppError";
 import { sanitizeModelInput } from "../services/inputSanitizer";
 
 type InvocationScope = {
-  role: "Admin" | "Staff" | string;
+  role?: string;
   applicationId?: string;
   userId?: string;
   actionType?: string;
 };
 
 export async function runAI(
-  systemPrompt: string,
-  userMessage: string,
+  source: string,
+  message: string,
   history: { role: "user" | "assistant"; content: string }[] = [],
-  scope?: InvocationScope
-) {
-  if (scope && scope.role !== "Admin" && scope.role !== "Staff") {
-    throw new AppError("forbidden", 403);
+  context: InvocationScope = {}
+): Promise<any> {
+  const normalizedRole = context?.role?.toLowerCase();
+  const allowedRoles = new Set(["admin", "staff", "system"]);
+
+  if (normalizedRole && !allowedRoles.has(normalizedRole)) {
+    const err: any = new Error("forbidden");
+    err.code = "forbidden";
+    err.status = 403;
+    throw err;
   }
 
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: sanitizeModelInput(systemPrompt) },
+    { role: "system", content: sanitizeModelInput(source) },
     ...history.map((item) => ({ ...item, content: sanitizeModelInput(item.content) })),
-    { role: "user", content: sanitizeModelInput(userMessage) }
+    { role: "user", content: sanitizeModelInput(message) }
   ];
 
   const prompt = messages
-    .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+    .map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`)
     .join("\n\n");
 
   const result = await resilientLLM("analysis", prompt, {
-    applicationId: scope?.applicationId,
-    userId: scope?.userId,
-    actionType: scope?.actionType ?? "maya_chat"
+    applicationId: context?.applicationId,
+    userId: context?.userId,
+    actionType: context?.actionType ?? "maya_chat"
   });
+
   return result.output;
 }

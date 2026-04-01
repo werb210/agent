@@ -1,6 +1,4 @@
-import { withRetry } from "./retry";
-import { pushDeadLetter } from "./deadLetter";
-import { saveEvent } from "./eventStore";
+import { pool } from "../db";
 
 const executedToolKeys = new Set<string>();
 
@@ -13,48 +11,32 @@ export async function executeTool(
   const idempotencyKey = `${callId}:${toolName}:${JSON.stringify(payload)}`;
 
   if (executedToolKeys.has(idempotencyKey)) {
-    await saveEvent({
-      callId,
-      type: "tool_duplicate_skipped",
-      payload: { toolName, payload, idempotencyKey }
-    });
-
     return { skipped: true, idempotencyKey };
   }
 
-  await saveEvent({
-    callId,
-    type: "tool_attempt",
-    payload: { toolName, payload, idempotencyKey }
-  });
+  let attempts = 0;
 
-  try {
-    const result = await withRetry(fn);
-    executedToolKeys.add(idempotencyKey);
-
-    await saveEvent({
-      callId,
-      type: "tool_success",
-      payload: { toolName, result, idempotencyKey }
-    });
-
-    return result;
-  } catch (err) {
-    const errorText = String(err);
-
-    await saveEvent({
-      callId,
-      type: "tool_failure",
-      payload: { toolName, error: errorText, idempotencyKey }
-    });
-
-    await pushDeadLetter({
-      type: "maya_tool",
-      data: { callId, toolName, payload },
-      error: errorText
-    });
-
-    throw err;
+  while (attempts < 3) {
+    try {
+      const result = await fn();
+      executedToolKeys.add(idempotencyKey);
+      await pool.query("INSERT INTO maya_tool_log(call_id, tool_name, payload) VALUES ($1, $2, $3)", [
+        callId,
+        toolName,
+        payload
+      ]);
+      return result;
+    } catch (err) {
+      attempts += 1;
+      if (attempts >= 3) {
+        await pool.query("INSERT INTO maya_dead_letter(job_type, payload, error) VALUES ($1, $2, $3)", [
+          "maya_tool",
+          { callId, toolName, payload },
+          String(err)
+        ]);
+        throw err;
+      }
+    }
   }
 }
 
