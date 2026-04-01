@@ -8,6 +8,11 @@ const BASE_URL = process.env.SERVER_URL || "";
 const DB_NOT_READY_ERROR = "DB_NOT_READY";
 const MAX_READY_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
+const CIRCUIT_RESET_MS = 3000;
+const CIRCUIT_OPEN_ERROR = "CIRCUIT_OPEN";
+
+let open = false;
+let lastFail = 0;
 
 function buildUrl(path: string): string {
   if (!path.startsWith("/api/")) {
@@ -22,7 +27,7 @@ function normalize<T>(res: unknown): T {
     throw new Error("INVALID_RESPONSE");
   }
 
-  if ("status" in res && (res as { status?: unknown }).status === "error") {
+  if ("status" in res && (res as { status?: unknown }).status !== "ok") {
     throw new Error(String((res as { error?: unknown }).error ?? "INVALID_RESPONSE"));
   }
 
@@ -37,18 +42,75 @@ function normalize<T>(res: unknown): T {
   return (res as { data: T }).data;
 }
 
+function allow(): boolean {
+  if (!open) {
+    return true;
+  }
+
+  return Date.now() - lastFail > CIRCUIT_RESET_MS;
+}
+
+function fail(): void {
+  open = true;
+  lastFail = Date.now();
+}
+
+function success(): void {
+  open = false;
+}
+
+function retryDelay(attempt: number): number {
+  return RETRY_DELAY_MS * (attempt + 1);
+}
+
+function circuitWaitMs(): number {
+  if (!open) {
+    return 0;
+  }
+
+  return Math.max(0, CIRCUIT_RESET_MS - (Date.now() - lastFail));
+}
+
+async function call<T>(fn: () => Promise<T>): Promise<T> {
+  if (!allow()) {
+    throw new Error(CIRCUIT_OPEN_ERROR);
+  }
+
+  try {
+    const result = await fn();
+    success();
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === DB_NOT_READY_ERROR) {
+      fail();
+    }
+    throw error;
+  }
+}
+
 async function callWithRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < MAX_READY_RETRIES; i += 1) {
+  let attempts = 0;
+
+  while (attempts < MAX_READY_RETRIES) {
     try {
-      return await fn();
+      return await call(fn);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+
+      if (message === CIRCUIT_OPEN_ERROR) {
+        const waitMs = Math.max(circuitWaitMs(), retryDelay(attempts));
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        continue;
+      }
+
       if (message !== DB_NOT_READY_ERROR) {
         throw error;
       }
 
-      if (i < MAX_READY_RETRIES - 1) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      attempts += 1;
+      if (attempts < MAX_READY_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelay(attempts - 1)));
       }
     }
   }
@@ -80,4 +142,9 @@ export async function serverPost<T>(
   });
 }
 
-export { callWithRetry, normalize };
+function resetCircuitStateForTests(): void {
+  open = false;
+  lastFail = 0;
+}
+
+export { callWithRetry, normalize, resetCircuitStateForTests };
