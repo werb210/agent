@@ -1,4 +1,5 @@
 import { AppError } from "../errors/AppError";
+import { setTimeout as sleep } from "node:timers/promises";
 interface CircuitOptions {
   timeout: number;
   failureThreshold: number;
@@ -28,16 +29,11 @@ export class CircuitBreaker {
       }
     }
 
-    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-
     try {
       const result = await Promise.race([
         fn(),
-        new Promise((_, reject) => {
-          timeoutHandle = setTimeout(() => reject(new Error("Timeout")), this.options.timeout);
-          if (typeof timeoutHandle.unref === "function") {
-            timeoutHandle.unref();
-          }
+        sleep(this.options.timeout).then(() => {
+          throw new Error("Timeout");
         })
       ]);
 
@@ -53,10 +49,6 @@ export class CircuitBreaker {
       }
 
       throw err;
-    } finally {
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-      }
     }
   }
 }

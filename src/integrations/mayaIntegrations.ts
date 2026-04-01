@@ -1,10 +1,11 @@
 import { logger } from "../infrastructure/logger";
+import { setTimeout as sleep } from "node:timers/promises";
 
 const INTEGRATION_TIMEOUT_MS = 3_000;
 
 async function withTimeout(name: string, job: () => Promise<void>) {
-  const timeoutPromise = new Promise<void>((_, reject) => {
-    setTimeout(() => reject(new Error(`${name}_timeout`)), INTEGRATION_TIMEOUT_MS);
+  const timeoutPromise = sleep(INTEGRATION_TIMEOUT_MS).then(() => {
+    throw new Error(`${name}_timeout`);
   });
 
   try {
@@ -29,10 +30,8 @@ async function syncPipeline(_message: string): Promise<void> {
   return;
 }
 
-export function triggerMayaIntegrations(message: string) {
-  setImmediate(() => {
-    void withTimeout("o365", () => syncO365(message));
-    void withTimeout("slack", () => syncSlack(message));
-    void withTimeout("pipeline", () => syncPipeline(message));
-  });
+export async function triggerMayaIntegrations(message: string): Promise<void> {
+  await withTimeout("o365", () => syncO365(message));
+  await withTimeout("slack", () => syncSlack(message));
+  await withTimeout("pipeline", () => syncPipeline(message));
 }

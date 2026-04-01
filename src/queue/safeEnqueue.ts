@@ -1,9 +1,8 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import { enqueueJob, type Job } from "./queue";
 import { defaultRetryPolicy, shouldRetry, type RetryPolicy } from "./policies/retryPolicy";
 
 type EnqueueInput = Omit<Job, "id" | "createdAt"> & Partial<Pick<Job, "id" | "createdAt">>;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function safeEnqueue(task: EnqueueInput, policy: RetryPolicy = defaultRetryPolicy): Promise<boolean> {
   let attempt = 0;

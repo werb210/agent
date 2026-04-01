@@ -44,17 +44,12 @@ async function sendMessage(sessionId: string, message: string) {
   const bodyString = JSON.stringify(payload);
   payload.auth.signature = sign(bodyString);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-
   const response = await nativeFetch(AGENT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-    signal: controller.signal,
+    signal: AbortSignal.timeout(30000),
   });
-
-  clearTimeout(timeout);
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
@@ -97,4 +92,8 @@ async function startConsole() {
   }
 }
 
-void startConsole();
+startConsole().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error("Fatal console startup error:", message);
+  process.exit(1);
+});

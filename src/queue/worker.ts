@@ -1,4 +1,5 @@
 import { dequeue } from "./jobQueue"
+import { setTimeout as sleep } from "node:timers/promises";
 
 const MAX_ATTEMPTS = 3
 let running = true
@@ -16,7 +17,7 @@ export async function startWorker(handler: (job: any) => Promise<void>) {
     const job = dequeue()
 
     if (!job) {
-      await new Promise(r => setTimeout(r, 500))
+      await sleep(500)
       continue
     }
 
