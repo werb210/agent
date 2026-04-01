@@ -7,6 +7,6 @@ export class OrchestratorAgent {
 
   async runFullAnalysis(input: ToolExecutionCall) {
     requireCapability(this.role, "view_sessions");
-    return runAgent(input);
+    return await runAgent(input);
   }
 }

@@ -6,9 +6,16 @@ export type LogEntry = {
 };
 
 export function log(entry: LogEntry): void {
-  if (!entry.callId || !entry.operation || !entry.status) {
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    !entry.callId ||
+    !entry.operation ||
+    !entry.status
+  ) {
     throw new Error("INVALID_LOG_ENTRY");
   }
 
-  console.log(JSON.stringify(entry));
+  const safe = JSON.stringify(entry);
+  console.log(safe);
 }

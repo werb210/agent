@@ -66,10 +66,21 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
   }
 }
 
+function deepFreeze<T>(obj: T): T {
+  if (obj && typeof obj === "object") {
+    Object.freeze(obj);
+    Object.values(obj as Record<string, unknown>).forEach((value) => {
+      deepFreeze(value);
+    });
+  }
+
+  return obj;
+}
+
 async function executeTool(call: ToolExecutionCall): Promise<Record<string, unknown>> {
-  const context = Object.freeze({
+  const context = deepFreeze({
     callId: call.callId,
-    input: { ...call.input }
+    input: call.input
   });
 
   return tools[call.tool as ToolRegistryName](context);
