@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { runAI } from "../brain/openaiClient";
 import { generateCreditSummary } from "../services/creditSummary";
 
 jest.mock("../infrastructure/mayaResilience", () => ({
@@ -22,10 +21,9 @@ describe("Maya V1 production hardening", () => {
   });
 
   it("rejects unauthorized roles", async () => {
-    (runAI as jest.Mock).mockRejectedValue({
-      code: "forbidden",
-      status: 403,
-    });
+    const { runAI } = jest.requireActual("../brain/openaiClient") as {
+      runAI: (source: string, message: string, history: any[], context: { role?: string }) => Promise<any>;
+    };
 
     await expect(
       runAI("system", "hello", [], { role: "client" })

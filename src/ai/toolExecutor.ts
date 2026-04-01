@@ -1,4 +1,4 @@
-import { executeTool as executeWithDurability } from "../lib/toolExecutor";
+import { pool } from "../lib/db";
 import { logToolCall, logToolError, logToolResult } from "../lib/logger";
 import { createLead, startCall, updateCallStatus } from "../tools";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
@@ -25,12 +25,34 @@ function assertToolResult(result: unknown): asserts result is ToolExecutionResul
   }
 }
 
+async function executeWithRetry(callId: string, fn: () => Promise<any>): Promise<any> {
+  let attempts = 0;
+
+  while (attempts < 3) {
+    try {
+      const result = await fn();
+      await pool.query("insert into tool_log values ($1)", [callId]);
+      return result;
+    } catch (err) {
+      attempts++;
+      if (attempts >= 3) {
+        await pool.query("insert into dead_letter values ($1)", [callId]);
+        throw err;
+      }
+    }
+  }
+}
+
 export async function executeTool(
   callId: string,
   name: string,
-  params: Record<string, unknown>,
-  authToken?: string
-): Promise<ToolExecutionResult> {
+  params: any,
+  fnOrToken: (() => Promise<any>) | string,
+): Promise<any> {
+  if (typeof fnOrToken === "function") {
+    return executeWithRetry(callId, fnOrToken);
+  }
+
   const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
   if (globalState.__TOOL_RUNNING__) {
     throw new Error("PARALLEL_TOOL_EXECUTION_BLOCKED");
@@ -40,7 +62,7 @@ export async function executeTool(
     throw new Error(`INVALID_TOOL: ${name}`);
   }
 
-  const token = authToken ?? process.env.AGENT_INTERNAL_API_TOKEN;
+  const token = fnOrToken ?? process.env.AGENT_INTERNAL_API_TOKEN;
   if (!token) {
     throw new Error("Missing auth token");
   }
@@ -57,7 +79,7 @@ export async function executeTool(
   logToolCall(name, { callId, params });
 
   try {
-    const toolResponse = await executeWithDurability(callId, name, params, async () => tool(params, token));
+    const toolResponse = await executeWithRetry(callId, async () => tool(params, token));
 
     if (!toolResponse || typeof toolResponse !== "object") {
       throw new Error("EMPTY_TOOL_RESULT");
