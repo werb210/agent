@@ -1,6 +1,6 @@
 import { evaluateEscalation } from "../services/escalationEngine";
-import { getAvailableStaff } from "../services/staffAvailability";
-import { getMayaSettings } from "../services/mayaSettingsService";
+import * as staffModule from "../services/staffAvailability";
+import * as settingsModule from "../services/mayaSettingsService";
 
 jest.mock("../services/staffAvailability", () => ({
   getAvailableStaff: jest.fn()
@@ -10,13 +10,9 @@ jest.mock("../services/mayaSettingsService", () => ({
   getMayaSettings: jest.fn()
 }));
 
-const mockedGetAvailableStaff = getAvailableStaff as jest.MockedFunction<
-  typeof getAvailableStaff
->;
+const mockedGetAvailableStaff = staffModule.getAvailableStaff as jest.Mock;
 
-const mockedGetMayaSettings = getMayaSettings as jest.MockedFunction<
-  typeof getMayaSettings
->;
+const mockedGetMayaSettings = settingsModule.getMayaSettings as jest.Mock;
 
 describe("evaluateEscalation", () => {
   beforeEach(() => {
