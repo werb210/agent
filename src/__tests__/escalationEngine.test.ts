@@ -10,9 +10,15 @@ jest.mock("../services/mayaSettingsService", () => ({
   getMayaSettings: jest.fn()
 }));
 
-const mockedGetAvailableStaff = staffModule.getAvailableStaff as jest.Mock;
+const mockedGetAvailableStaff =
+  staffModule.getAvailableStaff as jest.MockedFunction<
+    typeof staffModule.getAvailableStaff
+  >;
 
-const mockedGetMayaSettings = settingsModule.getMayaSettings as jest.Mock;
+const mockedGetMayaSettings =
+  settingsModule.getMayaSettings as jest.MockedFunction<
+    typeof settingsModule.getMayaSettings
+  >;
 
 describe("evaluateEscalation", () => {
   beforeEach(() => {
