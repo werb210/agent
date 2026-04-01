@@ -41,8 +41,8 @@ async function bootstrapRuntime(): Promise<void> {
     throw new Error("Service already started");
   }
 
-  started = true;
   await checkHealth();
+  started = true;
   logger.info("runtime_ready", {
     timestamp: new Date().toISOString(),
     operation: "startup",

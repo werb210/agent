@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { areToolHandlersLoaded } from "./ai/toolExecutor";
 import { pool } from "./db";
 
 const REQUIRED_ENV_VARS = [
@@ -44,6 +45,12 @@ async function validateDbConnection(): Promise<void> {
   await pool.connect();
 }
 
+function validateHandlersLoaded(): void {
+  if (!areToolHandlersLoaded()) {
+    throw new Error("Required handlers are not loaded");
+  }
+}
+
 function validateRequiredClientsInitialized(): void {
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
   const twilioClientReady =
@@ -61,6 +68,7 @@ export async function checkHealth(): Promise<{ status: "ok" }> {
   validateRequiredEnvVars();
   validateServiceInitialization();
   await validateDbConnection();
+  validateHandlersLoaded();
   validateRequiredClientsInitialized();
   return { status: "ok" };
 }

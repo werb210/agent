@@ -3,16 +3,28 @@ import { logToolCall, logToolError, logToolResult } from "../lib/logger";
 import { createLead, startCall, updateCallStatus } from "../tools";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
 
-export type ToolExecutionResult = {
-  success: true;
-  result: Record<string, unknown>;
+export type ToolExecutionResult = Record<string, unknown>;
+
+export type ToolExecutionCall = {
+  callId: string;
+  name: string;
+  params: Record<string, unknown>;
+  fnOrToken: (() => Promise<unknown>) | string;
 };
+
+export type ToolExecutionResponse =
+  | { status: "ok"; data: ToolExecutionResult }
+  | { status: "error"; error: { code: "EXEC_FAIL"; message: string } };
 
 const allowedTools: ToolRegistryName[] = [
   TOOL_REGISTRY.createLead,
   TOOL_REGISTRY.startCall,
   TOOL_REGISTRY.updateCallStatus
 ];
+
+export function areToolHandlersLoaded(): boolean {
+  return [createLead, startCall, updateCallStatus].every((handler) => typeof handler === "function");
+}
 
 async function executeWithRetry(callId: string, name: string, fn: () => Promise<any>) {
   let attempts = 0;
@@ -41,12 +53,12 @@ async function executeWithRetry(callId: string, name: string, fn: () => Promise<
   }
 }
 
-export async function executeTool(
+async function handler(
   callId: string,
   name: string,
   params: any,
   fnOrToken: (() => Promise<any>) | string,
-): Promise<any> {
+): Promise<ToolExecutionResult> {
   if (typeof fnOrToken === "function") {
     return executeWithRetry(callId, name, fnOrToken);
   }
@@ -83,18 +95,37 @@ export async function executeTool(
       throw new Error("EMPTY_TOOL_RESULT");
     }
 
-    const result: ToolExecutionResult = {
-      success: true,
-      result: toolResponse as Record<string, unknown>
-    };
-
-    logToolResult(name, result);
+    const result = toolResponse as Record<string, unknown>;
+    logToolResult(name, { callId, result });
     return result;
   } catch (error) {
     console.error("TOOL_ERROR", name, error);
-    logToolError(name, error);
+    logToolError(name, { callId, error });
     throw error;
   } finally {
     globalState.__TOOL_RUNNING__ = false;
   }
+}
+
+export async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
+  try {
+    const result = await handler(call.callId, call.name, call.params, call.fnOrToken);
+    return { status: "ok", data: result };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { status: "error", error: { code: "EXEC_FAIL", message } };
+  }
+}
+
+export async function executeTool(
+  callId: string,
+  name: string,
+  params: any,
+  fnOrToken: (() => Promise<any>) | string,
+): Promise<any> {
+  const response = await execute({ callId, name, params, fnOrToken });
+  if (response.status === "error") {
+    throw new Error(response.error.message);
+  }
+  return response.data;
 }
