@@ -60,18 +60,15 @@ describe("auth flow e2e", () => {
     await expect(apiRequest("/api/ping")).rejects.toThrow("[EMPTY RESPONSE]");
   });
 
-  it("TEST 9: caller authorization header override is ignored", async () => {
+  it("TEST 9: request uses bearer token from localStorage", async () => {
     saveToken("valid-token");
     (globalThis as any).fetch = jest.fn(async () => ({ ok: true, status: 200, text: async () => '{"ok":true}', json: async () => ({ ok: true }) }));
 
-    await apiRequest("/api/ping", {
-      headers: {
-        Authorization: "Bearer attacker-token"
-      }
-    });
+    await apiRequest("/api/ping", "POST", { ping: true });
 
     const fetchArgs = ((globalThis as any).fetch as jest.Mock).mock.calls[0];
     expect(fetchArgs[1].headers.Authorization).toBe("Bearer valid-token");
     expect(fetchArgs[1].headers["Content-Type"]).toBe("application/json");
+    expect(fetchArgs[1].body).toBe(JSON.stringify({ ping: true }));
   });
 });

@@ -1,7 +1,3 @@
-import { evaluateEscalation } from "../services/escalationEngine";
-import * as staffModule from "../services/staffAvailability";
-import * as settingsModule from "../services/mayaSettingsService";
-
 jest.mock("../services/staffAvailability", () => ({
   getAvailableStaff: jest.fn()
 }));
@@ -10,20 +6,20 @@ jest.mock("../services/mayaSettingsService", () => ({
   getMayaSettings: jest.fn()
 }));
 
+import { evaluateEscalation } from "../services/escalationEngine";
+import * as staffModule from "../services/staffAvailability";
+import * as settingsModule from "../services/mayaSettingsService";
+
 const mockedGetAvailableStaff =
-  staffModule.getAvailableStaff as jest.MockedFunction<
-    typeof staffModule.getAvailableStaff
-  >;
+  staffModule.getAvailableStaff as jest.Mock;
 
 const mockedGetMayaSettings =
-  settingsModule.getMayaSettings as jest.MockedFunction<
-    typeof settingsModule.getMayaSettings
-  >;
+  settingsModule.getMayaSettings as jest.Mock;
 
 describe("evaluateEscalation", () => {
   beforeEach(() => {
-    mockedGetAvailableStaff.mockReset();
-    mockedGetMayaSettings.mockReset();
+    mockedGetAvailableStaff.mockClear();
+    mockedGetMayaSettings.mockClear();
     mockedGetMayaSettings.mockResolvedValue({
       autonomy_level: 2,
       allow_booking: true,
