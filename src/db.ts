@@ -19,3 +19,8 @@ export const pool = {
     return Promise.resolve();
   }
 };
+
+
+export default {
+  pool
+};
