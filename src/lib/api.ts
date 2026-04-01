@@ -20,27 +20,16 @@ export async function apiRequest<T = unknown>(
   path: string,
   method: string,
   body?: unknown,
-  config: { headers?: HeadersInit } = {}
+  _config: { headers?: HeadersInit } = {}
 ): Promise<T> {
+  void _config;
   return withRetry(async () => {
     const normalizedMethod = method.toUpperCase();
     const endpoint = normalizedMethod === "GET" && body && typeof body === "object"
       ? `${path}${toQueryString(body as Record<string, unknown>)}`
       : path;
-
-    const headers = new Headers(config.headers ?? {});
-    let payload: BodyInit | undefined;
-
-    if (normalizedMethod !== "GET" && typeof body !== "undefined") {
-      headers.set("Content-Type", "application/json");
-      payload = JSON.stringify(body);
-    }
-
-    const data = await baseApiRequest(endpoint, {
-      method: normalizedMethod,
-      headers,
-      body: payload
-    });
+    const payload = normalizedMethod === "GET" ? undefined : body;
+    const data = await baseApiRequest(endpoint, normalizedMethod, payload);
 
     if (!data || typeof data !== "object") {
       throw new Error("Invalid API response");

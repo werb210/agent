@@ -1,8 +1,3 @@
-import { executeAction } from "../services/actionExecutor";
-import { handleBooking } from "../services/bookingEngine";
-import { getMayaSettings } from "../services/mayaSettingsService";
-import { triggerOutboundCall } from "../services/outboundIntelligence";
-
 jest.mock("../services/bookingEngine", () => ({
   handleBooking: jest.fn()
 }));
@@ -15,23 +10,22 @@ jest.mock("../services/outboundIntelligence", () => ({
   triggerOutboundCall: jest.fn()
 }));
 
-const mockedHandleBooking = handleBooking as jest.MockedFunction<
-  typeof handleBooking
->;
+import { executeAction } from "../services/actionExecutor";
+import * as bookingModule from "../services/bookingEngine";
+import * as settingsModule from "../services/mayaSettingsService";
+import * as outboundModule from "../services/outboundIntelligence";
 
-const mockedGetMayaSettings = getMayaSettings as jest.MockedFunction<
-  typeof getMayaSettings
->;
+const mockedHandleBooking = bookingModule.handleBooking as jest.Mock;
 
-const mockedTriggerOutboundCall = triggerOutboundCall as jest.MockedFunction<
-  typeof triggerOutboundCall
->;
+const mockedGetMayaSettings = settingsModule.getMayaSettings as jest.Mock;
+
+const mockedTriggerOutboundCall = outboundModule.triggerOutboundCall as jest.Mock;
 
 describe("executeAction governance", () => {
   beforeEach(() => {
-    mockedHandleBooking.mockReset();
-    mockedGetMayaSettings.mockReset();
-    mockedTriggerOutboundCall.mockReset();
+    mockedHandleBooking.mockClear();
+    mockedGetMayaSettings.mockClear();
+    mockedTriggerOutboundCall.mockClear();
     mockedGetMayaSettings.mockResolvedValue({
       autonomy_level: 1,
       allow_booking: true,
