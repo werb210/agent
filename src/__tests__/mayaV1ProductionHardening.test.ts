@@ -22,6 +22,11 @@ describe("Maya V1 production hardening", () => {
   });
 
   it("rejects unauthorized roles", async () => {
+    (runAI as jest.Mock).mockRejectedValue({
+      code: "forbidden",
+      status: 403,
+    });
+
     await expect(
       runAI("system", "hello", [], { role: "client" })
     ).rejects.toEqual(expect.objectContaining({ code: "forbidden", status: 403 }));

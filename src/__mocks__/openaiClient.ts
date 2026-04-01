@@ -1,5 +1,5 @@
-export const runAI = jest.fn();
+export const runAI = jest.fn(async () => {
+  return "mocked";
+});
 
-export default {
-  runAI,
-};
+export default { runAI };

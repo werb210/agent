@@ -1,7 +1,8 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts", "<rootDir>/src/__tests__/setupTests.ts"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts", "<rootDir>/src/test/setup.ts"],
   detectOpenHandles: true,
-  forceExit: true
+  forceExit: true,
+  testPathIgnorePatterns: ["setupTests.ts"]
 };
