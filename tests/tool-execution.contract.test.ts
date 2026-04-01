@@ -11,11 +11,6 @@ jest.mock("../src/lib/db", () => ({
 }));
 
 describe("tool execution response contract", () => {
-  beforeEach(() => {
-    const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
-    globalState.__TOOL_RUNNING__ = false;
-  });
-
   it("always returns structured success response", async () => {
     const response = await execute({
       callId: "test-call-id",
