@@ -1,16 +1,18 @@
+jest.mock("../core/mayaProductIntelligence", () => ({
+  getAvailableProductCategories: jest.fn(),
+}));
+
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import * as productModule from "../core/mayaProductIntelligence";
 
-jest.mock("../core/mayaProductIntelligence", () => ({
-  getAvailableProductCategories: jest.fn()
-}));
-
 const mockedGetAvailableProductCategories =
-  productModule.getAvailableProductCategories as jest.Mock;
+  productModule.getAvailableProductCategories as jest.MockedFunction<
+    typeof productModule.getAvailableProductCategories
+  >;
 
 describe("handleStartupInquiry", () => {
   beforeEach(() => {
-    mockedGetAvailableProductCategories.mockReset();
+    mockedGetAvailableProductCategories.mockClear();
   });
 
   it("returns available when startup category exists", async () => {
