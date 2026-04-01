@@ -4,5 +4,5 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts", "<rootDir>/src/test/setup.ts"],
   detectOpenHandles: true,
   forceExit: true,
-  testPathIgnorePatterns: ["setupTests.ts"]
+  testPathIgnorePatterns: ["/node_modules/", "/dist/", "setupTests.ts"]
 };
