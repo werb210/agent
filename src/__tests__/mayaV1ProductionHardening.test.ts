@@ -10,6 +10,8 @@ const { resilientLLM } = jest.requireMock("../infrastructure/mayaResilience") as
   resilientLLM: jest.Mock;
 };
 
+const realClient = jest.requireActual("../brain/openaiClient");
+
 describe("Maya V1 production hardening", () => {
   beforeEach(() => {
     resilientLLM.mockReset();
@@ -20,14 +22,13 @@ describe("Maya V1 production hardening", () => {
     expect(file).toContain("temperature: 0");
   });
 
-  it("rejects unauthorized roles", async () => {
-    const { runAI } = jest.requireActual("../brain/openaiClient") as {
-      runAI: (source: string, message: string, history: any[], context: { role?: string }) => Promise<any>;
-    };
-
+  test("forbidden roles are rejected", async () => {
     await expect(
-      runAI("system", "hello", [], { role: "client" })
-    ).rejects.toEqual(expect.objectContaining({ code: "forbidden", status: 403 }));
+      realClient.runAI("web", "msg", [], { role: "client" })
+    ).rejects.toMatchObject({
+      code: "forbidden",
+      status: 403,
+    });
   });
 
   it("enforces credit summary schema", async () => {

@@ -9,10 +9,10 @@ export async function runAI(
   void history;
 
   if (context?.role && context.role !== "staff" && context.role !== "system") {
-    const err: any = new Error("forbidden");
-    err.code = "forbidden";
-    err.status = 403;
-    throw err;
+    return Promise.reject({
+      code: "forbidden",
+      status: 403,
+    });
   }
 
   return { text: "ok" };

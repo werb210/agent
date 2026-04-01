@@ -1,7 +1,7 @@
 import { saveToken } from "../src/services/token";
 
 jest.mock("../src/brain/openaiClient", () => ({
-  runAI: jest.fn()
+  runAI: jest.fn(),
 }));
 
 class MemoryStorage {
@@ -48,5 +48,4 @@ beforeAll(() => {
 beforeEach(() => {
   const { runAI } = require("../src/brain/openaiClient");
   runAI.mockReset();
-  jest.clearAllMocks();
 });

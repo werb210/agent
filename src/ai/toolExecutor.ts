@@ -1,4 +1,4 @@
-import { pool } from "../lib/db";
+import { queryDb } from "../lib/db";
 import { logToolCall, logToolError, logToolResult } from "../lib/logger";
 import { createLead, startCall, updateCallStatus } from "../tools";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
@@ -14,29 +14,27 @@ const allowedTools: ToolRegistryName[] = [
   TOOL_REGISTRY.updateCallStatus
 ];
 
-function assertToolResult(result: unknown): asserts result is ToolExecutionResult {
-  if (!result || typeof result !== "object") {
-    throw new Error("INVALID_TOOL_RESULT");
-  }
-
-  const resultRecord = result as Record<string, unknown>;
-  if (resultRecord.success !== true || typeof resultRecord.result !== "object" || resultRecord.result === null) {
-    throw new Error("INVALID_TOOL_RESULT");
-  }
-}
-
-async function executeWithRetry(callId: string, fn: () => Promise<any>): Promise<any> {
+async function executeWithRetry(callId: string, name: string, fn: () => Promise<any>) {
   let attempts = 0;
 
   while (attempts < 3) {
     try {
       const result = await fn();
-      await pool.query("insert into tool_log values ($1)", [callId]);
+
+      await queryDb(
+        "insert into tool_log(call_id,name) values ($1,$2)",
+        [callId, name]
+      );
+
       return result;
     } catch (err) {
       attempts++;
+
       if (attempts >= 3) {
-        await pool.query("insert into dead_letter values ($1)", [callId]);
+        await queryDb(
+          "insert into dead_letter(call_id,name) values ($1,$2)",
+          [callId, name]
+        );
         throw err;
       }
     }
@@ -50,7 +48,7 @@ export async function executeTool(
   fnOrToken: (() => Promise<any>) | string,
 ): Promise<any> {
   if (typeof fnOrToken === "function") {
-    return executeWithRetry(callId, fnOrToken);
+    return executeWithRetry(callId, name, fnOrToken);
   }
 
   const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
@@ -79,7 +77,7 @@ export async function executeTool(
   logToolCall(name, { callId, params });
 
   try {
-    const toolResponse = await executeWithRetry(callId, async () => tool(params, token));
+    const toolResponse = await executeWithRetry(callId, name, async () => tool(params, token));
 
     if (!toolResponse || typeof toolResponse !== "object") {
       throw new Error("EMPTY_TOOL_RESULT");
@@ -90,7 +88,6 @@ export async function executeTool(
       result: toolResponse as Record<string, unknown>
     };
 
-    assertToolResult(result);
     logToolResult(name, result);
     return result;
   } catch (error) {

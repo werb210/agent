@@ -12,7 +12,8 @@
     "worker": "ts-node-dev --respawn --transpile-only src/infrastructure/mayaWorker.ts",
     "predeploy": "ts-node src/testing/preDeployCheck.ts",
     "lint": "tsc --noEmit",
-    "lint:api-guards": "bash scripts/ci-api-guards.sh"
+    "lint:api-guards": "bash scripts/ci-api-guards.sh",
+    "test:ci": "jest --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "@azure/msal-node": "^2.6.4",
