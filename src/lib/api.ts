@@ -1,4 +1,3 @@
-import { assertApiResponse, ApiResponseEnvelope } from "./assertApiResponse";
 import { apiRequest as baseApiRequest } from "./apiClient";
 import { withRetry } from "./retry";
 
@@ -47,6 +46,6 @@ export async function apiRequest<T = unknown>(
       throw new Error("Invalid API response");
     }
 
-    return assertApiResponse<T>(data as ApiResponseEnvelope<T>);
+    return data as T;
   });
 }

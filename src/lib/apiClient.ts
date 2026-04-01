@@ -18,18 +18,24 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
     throw new Error("[INVALID PATH]");
   }
 
-  const headers = {
+  const finalHeaders: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
-    Authorization: "***" // force override last
+    ...((options.headers as Record<string, string>) || {}),
   };
+
+  delete (finalHeaders as any).Authorization;
+
+  finalHeaders["Authorization"] = "***";
 
   const res = await fetchFn(`${API_BASE}${path}`, {
     ...options,
-    headers,
+    headers: finalHeaders,
   });
 
   if (res.status === 401) {
+    try {
+      globalThis.localStorage?.removeItem("token");
+    } catch {}
     throw new Error("[AUTH FAIL]");
   }
 
