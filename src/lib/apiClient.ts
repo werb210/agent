@@ -1,42 +1,27 @@
-import { getTokenOrFail } from "../services/token";
+const API_BASE = process.env.SERVER_URL;
 
-export async function apiRequest(path: string, options: RequestInit = {}) {
-  if (!/^(?!.*\/\/)(?!.*\.\.)\/api\/[a-zA-Z0-9/_-]+$/.test(path)) {
-    throw new Error("[INVALID PATH]");
-  }
-
-  const token = getTokenOrFail();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`
-  };
-
-  const response = await globalThis["fetch"](path, {
-    ...options,
-    headers
-  });
-
-  if (response.status === 401) {
-    localStorage.removeItem("token");
-    window.location.href = "/login";
-    throw new Error("[AUTH FAIL]");
-  }
-
-  if (!response.ok) {
-    throw new Error(`[API ERROR] ${response.status}`);
-  }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  const text = await response.text();
-
-  if (!text) {
-    throw new Error("[EMPTY RESPONSE]");
-  }
-
-  return JSON.parse(text);
+if (!API_BASE) {
+  throw new Error("Missing SERVER_URL");
 }
 
-export const apiClient = apiRequest;
+export async function apiRequest(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  if (res.status === 401) {
+    throw new Error("auth_expired");
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("API_ERROR", { path, status: res.status, body: text });
+    throw new Error(`API request failed: ${res.status}`);
+  }
+
+  return res.json();
+}

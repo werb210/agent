@@ -72,6 +72,7 @@ export async function executeTool(
     logToolResult(name, result);
     return result;
   } catch (error) {
+    console.error("TOOL_ERROR", name, error);
     logToolError(name, error);
     throw error;
   } finally {
