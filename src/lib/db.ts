@@ -4,3 +4,7 @@ export const pool = {
     rowCount: 0,
   }),
 };
+
+export async function queryDb(sql: string, params: any[]) {
+  return pool.query(sql, params);
+}
