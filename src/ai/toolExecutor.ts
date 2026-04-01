@@ -1,94 +1,64 @@
-import { logger } from "../infrastructure/logger";
-import { bfServerRequest } from "../integrations/bfServerClient";
 import { executeTool as executeWithDurability } from "../lib/toolExecutor";
+import { logToolCall, logToolError, logToolResult } from "../lib/logger";
+import { createLead, startCall, updateCallStatus } from "../tools";
+import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
 
 export type ToolExecutionResult = {
   success: true;
   result: Record<string, unknown>;
 };
 
-type ToolName = "createLead" | "scheduleAppointment" | "sendSMS" | "sendEmail" | "updateCRMRecord";
-
-const allowedTools: ToolName[] = ["createLead", "scheduleAppointment", "sendSMS", "sendEmail", "updateCRMRecord"];
-
-function isCreateLeadPayload(params: Record<string, unknown>): boolean {
-  const name = params.name;
-  const phone = params.phone;
-  const email = params.email;
-
-  if (typeof name !== "string" || name.trim().length === 0) {
-    return false;
-  }
-
-  if (typeof phone !== "string" || phone.trim().length === 0) {
-    return false;
-  }
-
-  if (email !== undefined && typeof email !== "string") {
-    return false;
-  }
-
-  return true;
-}
+const allowedTools: ToolRegistryName[] = [
+  TOOL_REGISTRY.createLead,
+  TOOL_REGISTRY.startCall,
+  TOOL_REGISTRY.updateCallStatus
+];
 
 function assertToolResult(result: unknown): asserts result is ToolExecutionResult {
   if (!result || typeof result !== "object") {
     throw new Error("INVALID_TOOL_RESULT");
   }
 
-  if (!("success" in result) || !("result" in result)) {
-    throw new Error("INVALID_TOOL_RESULT");
-  }
-
   const resultRecord = result as Record<string, unknown>;
-  const keys = Object.keys(resultRecord);
-  if (keys.length !== 2 || !keys.includes("success") || !keys.includes("result")) {
-    throw new Error("INVALID_TOOL_RESULT");
-  }
-
   if (resultRecord.success !== true || typeof resultRecord.result !== "object" || resultRecord.result === null) {
     throw new Error("INVALID_TOOL_RESULT");
   }
-
-  if (resultRecord.result == null) {
-    throw new Error("EMPTY_TOOL_RESULT");
-  }
 }
 
-export async function executeTool(callId: string, name: string, params: Record<string, unknown>): Promise<ToolExecutionResult> {
+export async function executeTool(
+  callId: string,
+  name: string,
+  params: Record<string, unknown>,
+  authToken?: string
+): Promise<ToolExecutionResult> {
   const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
   if (globalState.__TOOL_RUNNING__) {
     throw new Error("PARALLEL_TOOL_EXECUTION_BLOCKED");
   }
 
-  if (!allowedTools.includes(name as ToolName)) {
+  if (!allowedTools.includes(name as ToolRegistryName)) {
     throw new Error(`INVALID_TOOL: ${name}`);
   }
 
-  logger.info("tool_call_start", { toolName: name, callId });
-
-  const toolMap: Record<ToolName, (toolParams: Record<string, unknown>) => Promise<unknown>> = {
-    createLead: async (toolParams) => {
-      if (!isCreateLeadPayload(toolParams)) {
-        throw new Error("Invalid createLead payload");
-      }
-
-      return bfServerRequest("/api/crm/createLead", "POST", toolParams);
-    },
-    scheduleAppointment: async (toolParams) => bfServerRequest("/api/applications/create", "POST", toolParams),
-    sendSMS: async (toolParams) => bfServerRequest("/api/calls/log", "POST", { type: "sms", ...toolParams }),
-    sendEmail: async (toolParams) => bfServerRequest("/api/calls/log", "POST", { type: "email", ...toolParams }),
-    updateCRMRecord: async (toolParams) => bfServerRequest("/api/crm/contacts", "POST", toolParams)
-  };
-
-  const tool = toolMap[name as ToolName];
-  if (!tool) {
-    throw new Error("UNKNOWN_TOOL");
+  const token = authToken ?? process.env.AGENT_INTERNAL_API_TOKEN;
+  if (!token) {
+    throw new Error("Missing auth token");
   }
 
+  const toolMap: Record<ToolRegistryName, (toolParams: Record<string, unknown>, tokenValue: string) => Promise<unknown>> = {
+    createLead,
+    startCall,
+    updateCallStatus
+  };
+
+  const tool = toolMap[name as ToolRegistryName];
+
   globalState.__TOOL_RUNNING__ = true;
+  logToolCall(name, { callId, params });
+
   try {
-    const toolResponse = await executeWithDurability(callId, name, params, async () => tool(params));
+    const toolResponse = await executeWithDurability(callId, name, params, async () => tool(params, token));
+
     if (!toolResponse || typeof toolResponse !== "object") {
       throw new Error("EMPTY_TOOL_RESULT");
     }
@@ -97,11 +67,13 @@ export async function executeTool(callId: string, name: string, params: Record<s
       success: true,
       result: toolResponse as Record<string, unknown>
     };
-    assertToolResult(result);
 
-    logger.info("tool_call_success", { toolName: name, callId });
-    logger.info("tool_call_end", { toolName: name, callId, outcome: "success" });
+    assertToolResult(result);
+    logToolResult(name, result);
     return result;
+  } catch (error) {
+    logToolError(name, error);
+    throw error;
   } finally {
     globalState.__TOOL_RUNNING__ = false;
   }

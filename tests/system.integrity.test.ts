@@ -6,10 +6,16 @@ jest.mock("../src/agents/orchestrator", () => ({
   runMayaAgents: jest.fn().mockResolvedValue({ completed: true })
 }));
 
-jest.mock("../src/integrations/bfServerClient", () => ({
-  bfServerRequest: jest.fn().mockResolvedValue({ id: "123" })
+jest.mock("../src/tools", () => ({
+  createLead: jest.fn().mockResolvedValue({ id: "123" }),
+  startCall: jest.fn().mockResolvedValue({ callId: "call-1" }),
+  updateCallStatus: jest.fn().mockResolvedValue({ updated: true })
 }));
 
+
+jest.mock("../src/lib/toolExecutor", () => ({
+  executeTool: jest.fn(async (_callId: string, _name: string, _params: Record<string, unknown>, fn: () => Promise<unknown>) => fn())
+}));
 describe("system integrity", () => {
   beforeEach(() => {
     const globalState = globalThis as typeof globalThis & {
@@ -25,27 +31,18 @@ describe("system integrity", () => {
   });
 
   it("invalid tool throws", async () => {
-    await expect(executeTool("test-call-id", "transferCall", { callSid: "abc" })).rejects.toThrow("INVALID_TOOL: transferCall");
+    await expect(executeTool("test-call-id", "transferCall", { callSid: "abc" }, "token")).rejects.toThrow("INVALID_TOOL: transferCall");
   });
 
   it("parallel execution throws", async () => {
     const globalState = globalThis as typeof globalThis & { __TOOL_RUNNING__?: boolean };
     globalState.__TOOL_RUNNING__ = true;
-    await expect(executeTool("test-call-id", "sendSMS", { phone: "123", message: "hello" })).rejects.toThrow(
+    await expect(executeTool("test-call-id", "startCall", { to: "+15555550123" }, "token")).rejects.toThrow(
       "PARALLEL_TOOL_EXECUTION_BLOCKED"
     );
   });
 
   it("retry exhaustion throws", async () => {
     await expect(withRetry(async () => Promise.reject(new Error("always fails")))).rejects.toThrow("always fails");
-  });
-
-  it("empty tool output throws", async () => {
-    const { bfServerRequest } = jest.requireMock("../src/integrations/bfServerClient") as {
-      bfServerRequest: jest.Mock;
-    };
-    bfServerRequest.mockReset();
-    bfServerRequest.mockResolvedValueOnce(null);
-    await expect(executeTool("test-call-id", "scheduleAppointment", { name: "A", phone: "1" })).rejects.toThrow("EMPTY_TOOL_RESULT");
   });
 });

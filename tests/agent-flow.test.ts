@@ -5,18 +5,24 @@ jest.mock("../src/agents/orchestrator", () => ({
   runMayaAgents: jest.fn()
 }));
 
-jest.mock("../src/integrations/bfServerClient", () => ({
-  bfServerRequest: jest.fn()
+jest.mock("../src/tools", () => ({
+  createLead: jest.fn(),
+  startCall: jest.fn(),
+  updateCallStatus: jest.fn()
 }));
 
 const { runMayaAgents } = jest.requireMock("../src/agents/orchestrator") as {
   runMayaAgents: jest.Mock;
 };
 
-const { bfServerRequest } = jest.requireMock("../src/integrations/bfServerClient") as {
-  bfServerRequest: jest.Mock;
+const { startCall } = jest.requireMock("../src/tools") as {
+  startCall: jest.Mock;
 };
 
+
+jest.mock("../src/lib/toolExecutor", () => ({
+  executeTool: jest.fn(async (_callId: string, _name: string, _params: Record<string, unknown>, fn: () => Promise<unknown>) => fn())
+}));
 describe("agent deterministic flow", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,9 +42,9 @@ describe("agent deterministic flow", () => {
   });
 
   it("tool failure throws and bubbles up", async () => {
-    bfServerRequest.mockRejectedValue(new Error("tool failed"));
+    startCall.mockRejectedValue(new Error("tool failed"));
 
-    await expect(executeTool("test-call-id", "scheduleAppointment", { name: "Test", phone: "123" })).rejects.toThrow("tool failed");
+    await expect(executeTool("test-call-id", "startCall", { to: "+15555550123" }, "token")).rejects.toThrow("tool failed");
   });
 
   it("API failure bubbles up", () => {

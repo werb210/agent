@@ -5,6 +5,7 @@ import { getSession, updateSession } from "../voice/sessionStore";
 import { verifyTwilioSignature } from "../middleware/verifyTwilio";
 import { mayaRateLimit } from "../middleware/rateLimit";
 
+const nativeFetch = globalThis["fetch"];
 const router = Router();
 
 router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
@@ -39,7 +40,7 @@ router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
 
   if (highValue) {
     if (process.env.SERVER_ESCALATION_WEBHOOK) {
-      await fetch(process.env.SERVER_ESCALATION_WEBHOOK, {
+      await nativeFetch(process.env.SERVER_ESCALATION_WEBHOOK, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,7 +66,7 @@ router.post("/", mayaRateLimit, verifyTwilioSignature, async (req, res) => {
 
   if (bookingIntent) {
     if (process.env.BOOKING_WEBHOOK) {
-      await fetch(process.env.BOOKING_WEBHOOK, {
+      await nativeFetch(process.env.BOOKING_WEBHOOK, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

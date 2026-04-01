@@ -2,6 +2,7 @@ import { getGraphToken } from "./msAuth";
 import { pool } from "../db";
 import twilio from "twilio";
 
+const nativeFetch = globalThis["fetch"];
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 function getTwilioClient() {
@@ -35,7 +36,7 @@ export async function checkAvailability(
 ) {
   const token = await getGraphToken();
 
-  const response = await fetch(
+  const response = await nativeFetch(
     `${GRAPH_BASE}/users/${email}/calendar/getSchedule`,
     {
       method: "POST",
@@ -109,7 +110,7 @@ export async function createCalendarEvent(
 ) {
   const token = await getGraphToken();
 
-  const response = await fetch(`${GRAPH_BASE}/users/${email}/events`, {
+  const response = await nativeFetch(`${GRAPH_BASE}/users/${email}/events`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

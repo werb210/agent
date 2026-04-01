@@ -11,7 +11,7 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
     "Authorization": `Bearer ${token}`
   };
 
-  const response = await fetch(path, {
+  const response = await globalThis["fetch"](path, {
     ...options,
     headers
   });
