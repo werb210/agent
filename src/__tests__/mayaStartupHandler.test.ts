@@ -1,13 +1,20 @@
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
-import { getAvailableProductCategories } from "../core/mayaProductIntelligence";
+import * as productModule from "../core/mayaProductIntelligence";
 
 jest.mock("../core/mayaProductIntelligence", () => ({
   getAvailableProductCategories: jest.fn()
 }));
 
+const mockedGetAvailableProductCategories =
+  productModule.getAvailableProductCategories as jest.Mock;
+
 describe("handleStartupInquiry", () => {
+  beforeEach(() => {
+    mockedGetAvailableProductCategories.mockReset();
+  });
+
   it("returns available when startup category exists", async () => {
-    (getAvailableProductCategories as jest.Mock).mockResolvedValue(["Startup Working Capital", "term_loan"]);
+    mockedGetAvailableProductCategories.mockResolvedValue(["Startup Working Capital", "term_loan"]);
 
     const result = await handleStartupInquiry("do you fund startups?");
 
@@ -18,7 +25,7 @@ describe("handleStartupInquiry", () => {
   });
 
   it("returns not_available when startup category does not exist", async () => {
-    (getAvailableProductCategories as jest.Mock).mockResolvedValue(["term_loan", "line_of_credit"]);
+    mockedGetAvailableProductCategories.mockResolvedValue(["term_loan", "line_of_credit"]);
 
     const result = await handleStartupInquiry("do you fund startups?");
 
