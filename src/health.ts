@@ -16,7 +16,7 @@ function validateRequiredEnvVars(): void {
   }
 }
 
-function validateServiceConfiguration(): void {
+function validateServiceInitialization(): void {
   const redisUrl = process.env.REDIS_URL;
 
   if (!redisUrl) {
@@ -34,8 +34,8 @@ function validateServiceConfiguration(): void {
   }
 }
 
-export async function checkHealth(): Promise<{ status: "ok" | "error" }> {
+export async function checkHealth(): Promise<{ status: "ok" }> {
   validateRequiredEnvVars();
-  validateServiceConfiguration();
+  validateServiceInitialization();
   return { status: "ok" };
 }

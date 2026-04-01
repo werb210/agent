@@ -1,30 +1,23 @@
-import { saveToken } from "../src/services/token";
+import { checkHealth } from "../src/health";
 
-const fetchMock = jest.fn();
+describe("service smoke", () => {
+  const originalEnv = process.env;
 
-globalThis.fetch = fetchMock as any;
-
-fetchMock.mockResolvedValue({
-  ok: true,
-  status: 200,
-  json: async () => ({ status: "ok" }),
-});
-
-describe("api smoke", () => {
   beforeEach(() => {
-    fetchMock.mockClear();
-    saveToken("test-token");
+    process.env = {
+      ...originalEnv,
+      OPENAI_API_KEY: "test-openai-key",
+      TWILIO_ACCOUNT_SID: "test-sid",
+      TWILIO_AUTH_TOKEN: "test-token",
+      REDIS_URL: "redis://127.0.0.1:6379"
+    };
   });
 
-  it("calls api endpoint and validates response envelope", async () => {
-    const { apiRequest } = await import("../src/lib/api");
+  afterAll(() => {
+    process.env = originalEnv;
+  });
 
-    await expect(apiRequest<{ status: string }>("/api/health", "GET")).resolves.toEqual({ status: "ok" });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/health",
-      expect.objectContaining({
-        method: "GET"
-      })
-    );
+  it("calls internal readiness directly", async () => {
+    await expect(checkHealth()).resolves.toEqual({ status: "ok" });
   });
 });
