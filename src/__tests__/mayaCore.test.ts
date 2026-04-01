@@ -1,17 +1,21 @@
 import { runMayaCore } from "../services/mayaCore";
-import { runAI } from "../brain/openaiClient";
+import * as openaiModule from "../brain/openaiClient";
 
-jest.mock("../brain/openaiClient", () => ({
-  runAI: jest.fn()
-}));
+jest.mock("../brain/openaiClient");
+
+const mockedRunAI = openaiModule.runAI as jest.Mock;
 
 describe("runMayaCore", () => {
+  beforeEach(() => {
+    mockedRunAI.mockClear();
+  });
+
   it("injects stage into the system prompt", async () => {
-    (runAI as jest.Mock).mockResolvedValue("Reply");
+    mockedRunAI.mockResolvedValue("Reply");
 
     await runMayaCore("hello", "qualifying", "client", []);
 
-    expect(runAI).toHaveBeenCalledWith(
+    expect(mockedRunAI).toHaveBeenCalledWith(
       expect.stringContaining("Stage: qualifying"),
       "hello",
       [],
@@ -20,11 +24,11 @@ describe("runMayaCore", () => {
   });
 
   it("uses deterministic system prompt for client mode", async () => {
-    (runAI as jest.Mock).mockResolvedValue("Reply");
+    mockedRunAI.mockResolvedValue("Reply");
 
     await runMayaCore("what products do you have", "new", "client", []);
 
-    expect(runAI).toHaveBeenCalledWith(
+    expect(mockedRunAI).toHaveBeenCalledWith(
       expect.stringContaining("Do not speculate."),
       "what products do you have",
       [],
@@ -33,7 +37,7 @@ describe("runMayaCore", () => {
   });
 
   it("returns fallback when AI returns null", async () => {
-    (runAI as jest.Mock).mockResolvedValue(null);
+    mockedRunAI.mockResolvedValue(null);
 
     const reply = await runMayaCore("hello", "new", "client", []);
 
@@ -41,11 +45,11 @@ describe("runMayaCore", () => {
   });
 
   it("uses staff system prompt in staff mode", async () => {
-    (runAI as jest.Mock).mockResolvedValue("Reply");
+    mockedRunAI.mockResolvedValue("Reply");
 
     await runMayaCore("give me summary", "qualifying", "staff", []);
 
-    expect(runAI).toHaveBeenCalledWith(
+    expect(mockedRunAI).toHaveBeenCalledWith(
       expect.stringContaining("Mode: staff"),
       "give me summary",
       [],
