@@ -1,12 +1,12 @@
 import { checkHealth, cleanupResources } from "./health";
-import { logger } from "./infrastructure/logger";
+import { log } from "./logger";
 
 let started = false;
 
 process.on("unhandledRejection", (err) => {
   console.error(err);
-  logger.error("runtime_failure", {
-    timestamp: new Date().toISOString(),
+  log({
+    callId: "runtime",
     operation: "unhandledRejection",
     status: "error",
     err: err instanceof Error ? err.message : String(err)
@@ -16,8 +16,8 @@ process.on("unhandledRejection", (err) => {
 
 process.on("uncaughtException", (err) => {
   console.error(err);
-  logger.error("runtime_failure", {
-    timestamp: new Date().toISOString(),
+  log({
+    callId: "runtime",
     operation: "uncaughtException",
     status: "error",
     err: err.message
@@ -27,38 +27,24 @@ process.on("uncaughtException", (err) => {
 
 const shutdown = async () => {
   await cleanupResources();
-  logger.info("runtime_shutdown", {
-    timestamp: new Date().toISOString(),
-    operation: "shutdown",
-    status: "ok"
-  });
+  log({ callId: "runtime", operation: "shutdown", status: "ok" });
   process.exit(0);
 };
 
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
-function start(): void {
-  logger.info("runtime_ready", {
-    timestamp: new Date().toISOString(),
-    operation: "startup",
-    status: "ok"
-  });
-}
-
-async function bootstrapRuntime(): Promise<void> {
-  if (started) {
-    throw new Error("Double start detected");
-  }
-
+export async function start() {
+  if (started) throw new Error("DOUBLE_START");
   started = true;
+
   await checkHealth();
-  start();
+  log({ callId: "runtime", operation: "startup", status: "ok" });
 }
 
-bootstrapRuntime().catch((err) => {
-  logger.error("runtime_startup_failed", {
-    timestamp: new Date().toISOString(),
+start().catch((err) => {
+  log({
+    callId: "runtime",
     operation: "startup",
     status: "error",
     err: err instanceof Error ? err.message : String(err)

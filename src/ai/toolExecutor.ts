@@ -1,112 +1,61 @@
-import { queryDb } from "../lib/db";
-import { logToolCall, logToolError, logToolResult } from "../lib/logger";
 import { createLead, startCall, updateCallStatus } from "../tools";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
-
-export type ToolExecutionResult = Record<string, unknown>;
+import { log } from "../logger";
 
 export type ToolExecutionCall = {
   callId: string;
-  name: string;
-  params: Record<string, unknown>;
-  fnOrToken: (() => Promise<unknown>) | string;
+  tool: ToolRegistryName | string;
+  input: Record<string, unknown>;
 };
 
-export type ToolExecutionResponse =
-  | { status: "ok"; data: ToolExecutionResult }
-  | { status: "error"; error: { code: "EXEC_FAIL"; message: string } };
+type ToolExecutionContext = Readonly<{
+  callId: string;
+  input: Record<string, unknown>;
+}>;
 
-const allowedTools: ToolRegistryName[] = [
-  TOOL_REGISTRY.createLead,
-  TOOL_REGISTRY.startCall,
-  TOOL_REGISTRY.updateCallStatus
-];
+export type ToolExecutionResponse =
+  | { status: "ok"; data: Record<string, unknown> }
+  | { status: "error"; error: { code: "UNKNOWN_TOOL" | "EXEC_FAIL"; message: string } };
+
+const tools: Record<ToolRegistryName, (context: ToolExecutionContext) => Promise<Record<string, unknown>>> = {
+  [TOOL_REGISTRY.createLead]: async ({ input }) => createLead(input, String(input.token ?? "")) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.startCall]: async ({ input }) => startCall(input, String(input.token ?? "")) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.updateCallStatus]: async ({ input }) => updateCallStatus(input, String(input.token ?? "")) as Promise<Record<string, unknown>>
+};
+
+const toolNames = Object.keys(tools);
+
+if (toolNames.length === 0) {
+  throw new Error("NO_TOOLS_REGISTERED");
+}
+
+for (const name of toolNames) {
+  if (typeof tools[name as ToolRegistryName] !== "function") {
+    throw new Error(`INVALID_TOOL_HANDLER_${name}`);
+  }
+}
 
 export function areToolHandlersLoaded(): boolean {
-  return [createLead, startCall, updateCallStatus].every((handler) => typeof handler === "function");
+  return toolNames.every((name) => typeof tools[name as ToolRegistryName] === "function");
 }
 
-async function executeWithRetry(callId: string, name: string, fn: () => Promise<any>) {
-  let attempts = 0;
-
-  while (attempts < 3) {
-    try {
-      const result = await fn();
-
-      await queryDb(
-        "insert into tool_log(call_id,name) values ($1,$2)",
-        [callId, name]
-      );
-
-      return result;
-    } catch (err) {
-      attempts++;
-
-      if (attempts >= 3) {
-        await queryDb(
-          "insert into dead_letter(call_id,name) values ($1,$2)",
-          [callId, name]
-        );
-        throw err;
+async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
+  if (!tools[call.tool as ToolRegistryName]) {
+    return {
+      status: "error",
+      error: {
+        code: "UNKNOWN_TOOL",
+        message: call.tool
       }
-    }
-  }
-}
-
-async function handler(
-  callId: string,
-  name: string,
-  params: any,
-  fnOrToken: (() => Promise<any>) | string,
-): Promise<ToolExecutionResult> {
-  if (!callId) {
-    throw new Error("Missing callId");
+    };
   }
 
-  if (!allowedTools.includes(name as ToolRegistryName)) {
-    throw new Error(`INVALID_TOOL: ${name}`);
-  }
-
-  if (typeof fnOrToken === "function") {
-    return executeWithRetry(callId, name, fnOrToken);
-  }
-
-  const token = fnOrToken ?? process.env.AGENT_INTERNAL_API_TOKEN;
-  if (!token) {
-    throw new Error("Missing auth token");
-  }
-
-  const toolMap: Record<ToolRegistryName, (toolParams: Record<string, unknown>, tokenValue: string) => Promise<unknown>> = {
-    createLead,
-    startCall,
-    updateCallStatus
-  };
-
-  const tool = toolMap[name as ToolRegistryName];
-
-  logToolCall(callId, name, params);
-
-  try {
-    const toolResponse = await executeWithRetry(callId, name, async () => tool(params, token));
-
-    if (!toolResponse || typeof toolResponse !== "object") {
-      throw new Error("EMPTY_TOOL_RESULT");
-    }
-
-    const result = toolResponse as Record<string, unknown>;
-    logToolResult(callId, name, result);
-    return result;
-  } catch (error) {
-    logToolError(callId, name, error);
-    throw error;
-  }
-}
-
-export async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
   try {
     const result = await executeTool(call);
+    log({ callId: call.callId, operation: call.tool, status: "ok" });
     return { status: "ok", data: result };
   } catch (err) {
+    log({ callId: call.callId, operation: call.tool, status: "error" });
     return {
       status: "error",
       error: {
@@ -117,6 +66,13 @@ export async function execute(call: ToolExecutionCall): Promise<ToolExecutionRes
   }
 }
 
-export async function executeTool(call: ToolExecutionCall): Promise<ToolExecutionResult> {
-  return handler(call.callId, call.name, call.params, call.fnOrToken);
+async function executeTool(call: ToolExecutionCall): Promise<Record<string, unknown>> {
+  const context = Object.freeze({
+    callId: call.callId,
+    input: { ...call.input }
+  });
+
+  return tools[call.tool as ToolRegistryName](context);
 }
+
+export { execute };

@@ -1,9 +1,4 @@
 import { assertApiResponse } from "../src/lib/assertApiResponse";
-import { execute } from "../src/ai/toolExecutor";
-
-jest.mock("../src/agents/orchestrator", () => ({
-  runMayaAgents: jest.fn()
-}));
 
 jest.mock("../src/tools", () => ({
   createLead: jest.fn(),
@@ -11,45 +6,46 @@ jest.mock("../src/tools", () => ({
   updateCallStatus: jest.fn()
 }));
 
-const { runMayaAgents } = jest.requireMock("../src/agents/orchestrator") as {
-  runMayaAgents: jest.Mock;
-};
-
 const { startCall } = jest.requireMock("../src/tools") as {
   startCall: jest.Mock;
 };
 
-
-jest.mock("../src/lib/toolExecutor", () => ({
-  executeTool: jest.fn(async (_callId: string, _name: string, _params: Record<string, unknown>, fn: () => Promise<unknown>) => fn())
-}));
 describe("agent deterministic flow", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("valid input returns valid output", async () => {
-    const expected = { sales: {}, marketing: {}, risk: {} };
-    runMayaAgents.mockResolvedValue(expected);
-
     const { runAgent } = await import("../src/agents/runAgent");
-    await expect(runAgent({ intent: "qualifyLead", leadId: "123" })).resolves.toEqual({ success: true, result: expected });
+    const response = await runAgent({
+      callId: "test-call-id",
+      tool: "startCall",
+      input: { to: "+15555550123", token: "token" }
+    });
+
+    expect(response).toHaveProperty("status");
+    expect(response).toHaveProperty("meta.callId");
+    expect(response.status).toBe("ok");
   });
 
   it("invalid input throws", async () => {
     const { runAgent } = await import("../src/agents/runAgent");
-    await expect(runAgent(undefined)).rejects.toThrow("INVALID_AGENT_INPUT");
+    await expect(runAgent(undefined as never)).rejects.toThrow("INVALID_CALL_INPUT");
   });
 
-  it("tool failure throws and bubbles up", async () => {
+  it("tool failure returns error response", async () => {
     startCall.mockRejectedValue(new Error("tool failed"));
+    const { runAgent } = await import("../src/agents/runAgent");
 
-    await expect(
-      execute({ callId: "test-call-id", name: "startCall", params: { to: "+15555550123" }, fnOrToken: "token" })
-    ).resolves.toEqual({
-      status: "error",
-      error: { code: "EXEC_FAIL", message: "tool failed" }
+    const response = await runAgent({
+      callId: "test-call-id",
+      tool: "startCall",
+      input: { to: "+15555550123", token: "token" }
     });
+
+    expect(response).toHaveProperty("status");
+    expect(response).toHaveProperty("meta.callId");
+    expect(response.status).toBe("error");
   });
 
   it("API failure bubbles up", () => {

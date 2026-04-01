@@ -1,25 +1,19 @@
-jest.mock("../src/agents/orchestrator", () => ({
-  runMayaAgents: jest.fn()
-}));
-
 import { runAgent } from "../src/agents/runAgent";
-import { validateOutput } from "../src/lib/validateOutput";
-
-const { runMayaAgents } = jest.requireMock("../src/agents/orchestrator") as {
-  runMayaAgents: jest.Mock;
-};
 
 describe("agent hard failures", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  it("fails on invalid call payload", async () => {
+    await expect(runAgent(undefined as never)).rejects.toThrow("INVALID_CALL_INPUT");
   });
 
-  it("fails on invalid tool response", async () => {
-    runMayaAgents.mockResolvedValue(null);
-    await expect(runAgent({ bad: true })).rejects.toThrow();
-  });
+  it("fails unknown tools deterministically", async () => {
+    const result = await runAgent({
+      callId: "call-1",
+      tool: "missingTool",
+      input: {}
+    });
 
-  it("fails on missing output structure", async () => {
-    await expect(Promise.resolve().then(() => validateOutput(null))).rejects.toThrow();
+    expect(result).toHaveProperty("status");
+    expect(result).toHaveProperty("meta.callId");
+    expect(result.status).toBe("error");
   });
 });

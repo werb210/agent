@@ -1,8 +1,7 @@
-import { logger } from "../infrastructure/logger";
+import { log } from "../logger";
 
 export function logToolCall(callId: string, name: string, params: unknown): void {
-  logger.info("tool_call", {
-    timestamp: new Date().toISOString(),
+  log({
     callId,
     operation: name,
     status: "started",
@@ -11,8 +10,7 @@ export function logToolCall(callId: string, name: string, params: unknown): void
 }
 
 export function logToolResult(callId: string, name: string, result: unknown): void {
-  logger.info("tool_result", {
-    timestamp: new Date().toISOString(),
+  log({
     callId,
     operation: name,
     status: "ok",
@@ -21,8 +19,7 @@ export function logToolResult(callId: string, name: string, result: unknown): vo
 }
 
 export function logToolError(callId: string, name: string, error: unknown): void {
-  logger.error("tool_error", {
-    timestamp: new Date().toISOString(),
+  log({
     callId,
     operation: name,
     status: "error",
