@@ -1,5 +1,5 @@
 import { assertApiResponse } from "../src/lib/assertApiResponse";
-import { executeTool } from "../src/ai/toolExecutor";
+import { execute } from "../src/ai/toolExecutor";
 
 jest.mock("../src/agents/orchestrator", () => ({
   runMayaAgents: jest.fn()
@@ -44,7 +44,12 @@ describe("agent deterministic flow", () => {
   it("tool failure throws and bubbles up", async () => {
     startCall.mockRejectedValue(new Error("tool failed"));
 
-    await expect(executeTool("test-call-id", "startCall", { to: "+15555550123" }, "token")).rejects.toThrow("tool failed");
+    await expect(
+      execute({ callId: "test-call-id", name: "startCall", params: { to: "+15555550123" }, fnOrToken: "token" })
+    ).resolves.toEqual({
+      status: "error",
+      error: { code: "EXEC_FAIL", message: "tool failed" }
+    });
   });
 
   it("API failure bubbles up", () => {

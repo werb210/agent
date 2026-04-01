@@ -6,6 +6,7 @@ import { getAvailableStaff } from "../staff/staffAvailability";
 import { createBooking } from "../booking/o365BookingService";
 import { getState, saveState } from "../../lib/conversationState";
 import { saveEvent } from "../../lib/eventStore";
+import { logger } from "../../infrastructure/logger";
 
 export async function handleVoiceInput(sessionId: string, userSpeech: string) {
   const session = await pool.request(
@@ -31,8 +32,11 @@ export async function handleVoiceInput(sessionId: string, userSpeech: string) {
 
   const existingState = await getState(sessionId);
   if (existingState) {
-    // eslint-disable-next-line no-console
-    console.log("Resuming call state");
+    logger.info("voice_session_resume", {
+      callId: sessionId,
+      operation: "voice_session_resume",
+      status: "ok"
+    });
     state = {
       ...(existingState as Record<string, unknown>),
       transcript: updatedTranscript,

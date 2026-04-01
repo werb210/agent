@@ -42,12 +42,12 @@ async function validateDbConnection(): Promise<void> {
   if (typeof pool.connect !== "function" || typeof pool.query !== "function") {
     throw new Error("Database client is not initialized");
   }
-  await pool.connect();
+  await pool.query("SELECT 1");
 }
 
 function validateHandlersLoaded(): void {
   if (!areToolHandlersLoaded()) {
-    throw new Error("Required handlers are not loaded");
+    throw new Error("Handlers not loaded");
   }
 }
 

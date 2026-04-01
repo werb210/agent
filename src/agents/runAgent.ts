@@ -3,16 +3,17 @@ import { MayaAgentPayload } from "./agentTypes";
 import { validateInput } from "../lib/validateInput";
 import { validateOutput } from "../lib/validateOutput";
 
+let isAgentRunning = false;
+
 async function executeFlow(input: MayaAgentPayload) {
   return runMayaAgents(input);
 }
 
 export async function runAgent(input: unknown) {
-  const globalState = globalThis as typeof globalThis & { __AGENT_RUNNING__?: boolean };
-  if (globalState.__AGENT_RUNNING__) {
+  if (isAgentRunning) {
     throw new Error("AGENT_ALREADY_RUNNING");
   }
-  globalState.__AGENT_RUNNING__ = true;
+  isAgentRunning = true;
 
   let stepCount = 0;
   try {
@@ -31,6 +32,6 @@ export async function runAgent(input: unknown) {
     const validatedOutput = validateOutput({ success: true, result: finalOutput as unknown as Record<string, unknown> });
     return validatedOutput;
   } finally {
-    globalState.__AGENT_RUNNING__ = false;
+    isAgentRunning = false;
   }
 }

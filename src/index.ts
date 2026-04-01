@@ -4,20 +4,22 @@ import { logger } from "./infrastructure/logger";
 let started = false;
 
 process.on("unhandledRejection", (err) => {
+  console.error(err);
   logger.error("runtime_failure", {
     timestamp: new Date().toISOString(),
     operation: "unhandledRejection",
-    success: false,
+    status: "error",
     err: err instanceof Error ? err.message : String(err)
   });
   process.exit(1);
 });
 
 process.on("uncaughtException", (err) => {
+  console.error(err);
   logger.error("runtime_failure", {
     timestamp: new Date().toISOString(),
     operation: "uncaughtException",
-    success: false,
+    status: "error",
     err: err.message
   });
   process.exit(1);
@@ -28,7 +30,7 @@ const shutdown = async () => {
   logger.info("runtime_shutdown", {
     timestamp: new Date().toISOString(),
     operation: "shutdown",
-    success: true
+    status: "ok"
   });
   process.exit(0);
 };
@@ -36,25 +38,29 @@ const shutdown = async () => {
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
-async function bootstrapRuntime(): Promise<void> {
-  if (started) {
-    throw new Error("Service already started");
-  }
-
-  await checkHealth();
-  started = true;
+function start(): void {
   logger.info("runtime_ready", {
     timestamp: new Date().toISOString(),
     operation: "startup",
-    success: true
+    status: "ok"
   });
+}
+
+async function bootstrapRuntime(): Promise<void> {
+  if (started) {
+    throw new Error("Double start detected");
+  }
+
+  started = true;
+  await checkHealth();
+  start();
 }
 
 bootstrapRuntime().catch((err) => {
   logger.error("runtime_startup_failed", {
     timestamp: new Date().toISOString(),
     operation: "startup",
-    success: false,
+    status: "error",
     err: err instanceof Error ? err.message : String(err)
   });
   process.exit(1);
