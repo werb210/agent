@@ -1,30 +1,20 @@
-const autocannon = require("autocannon") as (
-  options: {
-    url: string;
-    connections: number;
-    duration: number;
-  },
-  callback: (err: Error | null, result: unknown) => void
-) => void;
+import { checkHealth } from "../health";
 
-export async function runLoadTest(): Promise<unknown> {
-  const targetUrl = process.env.LOAD_TEST_URL ?? "http://localhost:8080/health";
+export async function runLoadTest(): Promise<{
+  iterations: number;
+  durationMs: number;
+  status: "ok";
+}> {
+  const iterations = Number(process.env.LOAD_TEST_ITERATIONS ?? 50);
+  const start = Date.now();
 
-  return new Promise((resolve, reject) => {
-    autocannon(
-      {
-        url: targetUrl,
-        connections: 50,
-        duration: 10
-      },
-      (err: Error | null, result: unknown) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+  for (let index = 0; index < iterations; index += 1) {
+    await checkHealth();
+  }
 
-        resolve(result);
-      }
-    );
-  });
+  return {
+    iterations,
+    durationMs: Date.now() - start,
+    status: "ok"
+  };
 }

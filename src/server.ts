@@ -52,8 +52,6 @@ import { sanitizeString } from "./security/sanitizer";
 import { calculateConfidence as calculateMLConfidence } from "./core/confidenceScore";
 import { checkServerHealth } from "./services/healthCheck";
 import { endSession, hasSession, startSession } from "./services/sessionManager";
-import { queueLength } from "./queue/jobQueue";
-import healthRouter from "./routes/health";
 import { getCallEvents } from "./lib/eventStore";
 import { getState } from "./lib/conversationState";
 
@@ -162,19 +160,6 @@ app.get("/", (_, res) => {
   res.json({ status: "Maya SMS Agent running" });
 });
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.use(healthRouter);
-
-app.get("/maya/health", async (_req, res) => {
-  res.json({
-    status: "ok",
-    queue_length: queueLength(),
-    workers: 1
-  });
-});
 
 app.get("/internal/call/:callId", async (req, res) => {
   const callId = String(req.params.callId ?? "");

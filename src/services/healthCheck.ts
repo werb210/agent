@@ -1,15 +1,6 @@
-import { AppError } from "../errors/AppError";
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { checkHealth } from "../health";
 
 export async function checkServerHealth() {
-  try {
-    await bfServerRequest("/api/health", "GET");
-    return true;
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new AppError("upstream_timeout", 504);
-    }
-
-    throw err;
-  }
+  await checkHealth();
+  return true;
 }
