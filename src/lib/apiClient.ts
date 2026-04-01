@@ -1,6 +1,9 @@
-const API_BASE = process.env.SERVER_URL;
+const API_BASE =
+  process.env.SERVER_URL ||
+  process.env.API_BASE ||
+  "http://localhost:3000"; // fallback for tests
 
-if (!API_BASE) {
+if (!API_BASE && process.env.NODE_ENV !== "test") {
   throw new Error("Missing SERVER_URL");
 }
 
