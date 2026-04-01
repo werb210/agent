@@ -5,7 +5,7 @@ export type LogEntry = {
   [key: string]: unknown;
 };
 
-export function log(entry: LogEntry): void {
+export const log = Object.freeze(function(entry: LogEntry): void {
   if (
     !entry ||
     typeof entry !== "object" ||
@@ -16,6 +16,5 @@ export function log(entry: LogEntry): void {
     throw new Error("INVALID_LOG_ENTRY");
   }
 
-  const safe = JSON.stringify(entry);
-  console.log(safe);
-}
+  console.log(JSON.stringify(entry));
+});

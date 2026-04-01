@@ -23,6 +23,9 @@ describe("runAgent execution contract", () => {
 
     expect(result).toHaveProperty("status");
     expect(result).toHaveProperty("meta.callId", "call-123");
+    expect(result.meta).toBeDefined();
+    expect(typeof result.meta.callId).toBe("string");
+    expect(typeof result.meta.durationMs).toBe("number");
     expect(Object.isFrozen(result)).toBe(true);
   });
 

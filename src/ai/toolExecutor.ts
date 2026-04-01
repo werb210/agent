@@ -14,8 +14,15 @@ type ToolExecutionContext = Readonly<{
 }>;
 
 export type ToolExecutionResponse =
-  | { status: "ok"; data: Record<string, unknown> }
-  | { status: "error"; error: { code: "UNKNOWN_TOOL" | "EXEC_FAIL"; message: string } };
+  | { status: "ok"; data: Record<string, unknown>; error?: undefined }
+  | {
+      status: "error";
+      data?: undefined;
+      error: {
+        code: "UNKNOWN_TOOL" | "EXEC_FAIL" | "INVALID_TOOL_RESPONSE" | "MISSING_TOOL_STATUS";
+        message?: string;
+      };
+    };
 
 const tools: Record<ToolRegistryName, (context: ToolExecutionContext) => Promise<Record<string, unknown>>> = {
   [TOOL_REGISTRY.createLead]: async ({ input }) => createLead(input, String(input.token ?? "")) as Promise<Record<string, unknown>>,
@@ -56,6 +63,12 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
     return { status: "ok", data: result };
   } catch (err) {
     log({ callId: call.callId, operation: call.tool, status: "error" });
+    if (err instanceof Error && (err.message === "INVALID_TOOL_RESPONSE" || err.message === "MISSING_TOOL_STATUS")) {
+      return {
+        status: "error",
+        error: { code: err.message }
+      };
+    }
     return {
       status: "error",
       error: {
@@ -83,7 +96,18 @@ async function executeTool(call: ToolExecutionCall): Promise<Record<string, unkn
     input: call.input
   });
 
-  return tools[call.tool as ToolRegistryName](context);
+  const res = await tools[call.tool as ToolRegistryName](context);
+
+  if (!res || typeof res !== "object") {
+    throw new Error("INVALID_TOOL_RESPONSE");
+  }
+
+  if ("status" in res && !(res as Record<string, unknown>).status) {
+    throw new Error("MISSING_TOOL_STATUS");
+  }
+
+  const frozen = deepFreeze(res);
+  return frozen;
 }
 
 export { execute };

@@ -9,7 +9,7 @@ jest.mock("../src/tools", () => ({
 describe("tool execution response contract", () => {
   it("always returns structured success response", async () => {
     const response = await runAgent({
-      callId: "test-call-id",
+      callId: "test-call-id-1",
       tool: "createLead",
       input: { name: "Alice", email: "alice@example.com", phone: "+15555550123", token: "token" }
     });
@@ -21,7 +21,7 @@ describe("tool execution response contract", () => {
 
   it("always returns structured error response", async () => {
     const response = await runAgent({
-      callId: "test-call-id",
+      callId: "test-call-id-2",
       tool: "transferCall",
       input: { callSid: "abc" }
     });
