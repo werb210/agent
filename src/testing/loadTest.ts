@@ -8,7 +8,7 @@ const autocannon = require("autocannon") as (
 ) => void;
 
 export async function runLoadTest(): Promise<unknown> {
-  const targetUrl = process.env.LOAD_TEST_URL ?? "http://127.0.0.1:5000/health";
+  const targetUrl = process.env.LOAD_TEST_URL ?? "http://localhost:8080/health";
 
   return new Promise((resolve, reject) => {
     autocannon(
