@@ -1,12 +1,23 @@
-describe("ML Service Health", () => {
-  it("should reach model-health endpoint", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: "ok" }),
-    } as any);
+import { checkHealth } from "../health";
 
-    const response = await fetch("http://ml/model-health");
+describe("Runtime Health", () => {
+  const originalEnv = process.env;
 
-    expect(response.ok).toBe(true);
+  beforeEach(() => {
+    process.env = {
+      ...originalEnv,
+      OPENAI_API_KEY: "test-openai-key",
+      TWILIO_ACCOUNT_SID: "test-sid",
+      TWILIO_AUTH_TOKEN: "test-token",
+      REDIS_URL: "redis://127.0.0.1:6379"
+    };
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
+  it("returns ok when required dependencies are configured", async () => {
+    await expect(checkHealth()).resolves.toEqual({ status: "ok" });
   });
 });

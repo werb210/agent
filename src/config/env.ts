@@ -38,7 +38,6 @@ export const ENV = parsed.success
 
 export const isProd = process.env.NODE_ENV === "production";
 export const isStaging = process.env.NODE_ENV === "staging";
-export const PORT = process.env.PORT || 5000;
 
 export function getEnv(name: string, fallback?: string): string {
   const value = process.env[name];

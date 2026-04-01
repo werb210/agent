@@ -1,28 +1,13 @@
-import cors from "cors";
-import express from "express";
-import healthRoutes from "./routes/health";
-import mayaRoutes from "./routes/maya";
-import voiceRoutes from "./routes/voice";
+import { checkHealth } from "./health";
 
-const app = express();
-const PORT = Number(process.env.PORT || 8080);
-
-app.use(cors());
-app.use(express.json());
-
-app.use("/maya", mayaRoutes);
-app.use("/voice", voiceRoutes);
-app.use("/", healthRoutes);
-
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.listen(PORT)
-  .on("error", (err) => {
-    console.error("Port bind failed", err);
+async function bootstrapRuntime(): Promise<void> {
+  try {
+    await checkHealth();
+    console.log("Maya runtime ready");
+  } catch (err) {
+    console.error("Startup health check failed", err);
     process.exit(1);
-  })
-  .on("listening", () => {
-    console.log(`Maya running on ${PORT}`);
-  });
+  }
+}
+
+void bootstrapRuntime();
