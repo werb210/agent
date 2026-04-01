@@ -1,3 +1,4 @@
+const nativeFetch = globalThis["fetch"];
 const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 describe("ML Service Health", () => {
@@ -8,7 +9,7 @@ describe("ML Service Health", () => {
       json: async () => ({ model_loaded: true }),
     } as Response);
 
-    const response = await fetch(`${ML_URL}/model-health`, {
+    const response = await nativeFetch(`${ML_URL}/model-health`, {
       headers: { "X-Internal-Secret": process.env.ML_INTERNAL_SECRET ?? "" }
     });
 

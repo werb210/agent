@@ -1,59 +1,44 @@
-import { createLeadSchema } from "../tools/schemas";
-
 export const tools = [
   {
     name: "createLead",
-    description: "Create a CRM lead record in BF-Server.",
-    parameters: createLeadSchema
-  },
-  {
-    name: "scheduleAppointment",
-    description: "Create a new application/appointment record.",
+    description: "Create a CRM lead record.",
     parameters: {
       type: "object",
       properties: {
         name: { type: "string" },
+        email: { type: "string", format: "email" },
         phone: { type: "string" },
-        requestedAmount: { type: "number" }
-      },
-      required: ["name", "phone"]
-    }
-  },
-  {
-    name: "updateCRMRecord",
-    description: "Update CRM contact/application metadata.",
-    parameters: {
-      type: "object",
-      properties: {
-        contactId: { type: "string" },
-        updates: { type: "object" }
-      },
-      required: ["contactId", "updates"]
-    }
-  },
-  {
-    name: "sendSMS",
-    description: "Send an SMS to a contact.",
-    parameters: {
-      type: "object",
-      properties: {
-        phone: { type: "string" },
+        businessName: { type: "string" },
+        productType: { type: "string" },
         message: { type: "string" }
       },
-      required: ["phone", "message"]
+      required: ["name", "email", "phone"]
     }
   },
   {
-    name: "sendEmail",
-    description: "Send an email to a contact.",
+    name: "startCall",
+    description: "Start outbound call.",
     parameters: {
       type: "object",
       properties: {
-        email: { type: "string" },
-        subject: { type: "string" },
-        body: { type: "string" }
+        to: { type: "string" }
       },
-      required: ["email", "subject", "body"]
+      required: ["to"]
+    }
+  },
+  {
+    name: "updateCallStatus",
+    description: "Update status for an active call.",
+    parameters: {
+      type: "object",
+      properties: {
+        callId: { type: "string" },
+        status: {
+          type: "string",
+          enum: ["initiated", "ringing", "in-progress", "completed", "failed"]
+        }
+      },
+      required: ["callId", "status"]
     }
   }
 ] as const;

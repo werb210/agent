@@ -9,6 +9,7 @@ import { generateReasoningSummary } from "./generateExplanation";
 import { pool } from "../db";
 import { AppError } from "../errors/AppError";
 
+const nativeFetch = globalThis["fetch"];
 const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 export const mlBreaker = new CircuitBreaker({
@@ -28,7 +29,7 @@ export async function getMLApprovalProbability(payload: any, role: string = "sys
   try {
     return await mlBreaker.execute(async () => {
       const start = Date.now();
-      const response = await fetch(`${ML_URL}/predict-nn`, {
+      const response = await nativeFetch(`${ML_URL}/predict-nn`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+const nativeFetch = globalThis["fetch"];
 export async function checkO365Availability(
   startISO: string,
   endISO: string
@@ -7,7 +8,7 @@ export async function checkO365Availability(
     return false;
   }
 
-  const response = await fetch(
+  const response = await nativeFetch(
     "https://graph.microsoft.com/v1.0/me/calendar/getSchedule",
     {
       method: "POST",

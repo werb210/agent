@@ -1,6 +1,7 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 import { DateTime } from "luxon";
 
+const nativeFetch = globalThis["fetch"];
 const TIMEZONE = "America/Edmonton";
 const BUSINESS_START = 9;
 const BUSINESS_END = 17;
@@ -18,7 +19,7 @@ const getClient = () => {
         scope: "https://graph.microsoft.com/.default",
         grant_type: "client_credentials"
       });
-      const tokenResponse = await fetch(tokenEndpoint, {
+      const tokenResponse = await nativeFetch(tokenEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body

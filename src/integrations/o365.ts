@@ -1,7 +1,8 @@
+const nativeFetch = globalThis["fetch"];
 export async function createO365Event(startISO: string, endISO: string, subject: string) {
   if (!process.env.O365_TOKEN) return;
 
-  await fetch("https://graph.microsoft.com/v1.0/me/events", {
+  await nativeFetch("https://graph.microsoft.com/v1.0/me/events", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.O365_TOKEN}`,

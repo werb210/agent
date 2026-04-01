@@ -4,6 +4,7 @@ import { resilientLLM } from "../infrastructure/mayaResilience";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 import { AppError } from "../errors/AppError";
 
+const nativeFetch = globalThis["fetch"];
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY is required");
 }
@@ -57,7 +58,7 @@ ${message}
 }
 
 export async function transcribeAudio(recordingUrl: string): Promise<string> {
-  const response = await fetch(recordingUrl);
+  const response = await nativeFetch(recordingUrl);
   if (!response.ok) {
     throw new AppError("upstream_error", response.status, `Unable to download recording for transcription: ${response.status}`);
   }

@@ -1,15 +1,27 @@
-const MAX_RETRIES = 3;
+const DEFAULT_RETRIES = 3;
+const DEFAULT_DELAY_MS = 1000;
+
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  retries = DEFAULT_RETRIES,
+  delay = DEFAULT_DELAY_MS
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof Error && ["Missing auth token", "Invalid tool payload"].includes(err.message)) {
+      throw err;
+    }
+
+    if (retries <= 0) {
+      throw err;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return retryWithBackoff(fn, retries - 1, delay * 2);
+  }
+}
 
 export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < MAX_RETRIES; i += 1) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === MAX_RETRIES - 1) {
-        throw e;
-      }
-    }
-  }
-
-  throw new Error("Retry execution exhausted unexpectedly");
+  return retryWithBackoff(fn, DEFAULT_RETRIES - 1, DEFAULT_DELAY_MS);
 }

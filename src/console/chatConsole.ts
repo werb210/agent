@@ -2,6 +2,7 @@ import readline from "readline-sync";
 import crypto from "crypto";
 import { AppError } from "../errors/AppError";
 
+const nativeFetch = globalThis["fetch"];
 const AGENT_URL = process.env.AGENT_URL || "http://127.0.0.1:4000/ai/execute";
 const rawSecret = process.env.AGENT_SHARED_SECRET;
 const rawInternalKey = process.env.AGENT_INTERNAL_KEY;
@@ -46,7 +47,7 @@ async function sendMessage(sessionId: string, message: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
 
-  const response = await fetch(AGENT_URL, {
+  const response = await nativeFetch(AGENT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
