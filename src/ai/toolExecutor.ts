@@ -19,7 +19,13 @@ export type ToolExecutionResponse =
       status: "error";
       data?: undefined;
       error: {
-        code: "UNKNOWN_TOOL" | "EXEC_FAIL" | "INVALID_TOOL_RESPONSE" | "MISSING_TOOL_STATUS";
+        code:
+          | "UNKNOWN_TOOL"
+          | "EXEC_FAIL"
+          | "INVALID_TOOL_RESPONSE"
+          | "MISSING_TOOL_STATUS"
+          | "TOOL_TIMEOUT"
+          | "TOOL_NOT_ALLOWED";
         message?: string;
       };
     };
@@ -31,6 +37,13 @@ const tools: Record<ToolRegistryName, (context: ToolExecutionContext) => Promise
 };
 
 const toolNames = Object.keys(tools);
+const allowedTools = new Set<string>([
+  "createLead",
+  "scheduleAppointment",
+  "updateCRMRecord",
+  TOOL_REGISTRY.startCall,
+  TOOL_REGISTRY.updateCallStatus
+]);
 
 if (toolNames.length === 0) {
   throw new Error("NO_TOOLS_REGISTERED");
@@ -46,18 +59,39 @@ export function areToolHandlersLoaded(): boolean {
   return toolNames.every((name) => typeof tools[name as ToolRegistryName] === "function");
 }
 
-async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
-  if (!tools[call.tool as ToolRegistryName]) {
-    return {
-      status: "error",
-      error: {
-        code: "UNKNOWN_TOOL",
-        message: call.tool
-      }
-    };
-  }
+export function withTimeout<T>(promise: Promise<T>, ms = 10_000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("TOOL_TIMEOUT")), ms);
+    })
+  ]);
+}
 
+function validateTool(name: string): void {
+  if (!allowedTools.has(name)) {
+    throw new Error("TOOL_NOT_ALLOWED");
+  }
+}
+
+async function execTool(fn: () => Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
+  return withTimeout(fn());
+}
+
+async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
   try {
+    validateTool(call.tool);
+
+    if (!tools[call.tool as ToolRegistryName]) {
+      return {
+        status: "error",
+        error: {
+          code: "UNKNOWN_TOOL",
+          message: call.tool
+        }
+      };
+    }
+
     const result = await executeTool(call);
     log({ callId: call.callId, operation: call.tool, status: "ok" });
     return { status: "ok", data: result };
@@ -67,6 +101,12 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
       return {
         status: "error",
         error: { code: err.message }
+      };
+    }
+    if (err instanceof Error && (err.message === "TOOL_TIMEOUT" || err.message === "TOOL_NOT_ALLOWED")) {
+      return {
+        status: "error",
+        error: { code: err.message, message: call.tool }
       };
     }
     return {
@@ -96,7 +136,7 @@ async function executeTool(call: ToolExecutionCall): Promise<Record<string, unkn
     input: call.input
   });
 
-  const res = await tools[call.tool as ToolRegistryName](context);
+  const res = await execTool(() => tools[call.tool as ToolRegistryName](context));
 
   if (!res || typeof res !== "object") {
     throw new Error("INVALID_TOOL_RESPONSE");
