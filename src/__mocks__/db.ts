@@ -1,12 +1,16 @@
-export const request = jest.fn(() => ({
+const query = jest.fn().mockResolvedValue({
+  rows: [],
+  rowCount: 0,
+});
+
+const request = jest.fn(() => ({
   input: jest.fn().mockReturnThis(),
-  query: jest.fn().mockResolvedValue({ recordset: [] }),
+  query,
 }));
 
 export const pool = {
   request,
+  query,
 };
 
-export default {
-  pool,
-};
+export default { pool };
