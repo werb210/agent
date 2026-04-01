@@ -1,22 +1,36 @@
 import { execute, ToolExecutionCall, ToolExecutionResponse } from "../ai/toolExecutor";
 
-export async function runAgent(call: ToolExecutionCall): Promise<ToolExecutionResponse & { meta: { callId: string; durationMs: number } }> {
+const activeCalls = new Set<string>();
+
+export async function runAgent(call: ToolExecutionCall): Promise<Readonly<ToolExecutionResponse & { meta: { callId: string; durationMs: number } }>> {
   if (!call || !call.callId) {
     throw new Error("INVALID_CALL_INPUT");
   }
 
-  const startTime = Date.now();
-  const result = await execute(call);
-
-  if (!result || !result.status) {
-    throw new Error("INVALID_EXECUTION_RESULT");
+  if (activeCalls.has(call.callId)) {
+    throw new Error("DUPLICATE_CALL");
   }
 
-  return {
-    ...result,
-    meta: {
-      callId: call.callId,
-      durationMs: Date.now() - startTime
+  activeCalls.add(call.callId);
+  const startTime = Date.now();
+
+  try {
+    const result = await execute(call);
+
+    if (!result || !result.status) {
+      throw new Error("INVALID_EXECUTION_RESULT");
     }
-  };
+
+    const output = {
+      ...result,
+      meta: {
+        callId: call.callId,
+        durationMs: Date.now() - startTime
+      }
+    };
+
+    return Object.freeze(output);
+  } finally {
+    activeCalls.delete(call.callId);
+  }
 }
