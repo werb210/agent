@@ -14,7 +14,8 @@
     "lint": "tsc --noEmit",
     "lint:api-guards": "bash scripts/ci-api-guards.sh",
     "test:ci": "jest --runInBand --detectOpenHandles --forceExit",
-    "verify:no-http": "node scripts/verify-no-http.js"
+    "verify:no-http": "node scripts/verify-no-http.js",
+    "verify:no-async-leaks": "rg -n \"setTimeout\\(|setInterval\\(|void .*\\(\" src && exit 1 || exit 0"
   },
   "dependencies": {
     "@azure/msal-node": "^2.6.4",

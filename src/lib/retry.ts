@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 const DEFAULT_RETRIES = 3;
 const DEFAULT_DELAY_MS = 1000;
 
@@ -17,7 +19,7 @@ export async function retryWithBackoff<T>(
       throw err;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    await sleep(delay);
     return retryWithBackoff(fn, retries - 1, delay * 2);
   }
 }

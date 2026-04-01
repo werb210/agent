@@ -1,4 +1,5 @@
 import Twilio from "twilio";
+import { setTimeout as sleep } from "node:timers/promises";
 
 export async function sendFollowUp(to: string) {
   const client = Twilio(
@@ -13,8 +14,7 @@ export async function sendFollowUp(to: string) {
   });
 }
 
-export function scheduleFollowUp(to: string, delayMs = 1000 * 60 * 60 * 24) {
-  setTimeout(() => {
-    void sendFollowUp(to);
-  }, delayMs);
+export async function scheduleFollowUp(to: string, delayMs = 1000 * 60 * 60 * 24): Promise<void> {
+  await sleep(delayMs);
+  await sendFollowUp(to);
 }

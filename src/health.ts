@@ -1,3 +1,6 @@
+import OpenAI from "openai";
+import { pool } from "./db";
+
 const REQUIRED_ENV_VARS = [
   "OPENAI_API_KEY",
   "TWILIO_ACCOUNT_SID",
@@ -34,8 +37,34 @@ function validateServiceInitialization(): void {
   }
 }
 
+async function validateDbConnection(): Promise<void> {
+  if (typeof pool.connect !== "function" || typeof pool.query !== "function") {
+    throw new Error("Database client is not initialized");
+  }
+  await pool.connect();
+}
+
+function validateRequiredClientsInitialized(): void {
+  const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+  const twilioClientReady =
+    typeof process.env.TWILIO_ACCOUNT_SID === "string" &&
+    process.env.TWILIO_ACCOUNT_SID.length > 0 &&
+    typeof process.env.TWILIO_AUTH_TOKEN === "string" &&
+    process.env.TWILIO_AUTH_TOKEN.length > 0;
+
+  if (!openaiClient || !twilioClientReady) {
+    throw new Error("Required clients are not initialized");
+  }
+}
+
 export async function checkHealth(): Promise<{ status: "ok" }> {
   validateRequiredEnvVars();
   validateServiceInitialization();
+  await validateDbConnection();
+  validateRequiredClientsInitialized();
   return { status: "ok" };
+}
+
+export async function cleanupResources(): Promise<void> {
+  return Promise.resolve();
 }

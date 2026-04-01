@@ -71,9 +71,6 @@ export async function runMayaLLM(task: MayaTaskType, prompt: string, options: Ma
   const model = selectModel(task);
   const startedAt = Date.now();
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
-
   try {
     const response: any = await openai.chat.completions.create({
       model,
@@ -82,7 +79,7 @@ export async function runMayaLLM(task: MayaTaskType, prompt: string, options: Ma
       max_tokens: 1500,
       response_format: options.responseFormat as any,
       stream: options.stream ?? false
-    }, { signal: controller.signal });
+    }, { signal: AbortSignal.timeout(15_000) });
 
     const totalTokens = response.usage?.total_tokens ?? 0;
     if (totalTokens > 6000) {
@@ -122,7 +119,5 @@ export async function runMayaLLM(task: MayaTaskType, prompt: string, options: Ma
       throw new AppError("token_limit_exceeded", 400, "token_limit_exceeded");
     }
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 }

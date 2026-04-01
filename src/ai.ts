@@ -27,9 +27,6 @@ export async function generateMayaResponse(input: string): Promise<MayaResponseR
     return { success: false, message: "ai_not_configured" };
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
   try {
     const response = await client.chat.completions.create(
       {
@@ -44,7 +41,7 @@ export async function generateMayaResponse(input: string): Promise<MayaResponseR
         ],
       },
       {
-        signal: controller.signal,
+        signal: AbortSignal.timeout(AI_TIMEOUT_MS),
       }
     );
 
@@ -53,12 +50,10 @@ export async function generateMayaResponse(input: string): Promise<MayaResponseR
       reply: response.choices[0]?.message?.content ?? "",
     };
   } catch (error) {
-    if (controller.signal.aborted) {
+    if (error instanceof Error && error.name === "AbortError") {
       return { success: false, message: "ai_timeout" };
     }
 
     return { success: false, message: "internal_error" };
-  } finally {
-    clearTimeout(timeout);
   }
 }
