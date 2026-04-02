@@ -1,13 +1,14 @@
 import { env } from "../config/env";
 
 export async function apiFetch(path: string, options: any = {}) {
+  const authToken =
+    process.env.JWT_TOKEN || process.env.AGENT_API_TOKEN || env.JWT_TOKEN;
+
   const res = await fetch(`${env.API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(env.JWT_TOKEN
-        ? { Authorization: `Bearer ${env.JWT_TOKEN}` }
-        : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers || {}),
     },
   });
