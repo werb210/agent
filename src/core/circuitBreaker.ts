@@ -8,6 +8,8 @@ interface CircuitOptions {
 
 type CircuitState = "CLOSED" | "OPEN" | "HALF";
 
+const SERVICE_UNAVAILABLE_ERROR = "SERVICE_UNAVAILABLE";
+
 export class CircuitBreaker {
   private failures = 0;
   private state: CircuitState = "CLOSED";
@@ -25,7 +27,7 @@ export class CircuitBreaker {
       if (now - this.lastFailureTime > this.options.resetTimeout) {
         this.state = "HALF";
       } else {
-        throw new AppError("internal_error", 500, "Circuit is OPEN");
+        throw new Error(SERVICE_UNAVAILABLE_ERROR);
       }
     }
 
@@ -44,8 +46,13 @@ export class CircuitBreaker {
       this.failures++;
       this.lastFailureTime = Date.now();
 
-      if (this.failures >= this.options.failureThreshold) {
+      if (this.failures > this.options.failureThreshold) {
         this.state = "OPEN";
+        throw new Error(SERVICE_UNAVAILABLE_ERROR);
+      }
+
+      if (err instanceof AppError) {
+        throw err;
       }
 
       throw err;
