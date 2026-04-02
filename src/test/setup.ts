@@ -1,25 +1,35 @@
-import { beforeAll, afterAll, afterEach, vi } from "vitest";
-import { setupServer } from "msw/node";
-import { http, HttpResponse } from "msw";
-
-process.env.API_URL = process.env.API_URL ?? "https://server.boreal.financial";
-process.env.NODE_ENV = process.env.NODE_ENV ?? "test";
+import { vi } from 'vitest';
 
 (globalThis as typeof globalThis & { jest: typeof vi }).jest = vi;
 
-export const server = setupServer(
-  http.post("*/api/v1/applications", () => {
-    return HttpResponse.json({ id: "mock-id" });
-  })
-);
+process.env.API_URL = process.env.API_URL ?? 'https://server.boreal.financial';
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = String(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
 
 global.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
-    json: () => Promise.resolve({ success: true, data: {} })
+    status: 200,
+    json: () => Promise.resolve({ approval_probability: 0.5, probability: 0.5, data: { probability: 0.5 } }),
   } as Response)
 );

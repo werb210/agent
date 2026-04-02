@@ -1,15 +1,5 @@
-import { MayaEvent } from "./events";
+import { EventEmitter } from 'events';
 
-type Listener = (event: MayaEvent) => void;
+export const emitter = new EventEmitter();
 
-const listeners: Listener[] = [];
-
-export function emit(event: MayaEvent) {
-  for (const listener of listeners) {
-    listener(event);
-  }
-}
-
-export function subscribe(fn: Listener) {
-  listeners.push(fn);
-}
+emitter.setMaxListeners(25);

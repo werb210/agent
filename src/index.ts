@@ -1,6 +1,7 @@
 import { checkHealth, cleanupResources } from "./health";
 import { log } from "./logger";
 import { validateEnv } from "./system/env";
+import { registerListeners } from "./events/registerListeners";
 
 validateEnv();
 process.setMaxListeners(25);
@@ -47,5 +48,6 @@ export async function start() {
 }
 
 export async function initMaya() {
+  registerListeners();
   return start();
 }
