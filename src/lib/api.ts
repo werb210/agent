@@ -1,18 +1,36 @@
-import { apiFetch } from "./apiClient";
+import { getEnv } from "../config/env";
 
-export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+type ApiResponse<T> = {
+  status: "ok" | "error" | "not_ready";
+  data?: T;
+  error?: string;
+  rid?: string;
+};
 
-export async function apiRequest<T = unknown>(
+export async function api<T = unknown>(
   path: string,
-  method: ApiMethod,
-  body?: unknown,
-  config: { headers?: HeadersInit } = {}
+  options?: {
+    method?: string;
+    body?: any;
+    headers?: Record<string, string>;
+  }
 ): Promise<T> {
-  const data = await apiFetch(path, {
-    method,
-    headers: config.headers,
-    ...(body ? { body: JSON.stringify(body) } : {}),
+  const { API_URL } = getEnv();
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: options?.method || "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
   });
 
-  return data as T;
+  const json: ApiResponse<T> = await res.json();
+
+  if (json.status !== "ok") {
+    throw new Error(json.error || "API error");
+  }
+
+  return json.data as T;
 }

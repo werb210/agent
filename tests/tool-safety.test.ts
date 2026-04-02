@@ -1,14 +1,14 @@
 import { execute } from "../src/ai/toolExecutor";
+import { vi } from "vitest";
 
-jest.mock("../src/tools", () => ({
+vi.mock("../src/tools", () => ({
   createLead: jest.fn(),
   startCall: jest.fn(),
   updateCallStatus: jest.fn()
 }));
 
-const { startCall } = jest.requireMock("../src/tools") as {
-  startCall: jest.Mock;
-};
+import * as toolsModule from "../src/tools";
+const startCall = toolsModule.startCall as unknown as ReturnType<typeof vi.fn>;
 
 describe("tool safety boundaries", () => {
   const originalToken = process.env.AGENT_API_TOKEN;
@@ -23,7 +23,7 @@ describe("tool safety boundaries", () => {
   });
 
   it("times out long-running tools", async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     startCall.mockImplementation(() => new Promise(() => undefined));
 
     const pending = execute({
@@ -32,13 +32,13 @@ describe("tool safety boundaries", () => {
       input: { to: "+15555550123" }
     });
 
-    await jest.advanceTimersByTimeAsync(10_000);
+    await vi.advanceTimersByTimeAsync(10_000);
     await expect(pending).resolves.toMatchObject({
       status: "error",
       error: { code: "TOOL_TIMEOUT" }
     });
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("rejects unknown tools that are not allow-listed", async () => {

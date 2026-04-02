@@ -7,18 +7,18 @@ describe("full system path", () => {
       const path = String(url);
 
       if (path.endsWith(endpoints.createLead)) {
-        return { json: async () => ({ success: true, data: { id: "lead-1" } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { id: "lead-1" } }) } as Response;
       }
 
       if (path.endsWith(endpoints.startCall)) {
-        return { json: async () => ({ success: true, data: { callId: "call-1" } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { callId: "call-1" } }) } as Response;
       }
 
       if (path.endsWith(endpoints.updateCallStatus)) {
-        return { json: async () => ({ success: true, data: { updated: true } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { updated: true } }) } as Response;
       }
 
-      return { status: 404, json: async () => ({ success: false, error: "Not found" }) } as Response;
+      return { status: 404, json: async () => ({ status: "error", error: "Not found" }) } as Response;
     });
   });
 
@@ -36,10 +36,10 @@ describe("full system path", () => {
     (global as any).fetch = jest.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
-        return { json: async () => ({ success: false, error: "lead failure" }) } as Response;
+        return { json: async () => ({ status: "error", error: "lead failure" }) } as Response;
       }
 
-      return { json: async () => ({ success: true, data: {} }) } as Response;
+      return { json: async () => ({ status: "ok", data: {} }) } as Response;
     });
 
     await expect(createLead({ name: "A", email: "a@b.com", phone: "123" }, "token")).rejects.toThrow("lead failure");
@@ -49,14 +49,14 @@ describe("full system path", () => {
     (global as any).fetch = jest.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
-        return { json: async () => ({ success: true, data: { id: "lead-1" } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { id: "lead-1" } }) } as Response;
       }
 
       if (path.endsWith(endpoints.startCall)) {
-        return { json: async () => ({ success: false, error: "call start failure" }) } as Response;
+        return { json: async () => ({ status: "error", error: "call start failure" }) } as Response;
       }
 
-      return { json: async () => ({ success: true, data: {} }) } as Response;
+      return { json: async () => ({ status: "ok", data: {} }) } as Response;
     });
 
     await createLead({ name: "A", email: "a@b.com", phone: "123" }, "token");
@@ -67,18 +67,18 @@ describe("full system path", () => {
     (global as any).fetch = jest.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
-        return { json: async () => ({ success: true, data: { id: "lead-1" } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { id: "lead-1" } }) } as Response;
       }
 
       if (path.endsWith(endpoints.startCall)) {
-        return { json: async () => ({ success: true, data: { callId: "call-1" } }) } as Response;
+        return { json: async () => ({ status: "ok", data: { callId: "call-1" } }) } as Response;
       }
 
       if (path.endsWith(endpoints.updateCallStatus)) {
-        return { json: async () => ({ success: false, error: "status update failure" }) } as Response;
+        return { json: async () => ({ status: "error", error: "status update failure" }) } as Response;
       }
 
-      return { json: async () => ({ success: true, data: {} }) } as Response;
+      return { json: async () => ({ status: "ok", data: {} }) } as Response;
     });
 
     await createLead({ name: "A", email: "a@b.com", phone: "123" }, "token");

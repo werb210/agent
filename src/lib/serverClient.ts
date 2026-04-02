@@ -1,21 +1,16 @@
 import { apiFetch } from "./apiClient";
 
 export type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
   | { status: "ok"; data: T }
-  | { status: "error"; error: string };
+  | { status: "error"; error: string }
+  | { status: "not_ready"; error?: string };
 
 export function normalize<T>(res: unknown): T {
   if (!res || typeof res !== "object") {
     throw new Error("INVALID_RESPONSE_FORMAT");
   }
 
-  if ((res as { status?: unknown }).status === "error") {
-    throw new Error(String((res as { error?: unknown }).error ?? "INVALID_RESPONSE_FORMAT"));
-  }
-
-  if ("success" in res && (res as { success?: unknown }).success === false) {
+  if ((res as { status?: unknown }).status !== "ok") {
     throw new Error(String((res as { error?: unknown }).error ?? "INVALID_RESPONSE_FORMAT"));
   }
 

@@ -1,5 +1,5 @@
 import { logger } from "../infrastructure/logger";
-import { apiRequest } from "../lib/api";
+import { api } from "../lib/api";
 
 type Primitive = string | number | boolean | null | undefined;
 type RequestPayload = Primitive | Record<string, unknown> | Array<unknown>;
@@ -12,7 +12,7 @@ export async function bfServerRequest(path: string, method: HttpMethod, body?: R
   logger.info("api_call_start", logMeta);
 
   try {
-    const data = await apiRequest(path, method, body);
+    const data = await api(path, { method, ...(body !== undefined ? { body } : {}) });
     logger.info("api_call_success", logMeta);
     logger.info("api_call_end", { ...logMeta, outcome: "success" });
     return data;
