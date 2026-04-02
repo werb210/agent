@@ -1,17 +1,34 @@
-import { executeTool } from "../core/executeTool";
 import { endpoints } from "../contracts/endpoints";
 import { api } from "../lib/api";
-import { MayaMessageSchema } from "../schemas/tools";
+
+export async function callMaya(path: string, payload?: any) {
+  const result = await api(path, {
+    method: payload ? "POST" : "GET",
+    ...(payload ? { body: payload } : {}),
+  });
+
+  if (!result || typeof result !== "object") {
+    console.error("INVALID MAYA RESPONSE:", result);
+    throw new Error("Invalid Maya response");
+  }
+
+  return result;
+}
 
 export async function sendMessage(message: string, authToken: string): Promise<unknown> {
-  return executeTool(
-    MayaMessageSchema,
-    (data) =>
-      api(endpoints.sendMessage, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${authToken}` },
-        ...(data ? { body: data } : {}),
-      }),
-    { message }
-  );
+  if (!authToken) {
+    throw new Error("Missing auth token");
+  }
+
+  const response = await api(endpoints.sendMessage, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${authToken}` },
+    body: { message },
+  });
+
+  if (!response || typeof response !== "object") {
+    throw new Error("Invalid response");
+  }
+
+  return response;
 }
