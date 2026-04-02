@@ -1,4 +1,4 @@
-import { getEnv } from "../config/env";
+import { env } from "../config/env";
 
 type ApiResponse<T> = {
   status: "ok" | "error" | "not_ready";
@@ -7,22 +7,48 @@ type ApiResponse<T> = {
   rid?: string;
 };
 
+function getToken(): string | null {
+  return process.env.JWT_TOKEN || null;
+}
+
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const token = getToken();
+
+  const res = await fetch(`${env.API_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+
+  if (res.status === 503) {
+    throw new Error("SERVICE_NOT_READY");
+  }
+
+  if (res.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  if (res.status === 410) {
+    throw new Error("ENDPOINT_DEPRECATED");
+  }
+
+  return res;
+}
+
 export async function api<T = unknown>(
   path: string,
   options?: {
     method?: string;
-    body?: any;
+    body?: unknown;
     headers?: Record<string, string>;
   }
 ): Promise<T> {
-  const { API_URL } = getEnv();
-
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await apiFetch(path, {
     method: options?.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
+    headers: options?.headers,
     body: options?.body ? JSON.stringify(options.body) : undefined,
   });
 
