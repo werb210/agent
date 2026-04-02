@@ -3,7 +3,8 @@ import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
 import { log } from "../logger";
 import { validateToolCall } from "../core/validateTool";
 import { executeTool as executeMayaTool } from "../core/toolExecutor";
-import { emit } from "../realtime/emitter";
+import { emitter } from "../realtime/emitter";
+import { EVENTS } from "../realtime/events";
 
 export type ToolExecutionCall = {
   callId: string;
@@ -97,12 +98,12 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
     if (call.tool !== TOOL_REGISTRY.startCall && call.tool !== TOOL_REGISTRY.updateCallStatus) {
       const toolCall = validateToolCall({
         name: call.tool,
-        payload: call.input
+        arguments: call.input
       });
 
       try {
         const result = await executeMayaTool(toolCall);
-        emit({ type: "tool.executed", name: toolCall.name });
+        emitter.emit(EVENTS.TOOL_EXECUTED, { name: toolCall.name });
         log({ callId: call.callId, operation: call.tool, status: "ok" });
         return { status: "ok", data: deepFreeze(result as Record<string, unknown>) };
       } catch (err) {

@@ -1,54 +1,16 @@
-import crypto from "crypto";
-import { enqueue } from "../queue/jobQueue";
-import { eventBus } from "./eventBus";
+import { emitter } from '../realtime/emitter';
+import { EVENTS } from '../realtime/events';
 
 let listenersRegistered = false;
 
-function queueEventJob(type: string, entityId: string, payload: unknown): void {
-  enqueue({
-    id: crypto.randomUUID(),
-    type,
-    payload: {
-      ...((payload as Record<string, unknown>) ?? {}),
-      entityId
-    },
-    createdAt: Date.now()
-  });
-}
-
-export function registerListeners(): void {
+export function registerListeners() {
   if (listenersRegistered) {
     return;
   }
 
   listenersRegistered = true;
 
-  eventBus.on("call.started", (event) => {
-    queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
-  });
-
-  eventBus.on("message.received", (event) => {
-    const documentType = String(event?.documentType ?? "").toLowerCase();
-    queueEventJob(
-      documentType.includes("bank") ? "bank_statement_analysis" : "document_ocr",
-      String(event?.documentId ?? event?.id ?? ""),
-      event
-    );
-  });
-
-  eventBus.on("call.ended", (event) => {
-    queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
-  });
-
-  eventBus.on("lead.created", (event) => {
-    queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
-  });
-
-  eventBus.on("tool.executed", (event) => {
-    queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
-  });
-
-  eventBus.on("message.received", (event) => {
-    queueEventJob("message_notification", String(event?.messageId ?? event?.id ?? ""), event);
+  emitter.on(EVENTS.TOOL_EXECUTED, (payload: unknown) => {
+    console.log('Tool executed:', payload);
   });
 }

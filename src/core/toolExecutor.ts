@@ -1,54 +1,61 @@
-import { createLead as createLeadTool, startCall } from "../tools";
-import { sendSMS as sendSmsTransport } from "../integrations/twilio";
-import { MayaToolCall } from "../types/tool";
+import { createLead as createLeadTool, startCall } from '../tools';
+import { sendSMS as sendSmsTransport } from '../integrations/twilio';
+import { validateToolCall } from './validateTool';
 
 function getAgentAuthToken(): string {
   const token = process.env.AGENT_API_TOKEN;
   if (!token) {
-    throw new Error("MISSING_AUTH");
+    throw new Error('MISSING_AUTH');
   }
 
   return token;
 }
 
-async function createLead(payload: MayaToolCall<"createLead">["payload"]) {
-  return createLeadTool(payload, getAgentAuthToken());
+async function createLead(arguments_: Record<string, unknown>) {
+  return createLeadTool(arguments_, getAgentAuthToken());
 }
 
-async function updateCRMRecord(payload: MayaToolCall<"updateCRMRecord">["payload"]) {
+async function updateCRM(arguments_: Record<string, unknown>) {
   return {
     ok: true,
-    id: payload.id,
-    fields: payload.fields
+    id: arguments_.id,
+    fields: arguments_.fields,
   };
 }
 
-async function scheduleAppointment(payload: MayaToolCall<"scheduleAppointment">["payload"]) {
-  return startCall({ to: payload.leadId }, getAgentAuthToken());
+async function scheduleAppointment(arguments_: Record<string, unknown>) {
+  return startCall({ to: String(arguments_.leadId ?? '') }, getAgentAuthToken());
 }
 
-async function sendSMS(payload: MayaToolCall<"sendSMS">["payload"]) {
-  await sendSmsTransport(payload.to, payload.message);
+async function sendSMS(arguments_: Record<string, unknown>) {
+  await sendSmsTransport(String(arguments_.to ?? ''), String(arguments_.message ?? ''));
   return { ok: true };
 }
 
-async function sendEmail(payload: MayaToolCall<"sendEmail">["payload"]) {
-  return { queued: true, to: payload.to, subject: payload.subject, body: payload.body };
+async function sendEmail(arguments_: Record<string, unknown>) {
+  return {
+    queued: true,
+    to: arguments_.to,
+    subject: arguments_.subject,
+    body: arguments_.body,
+  };
 }
 
-export async function executeTool(call: MayaToolCall) {
-  switch (call.name) {
-    case "createLead":
-      return createLead(call.payload as MayaToolCall<"createLead">["payload"]);
-    case "updateCRMRecord":
-      return updateCRMRecord(call.payload as MayaToolCall<"updateCRMRecord">["payload"]);
-    case "scheduleAppointment":
-      return scheduleAppointment(call.payload as MayaToolCall<"scheduleAppointment">["payload"]);
-    case "sendSMS":
-      return sendSMS(call.payload as MayaToolCall<"sendSMS">["payload"]);
-    case "sendEmail":
-      return sendEmail(call.payload as MayaToolCall<"sendEmail">["payload"]);
+export async function executeTool(raw: unknown) {
+  const tool = validateToolCall(raw);
+
+  switch (tool.name) {
+    case 'createLead':
+      return await createLead(tool.arguments);
+    case 'updateCRMRecord':
+      return await updateCRM(tool.arguments);
+    case 'scheduleAppointment':
+      return await scheduleAppointment(tool.arguments);
+    case 'sendSMS':
+      return await sendSMS(tool.arguments);
+    case 'sendEmail':
+      return await sendEmail(tool.arguments);
     default:
-      throw new Error(`Unknown tool: ${(call as { name?: string }).name}`);
+      throw new Error(`Unknown tool: ${tool.name}`);
   }
 }

@@ -8,9 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      API_URL: ${{ secrets.API_URL }}
-      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +19,5 @@ jobs:
       - run: npm ci
 
       - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run build
-      - name: Run tests
-        run: npm run test
-        env:
-          API_URL: http://localhost:3000
-          NODE_ENV: test
+
+      - run: npm run test

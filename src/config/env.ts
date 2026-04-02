@@ -1,19 +1,17 @@
-import { z } from "zod";
+let cachedEnv: {
+  OPENAI_API_KEY?: string;
+  API_URL?: string;
+  NODE_ENV?: string;
+} | null = null;
 
-const schema = z.object({
-  API_URL: z.string().url(),
-  NODE_ENV: z.enum(["development", "test", "production"]),
-});
+export function getEnv() {
+  if (cachedEnv) return cachedEnv;
 
-export type Env = z.infer<typeof schema>;
+  cachedEnv = {
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    API_URL: process.env.API_URL,
+    NODE_ENV: process.env.NODE_ENV,
+  };
 
-let cached: Env | null = null;
-
-export function getEnv(): Env {
-  if (cached) return cached;
-  if (!process.env.API_URL) {
-    throw new Error("API_URL missing");
-  }
-  cached = schema.parse(process.env);
-  return cached;
+  return cachedEnv;
 }
