@@ -1,6 +1,6 @@
 import { executeTool } from "../core/executeTool";
 import { endpoints } from "../contracts/endpoints";
-import { api } from "../lib/api";
+import { apiFetch } from "../utils/apiClient";
 import {
   CreateLeadSchema,
   ScheduleCallSchema,
@@ -12,11 +12,11 @@ function authedPost<T>(path: string, payload: unknown, authToken: string): Promi
     throw new Error("Missing auth token");
   }
 
-  return api<T>(path, {
+  return apiFetch(path, {
     method: "POST",
     headers: { Authorization: `Bearer ${authToken}` },
-    ...(payload ? { body: payload } : {}),
-  });
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
+  }) as Promise<T>;
 }
 
 export async function createLead(payload: unknown, authToken: string): Promise<unknown> {

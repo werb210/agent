@@ -1,20 +1,20 @@
 import { API_ROUTES } from "../contracts/api";
-import { api } from "../lib/api";
+import { apiFetch } from "../utils/apiClient";
 
 export async function fetchToken() {
-  return api(API_ROUTES.dialer.token, { method: "GET" });
+  return apiFetch(API_ROUTES.dialer.token, { method: "GET" });
 }
 
 export async function startCall(payload: { to: string }) {
-  return api(API_ROUTES.calls.start, {
+  return apiFetch(API_ROUTES.calls.start, {
     method: "POST",
-    ...(payload ? { body: payload } : {}),
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
 }
 
 export async function sendStatus(payload: { callId: string; status: string }) {
-  return api(API_ROUTES.calls.status, {
+  return apiFetch(API_ROUTES.calls.status, {
     method: "POST",
-    ...(payload ? { body: payload } : {}),
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
 }

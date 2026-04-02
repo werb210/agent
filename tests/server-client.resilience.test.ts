@@ -1,38 +1,34 @@
-import { api, apiFetch } from "../src/lib/api";
+import { apiFetch } from "../src/utils/apiClient";
 
 describe("server client resilience", () => {
-  it("returns envelope data", async () => {
+  it("returns json data", async () => {
     (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
-      json: async () => ({ status: "ok", data: { ok: true } }),
+      ok: true,
       status: 200,
+      json: async () => ({ ok: true }),
+      text: async () => "",
     });
 
-    await expect(api<{ ok: boolean }>("/api/test")).resolves.toEqual({ ok: true });
-  });
-
-  it("throws on non-ok envelope", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
-      json: async () => ({ status: "error", error: "DB_NOT_READY" }),
-      status: 200,
-    });
-
-    await expect(api("/api/test")).rejects.toThrow("DB_NOT_READY");
+    await expect(apiFetch("/api/test")).resolves.toEqual({ ok: true });
   });
 
   it("sends request id and auth headers through api options", async () => {
+    delete process.env.AGENT_API_TOKEN;
     process.env.JWT_TOKEN = "runtime-token";
 
     (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
-      json: async () => ({ status: "ok", data: { ok: true } }),
+      ok: true,
       status: 200,
+      json: async () => ({ ok: true }),
+      text: async () => "",
     });
 
-    await api("/api/test", {
+    await apiFetch("/api/test", {
       method: "POST",
       headers: {
         "x-request-id": "rid-123",
       },
-      body: { ping: true },
+      body: JSON.stringify({ ping: true }),
     });
 
     expect((globalThis as any).fetch).toHaveBeenCalledWith(
@@ -46,21 +42,13 @@ describe("server client resilience", () => {
     );
   });
 
-  it("throws SERVICE_NOT_READY on 503", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({ status: 503 });
+  it("throws on non-ok response", async () => {
+    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: async () => "service unavailable",
+    });
 
-    await expect(apiFetch("/api/test")).rejects.toThrow("SERVICE_NOT_READY");
-  });
-
-  it("throws UNAUTHORIZED on 401", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({ status: 401 });
-
-    await expect(apiFetch("/api/test")).rejects.toThrow("UNAUTHORIZED");
-  });
-
-  it("throws ENDPOINT_DEPRECATED on 410", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({ status: 410 });
-
-    await expect(apiFetch("/api/test")).rejects.toThrow("ENDPOINT_DEPRECATED");
+    await expect(apiFetch("/api/test")).rejects.toThrow("API ERROR 503");
   });
 });

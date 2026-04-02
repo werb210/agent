@@ -52,6 +52,6 @@ describe("tool execution response contract", () => {
     });
 
     expect(response.status).toBe("error");
-    expect(response.error).toMatchObject({ code: "EXEC_FAIL", message: "MISSING_AUTH" });
+    expect(response.error).toMatchObject({ code: "EXEC_FAIL", message: "AGENT AUTH TOKEN MISSING" });
   });
 });
