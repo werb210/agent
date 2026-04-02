@@ -3,6 +3,7 @@ process.env.NODE_ENV = "test";
 process.env.TWILIO_ACCOUNT_SID ||= "test";
 process.env.TWILIO_AUTH_TOKEN ||= "test";
 process.env.TWILIO_PHONE_NUMBER ||= "test";
+process.env.AGENT_API_TOKEN ||= "test-token";
 
 import { beforeEach, vi } from "vitest";
 
