@@ -2,6 +2,8 @@ import { checkHealth, cleanupResources } from "./health";
 import { log } from "./logger";
 import { validateEnv } from "./system/env";
 import { registerListeners } from "./events/registerListeners";
+import { waitForReady } from "./lib/ready";
+import { handleError } from "./lib/errorHandler";
 
 if (process.env.NODE_ENV !== "test") {
   try {
@@ -16,7 +18,7 @@ process.setMaxListeners(25);
 let started = false;
 
 process.on("unhandledRejection", (err) => {
-  console.error(err);
+  handleError(err);
   log({
     callId: "runtime",
     operation: "unhandledRejection",
@@ -27,7 +29,7 @@ process.on("unhandledRejection", (err) => {
 });
 
 process.on("uncaughtException", (err) => {
-  console.error(err);
+  handleError(err);
   log({
     callId: "runtime",
     operation: "uncaughtException",
@@ -50,6 +52,7 @@ export async function start() {
   if (started) throw new Error("DOUBLE_START");
   started = true;
 
+  await waitForReady();
   await checkHealth();
   log({ callId: "runtime", operation: "startup", status: "ok" });
 }
