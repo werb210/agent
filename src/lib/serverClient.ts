@@ -27,7 +27,7 @@ function normalize<T>(res: unknown): T {
     throw new Error("INVALID_RESPONSE");
   }
 
-  if ("status" in res && (res as { status?: unknown }).status !== "ok") {
+  if ((res as { status?: unknown }).status === "error") {
     throw new Error(String((res as { error?: unknown }).error ?? "INVALID_RESPONSE"));
   }
 
@@ -36,7 +36,7 @@ function normalize<T>(res: unknown): T {
   }
 
   if (!("data" in res)) {
-    throw new Error("MISSING_DATA");
+    throw new Error("INVALID_RESPONSE");
   }
 
   return (res as { data: T }).data;
@@ -118,29 +118,63 @@ async function callWithRetry<T>(fn: () => Promise<T>): Promise<T> {
   throw new Error("SERVICE_UNAVAILABLE");
 }
 
-async function safeCall<T>(fn: () => Promise<T>): Promise<T | { fallback: true }> {
+async function safeCall<T>(fn: () => Promise<T>): Promise<T | { status: "error"; error: string }> {
   try {
     return await call(fn);
-  } catch {
-    return { fallback: true };
+  } catch (error) {
+    return {
+      status: "error",
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
+}
+
+async function checkReady(authToken: string, requestId: string): Promise<void> {
+  const res = await globalThis["fetch"](buildUrl("/api/v1/ready"), {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "x-request-id": requestId
+    }
+  });
+
+  const json = await res.json();
+  normalize(json);
+}
+
+function resolveRequestId(provided?: string): string {
+  return provided && provided.trim().length > 0 ? provided : `rid_${Date.now()}`;
 }
 
 export async function serverPost<T>(
   path: string,
   body: unknown,
-  authToken?: string
+  authToken?: string,
+  requestId?: string
 ): Promise<T> {
   if (!authToken) {
     throw new Error("Missing auth token");
   }
 
+  const rid = resolveRequestId(requestId);
+
   return callWithRetry(async () => {
+    console.log(
+      JSON.stringify({
+        level: "info",
+        rid,
+        action: "agent_call"
+      })
+    );
+
+    await checkReady(authToken, rid);
+
     const res = await globalThis["fetch"](buildUrl(path), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`
+        Authorization: `Bearer ${authToken}`,
+        "x-request-id": rid
       },
       body: JSON.stringify(body)
     });

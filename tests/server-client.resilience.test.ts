@@ -34,7 +34,7 @@ describe("server client resilience", () => {
 
   it("throws INVALID_RESPONSE on malformed payload", () => {
     expect(() => normalize(null)).toThrow("INVALID_RESPONSE");
-    expect(() => normalize({ status: "ok" })).toThrow("MISSING_DATA");
+    expect(() => normalize({ status: "ok" })).toThrow("INVALID_RESPONSE");
   });
 
   it("normalizes error status payload", () => {
@@ -45,13 +45,23 @@ describe("server client resilience", () => {
     jest.useFakeTimers();
     (globalThis as any).fetch = jest
       .fn()
+      .mockResolvedValueOnce({ json: async () => ({ status: "ok", data: { ready: true } }) })
       .mockResolvedValueOnce({ json: async () => ({ status: "error", error: "DB_NOT_READY" }) })
+      .mockResolvedValueOnce({ json: async () => ({ status: "ok", data: { ready: true } }) })
       .mockResolvedValueOnce({ json: async () => ({ success: true, data: { ok: true } }) });
 
-    const promise = serverPost<{ ok: boolean }>("/api/test", { ping: true }, "token");
+    const promise = serverPost<{ ok: boolean }>("/api/test", { ping: true }, "token", "rid-123");
     await jest.runAllTimersAsync();
     await expect(promise).resolves.toEqual({ ok: true });
-    expect((globalThis as any).fetch).toHaveBeenCalledTimes(2);
+    expect((globalThis as any).fetch).toHaveBeenCalledTimes(4);
+    expect((globalThis as any).fetch).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "x-request-id": "rid-123"
+        })
+      })
+    );
   });
 
   it("opens circuit after DB_NOT_READY and backs off retries", async () => {
@@ -84,9 +94,10 @@ describe("server client resilience", () => {
     await expect(second).resolves.toBe("ok");
   });
 
-  it("executes fallback path when call fails", async () => {
+  it("returns structured error when call fails", async () => {
     await expect(safeCall(async () => Promise.reject(new Error("boom")))).resolves.toEqual({
-      fallback: true
+      status: "error",
+      error: "boom"
     });
   });
 });

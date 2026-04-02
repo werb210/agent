@@ -1,5 +1,4 @@
 import { executeTool } from "../core/executeTool";
-import { retryWithBackoff } from "../lib/retry";
 import { serverPost } from "../lib/serverClient";
 import {
   CreateLeadSchema,
@@ -8,25 +7,17 @@ import {
 } from "../schemas/tools";
 
 export async function createLead(payload: unknown, authToken: string): Promise<unknown> {
-  return executeTool(
-    CreateLeadSchema,
-    (data) => retryWithBackoff(() => serverPost("/api/lead", data, authToken)),
-    payload
-  );
+  return executeTool(CreateLeadSchema, (data) => serverPost("/api/lead", data, authToken), payload);
 }
 
 export async function startCall(payload: unknown, authToken: string): Promise<unknown> {
-  return executeTool(
-    ScheduleCallSchema,
-    (data) => retryWithBackoff(() => serverPost("/api/call/start", data, authToken)),
-    payload
-  );
+  return executeTool(ScheduleCallSchema, (data) => serverPost("/api/call/start", data, authToken), payload);
 }
 
 export async function updateCallStatus(payload: unknown, authToken: string): Promise<unknown> {
   return executeTool(
     UpdateCallStatusSchema,
-    (data) => retryWithBackoff(() => serverPost("/api/voice/status", data, authToken)),
+    (data) => serverPost("/api/voice/status", data, authToken),
     payload
   );
 }
