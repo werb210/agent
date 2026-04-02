@@ -6,9 +6,15 @@ const required = [
   "BASE_URL"
 ] as const;
 
+const isTest = process.env.NODE_ENV === "test";
+
 for (const key of required) {
   if (!process.env[key]) {
-    throw new Error(`Missing required env: ${key}`);
+    if (isTest) {
+      process.env[key] = "test-placeholder";
+    } else {
+      throw new Error(`Missing required env: ${key}`);
+    }
   }
 }
 
