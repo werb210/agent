@@ -11,8 +11,15 @@ const { startCall } = jest.requireMock("../src/tools") as {
 };
 
 describe("tool safety boundaries", () => {
+  const originalToken = process.env.AGENT_API_TOKEN;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.AGENT_API_TOKEN = "valid-token";
+  });
+
+  afterAll(() => {
+    process.env.AGENT_API_TOKEN = originalToken;
   });
 
   it("times out long-running tools", async () => {
@@ -22,7 +29,7 @@ describe("tool safety boundaries", () => {
     const pending = execute({
       callId: "tool-timeout-1",
       tool: "startCall",
-      input: { to: "+15555550123", token: "token" }
+      input: { to: "+15555550123" }
     });
 
     await jest.advanceTimersByTimeAsync(10_000);

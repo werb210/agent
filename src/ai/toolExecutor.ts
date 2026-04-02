@@ -31,9 +31,9 @@ export type ToolExecutionResponse =
     };
 
 const tools: Record<ToolRegistryName, (context: ToolExecutionContext) => Promise<Record<string, unknown>>> = {
-  [TOOL_REGISTRY.createLead]: async ({ input }) => createLead(input, String(input.token ?? "")) as Promise<Record<string, unknown>>,
-  [TOOL_REGISTRY.startCall]: async ({ input }) => startCall(input, String(input.token ?? "")) as Promise<Record<string, unknown>>,
-  [TOOL_REGISTRY.updateCallStatus]: async ({ input }) => updateCallStatus(input, String(input.token ?? "")) as Promise<Record<string, unknown>>
+  [TOOL_REGISTRY.createLead]: async ({ input }) => createLead(input, getAgentAuthToken()) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.startCall]: async ({ input }) => startCall(input, getAgentAuthToken()) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.updateCallStatus]: async ({ input }) => updateCallStatus(input, getAgentAuthToken()) as Promise<Record<string, unknown>>
 };
 
 const toolNames = Object.keys(tools);
@@ -66,6 +66,15 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10_000): Promise<T> {
       setTimeout(() => reject(new Error("TOOL_TIMEOUT")), ms);
     })
   ]);
+}
+
+function getAgentAuthToken(): string {
+  const token = process.env.AGENT_API_TOKEN;
+  if (!token) {
+    throw new Error("MISSING_AUTH");
+  }
+
+  return token;
 }
 
 function validateTool(name: string): void {

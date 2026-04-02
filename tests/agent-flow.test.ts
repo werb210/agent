@@ -11,8 +11,15 @@ const { startCall } = jest.requireMock("../src/tools") as {
 };
 
 describe("agent deterministic flow", () => {
+  const originalToken = process.env.AGENT_API_TOKEN;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.AGENT_API_TOKEN = "valid-token";
+  });
+
+  afterAll(() => {
+    process.env.AGENT_API_TOKEN = originalToken;
   });
 
   it("valid input returns valid output", async () => {
@@ -21,7 +28,7 @@ describe("agent deterministic flow", () => {
     const response = await runAgent({
       callId: "test-call-id-1",
       tool: "startCall",
-      input: { to: "+15555550123", token: "token" }
+      input: { to: "+15555550123" }
     });
 
     expect(response).toHaveProperty("status");
@@ -41,7 +48,7 @@ describe("agent deterministic flow", () => {
     const response = await runAgent({
       callId: "test-call-id-2",
       tool: "startCall",
-      input: { to: "+15555550123", token: "token" }
+      input: { to: "+15555550123" }
     });
 
     expect(response).toHaveProperty("status");
