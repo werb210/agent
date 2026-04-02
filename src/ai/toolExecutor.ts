@@ -103,6 +103,9 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
 
       try {
         const result = await executeMayaTool(toolCall);
+        if (result && typeof result === "object" && "status" in (result as Record<string, unknown>) && (result as Record<string, unknown>).status === "error") {
+          throw new Error(String((result as Record<string, unknown>).error || "Execution failed"));
+        }
         emitter.emit(EVENTS.TOOL_EXECUTED, { name: toolCall.name });
         log({ callId: call.callId, operation: call.tool, status: "ok" });
         return { status: "ok", data: deepFreeze(result as Record<string, unknown>) };
