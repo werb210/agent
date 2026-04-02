@@ -4,7 +4,7 @@ export type ApiResponse<T> =
   | { status: "ok"; data: T }
   | { status: "error"; error: string };
 
-const BASE_URL = process.env.SERVER_URL || "";
+const BASE_URL = process.env.API_URL || "";
 
 function buildUrl(path: string): string {
   if (!path.startsWith("/")) {
