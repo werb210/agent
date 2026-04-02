@@ -1,18 +1,15 @@
 export function handleError(err: any) {
-  if (err.message === "SERVICE_NOT_READY") {
-    console.error("Server not ready, retrying...");
-    return;
+  switch (err.message) {
+    case "SERVICE_NOT_READY":
+      console.error("API not ready — retry later");
+      break;
+    case "UNAUTHORIZED":
+      console.error("Unauthorized — check JWT token");
+      break;
+    case "ENDPOINT_DEPRECATED":
+      console.error("Deprecated endpoint used");
+      break;
+    default:
+      console.error("Unhandled error:", err);
   }
-
-  if (err.message === "UNAUTHORIZED") {
-    console.error("Auth failure — check token");
-    return;
-  }
-
-  if (err.message === "ENDPOINT_DEPRECATED") {
-    console.error("Deprecated endpoint called");
-    return;
-  }
-
-  console.error("Unhandled error:", err);
 }

@@ -1,31 +1,21 @@
-export type Env = {
+type Env = {
   API_URL: string;
-  JWT_STORAGE_KEY: string;
+  JWT_TOKEN?: string;
 };
 
-let cachedEnv: Env | null = null;
-
-export function resetEnv() {
-  cachedEnv = null;
+if (!process.env.API_URL) {
+  throw new Error("Missing API_URL");
 }
+
+export const env: Env = {
+  API_URL: process.env.API_URL,
+  JWT_TOKEN: process.env.JWT_TOKEN,
+};
 
 export function getEnv(): Env {
-  if (!cachedEnv) {
-    const apiUrl =
-      process.env.API_URL ||
-      (process.env.NODE_ENV === "test" ? "http://localhost:3000" : undefined);
-
-    if (!apiUrl) {
-      throw new Error("Missing API_URL");
-    }
-
-    cachedEnv = {
-      API_URL: apiUrl,
-      JWT_STORAGE_KEY: process.env.JWT_STORAGE_KEY || "bf_jwt_token",
-    };
-  }
-
-  return cachedEnv;
+  return env;
 }
 
-export const env = getEnv();
+export function resetEnv() {
+  // no-op: env is eagerly validated and immutable for process lifetime
+}
