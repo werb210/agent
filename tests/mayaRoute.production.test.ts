@@ -11,7 +11,8 @@ describe("maya runtime regression guard", () => {
   });
 
   it("fails when handlers are not loaded", async () => {
-    const handlers = jest.spyOn(require("../src/ai/toolExecutor"), "areToolHandlersLoaded");
+    const mod = await import("../src/ai/toolExecutor");
+    const handlers = jest.spyOn(mod, "areToolHandlersLoaded");
     handlers.mockReturnValue(false);
 
     await expect(checkHealth()).rejects.toThrow("HANDLERS_NOT_READY");

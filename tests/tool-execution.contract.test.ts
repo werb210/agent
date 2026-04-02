@@ -1,6 +1,7 @@
 import { runAgent } from "../src/agents/runAgent";
+import { vi } from "vitest";
 
-jest.mock("../src/tools", () => ({
+vi.mock("../src/tools", () => ({
   createLead: jest.fn().mockResolvedValue({ id: "lead-1" }),
   startCall: jest.fn().mockResolvedValue({ callId: "call-1" }),
   updateCallStatus: jest.fn().mockResolvedValue({ updated: true })

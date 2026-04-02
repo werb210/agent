@@ -1,14 +1,14 @@
 import { assertApiResponse } from "../src/lib/assertApiResponse";
+import { vi } from "vitest";
 
-jest.mock("../src/tools", () => ({
+vi.mock("../src/tools", () => ({
   createLead: jest.fn(),
   startCall: jest.fn(),
   updateCallStatus: jest.fn()
 }));
 
-const { startCall } = jest.requireMock("../src/tools") as {
-  startCall: jest.Mock;
-};
+import * as toolsModule from "../src/tools";
+const startCall = toolsModule.startCall as unknown as ReturnType<typeof vi.fn>;
 
 describe("agent deterministic flow", () => {
   const originalToken = process.env.AGENT_API_TOKEN;
@@ -59,7 +59,7 @@ describe("agent deterministic flow", () => {
   it("API failure bubbles up", () => {
     expect(() =>
       assertApiResponse({
-        success: false,
+        status: "error",
         error: "Request failed upstream"
       })
     ).toThrow("Request failed upstream");

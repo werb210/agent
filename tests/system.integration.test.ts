@@ -12,27 +12,27 @@ describe("system integration", () => {
       if (path.endsWith(endpoints.createLead)) {
         return {
           status: 200,
-          json: async () => ({ success: true, data: { id: "lead-1" } })
+          json: async () => ({ status: "ok", data: { id: "lead-1" } })
         } as Response;
       }
 
       if (path.endsWith(endpoints.startCall)) {
         return {
           status: 200,
-          json: async () => ({ success: true, data: { callId: "call-1" } })
+          json: async () => ({ status: "ok", data: { callId: "call-1" } })
         } as Response;
       }
 
       if (path.endsWith(endpoints.updateCallStatus)) {
         return {
           status: 200,
-          json: async () => ({ success: true, data: { updated: true } })
+          json: async () => ({ status: "ok", data: { updated: true } })
         } as Response;
       }
 
       return {
         status: 404,
-        json: async () => ({ success: false, error: "Not found" })
+        json: async () => ({ status: "error", error: "Not found" })
       } as Response;
     });
   });
