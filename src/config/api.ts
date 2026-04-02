@@ -1,6 +1,3 @@
-import { getEnv } from "./env";
-
-export function getApiBase() {
-  const { API_URL } = getEnv();
-  return `${API_URL}/api/v1`;
-}
+export const API_BASE_URL =
+  process.env.AGENT_API_BASE_URL ||
+  "http://localhost:8080";

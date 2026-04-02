@@ -1,20 +1,8 @@
 import { env } from "../config/env";
+import { apiFetch as baseApiFetch } from "../utils/apiClient";
 
 export async function apiFetch(path: string, options: any = {}) {
-  const authToken =
-    process.env.JWT_TOKEN ||
-    process.env.AGENT_API_TOKEN ||
-    env.JWT_TOKEN ||
-    "test-token";
-
-  const res = await fetch(`${env.API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${authToken}`,
-      ...(options.headers || {}),
-    },
-  });
+  const res = await baseApiFetch(`${env.API_URL}${path}`, options);
 
   if (res.status === 503) {
     throw new Error("SERVICE_NOT_READY");
