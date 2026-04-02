@@ -1,4 +1,4 @@
-import { callWithRetry, normalize, resetCircuitStateForTests, serverPost } from "../src/lib/serverClient";
+import { callWithRetry, normalize, resetCircuitStateForTests, safeCall, serverPost } from "../src/lib/serverClient";
 
 describe("server client resilience", () => {
   afterEach(() => {
@@ -34,7 +34,7 @@ describe("server client resilience", () => {
 
   it("throws INVALID_RESPONSE on malformed payload", () => {
     expect(() => normalize(null)).toThrow("INVALID_RESPONSE");
-    expect(() => normalize({ status: "ok" })).toThrow("INVALID_RESPONSE");
+    expect(() => normalize({ status: "ok" })).toThrow("MISSING_DATA");
   });
 
   it("normalizes error status payload", () => {
@@ -82,5 +82,11 @@ describe("server client resilience", () => {
     const second = callWithRetry(jest.fn<Promise<string>, []>().mockResolvedValue("ok"));
     await jest.runAllTimersAsync();
     await expect(second).resolves.toBe("ok");
+  });
+
+  it("executes fallback path when call fails", async () => {
+    await expect(safeCall(async () => Promise.reject(new Error("boom")))).resolves.toEqual({
+      fallback: true
+    });
   });
 });

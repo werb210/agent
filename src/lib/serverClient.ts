@@ -36,7 +36,7 @@ function normalize<T>(res: unknown): T {
   }
 
   if (!("data" in res)) {
-    throw new Error("INVALID_RESPONSE");
+    throw new Error("MISSING_DATA");
   }
 
   return (res as { data: T }).data;
@@ -118,6 +118,14 @@ async function callWithRetry<T>(fn: () => Promise<T>): Promise<T> {
   throw new Error("SERVICE_UNAVAILABLE");
 }
 
+async function safeCall<T>(fn: () => Promise<T>): Promise<T | { fallback: true }> {
+  try {
+    return await call(fn);
+  } catch {
+    return { fallback: true };
+  }
+}
+
 export async function serverPost<T>(
   path: string,
   body: unknown,
@@ -147,4 +155,4 @@ function resetCircuitStateForTests(): void {
   lastFail = 0;
 }
 
-export { callWithRetry, normalize, resetCircuitStateForTests };
+export { callWithRetry, normalize, resetCircuitStateForTests, safeCall };
