@@ -1,4 +1,4 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 type ApplicationContext = {
   revenue?: number;
@@ -83,5 +83,5 @@ export function hasRequiredApplicationFields(context: ApplicationContext): boole
 }
 
 export async function createDraftApplication(context: ApplicationContext): Promise<unknown> {
-  return bfServerRequest("/api/applications/create-draft", "POST", context);
+  return callBFServer("/api/applications/create-draft",  context);
 }

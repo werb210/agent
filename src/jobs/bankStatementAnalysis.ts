@@ -1,4 +1,4 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export type BankStatementPayload = {
   applicationId: string;
@@ -24,5 +24,5 @@ function analyze(payload: BankStatementPayload) {
 export default async function bankStatementAnalysis(payload: BankStatementPayload): Promise<void> {
   const result = analyze(payload);
 
-  await bfServerRequest("/api/analysis/bank", "POST", result);
+  await callBFServer("/api/analysis/bank",  result);
 }

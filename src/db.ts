@@ -1,9 +1,9 @@
-import { bfServerRequest } from "./integrations/bfServerClient";
+import { callBFServer } from "./integrations/bfServerClient";
 
 type QueryResult<T = any> = { rows: T[]; rowCount: number };
 
 async function request<T = any>(statement: string, params: unknown[] = []): Promise<QueryResult<T>> {
-  const data = await bfServerRequest("/api/internal/sql-compat", "POST", {
+  const data = await callBFServer<{ rows?: T[] }>("/api/internal/sql-compat", {
     statement,
     params
   });

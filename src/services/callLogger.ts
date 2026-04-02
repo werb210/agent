@@ -1,9 +1,9 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export async function logCall(sessionId: string, transcript: string) {
-  await bfServerRequest("/api/calls/log", "POST", { sessionId, transcript });
+  await callBFServer("/api/calls/log",  { sessionId, transcript });
 }
 
 export async function logCallSummary(callSid: string, summary: string, score: number) {
-  await bfServerRequest("/api/calls/log", "POST", { callSid, summary, score });
+  await callBFServer("/api/calls/log",  { callSid, summary, score });
 }

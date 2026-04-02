@@ -1,3 +1,4 @@
+import { afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { saveToken } from "../src/services/token";
 
 class MemoryStorage {
@@ -27,7 +28,12 @@ const storage = new MemoryStorage();
   location: {
     href: ""
   },
-  addEventListener: jest.fn()
+  addEventListener: vi.fn()
+};
+(globalThis as any).jest = vi;
+(globalThis as any).jest.requireMock = (path: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require(path);
 };
 
 beforeAll(() => {
@@ -41,7 +47,10 @@ beforeAll(() => {
   saveToken(token);
 });
 
-
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
 });

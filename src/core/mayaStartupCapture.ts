@@ -1,10 +1,10 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export async function captureStartupLead(data: {
   name: string;
   email: string;
   phone: string;
 }) {
-  await bfServerRequest("/api/crm/lead", "POST", data);
+  await callBFServer("/api/crm/lead",  data);
   return { success: true };
 }
