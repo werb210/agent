@@ -4,7 +4,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["tests/**/*.test.ts", "src/__tests__/maya.smoke.test.ts"],
-    setupFiles: ["./src/test/setupEnv.ts", "./tests/setup.ts"],
+    setupFiles: ["./src/__tests__/setup.ts"],
   },
 });
