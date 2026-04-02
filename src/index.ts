@@ -3,6 +3,7 @@ import { log } from "./logger";
 import { validateEnv } from "./system/env";
 
 validateEnv();
+process.setMaxListeners(25);
 
 let started = false;
 
@@ -45,12 +46,6 @@ export async function start() {
   log({ callId: "runtime", operation: "startup", status: "ok" });
 }
 
-start().catch((err) => {
-  log({
-    callId: "runtime",
-    operation: "startup",
-    status: "error",
-    err: err instanceof Error ? err.message : String(err)
-  });
-  process.exit(1);
-});
+export async function initMaya() {
+  return start();
+}

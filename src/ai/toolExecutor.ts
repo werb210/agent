@@ -1,6 +1,9 @@
 import { createLead, startCall, updateCallStatus } from "../tools";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
 import { log } from "../logger";
+import { validateToolCall } from "../core/validateTool";
+import { executeTool as executeMayaTool } from "../core/toolExecutor";
+import { emit } from "../realtime/emitter";
 
 export type ToolExecutionCall = {
   callId: string;
@@ -90,6 +93,23 @@ async function execTool(fn: () => Promise<Record<string, unknown>>): Promise<Rec
 async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> {
   try {
     validateTool(call.tool);
+
+    if (call.tool !== TOOL_REGISTRY.startCall && call.tool !== TOOL_REGISTRY.updateCallStatus) {
+      const toolCall = validateToolCall({
+        name: call.tool,
+        payload: call.input
+      });
+
+      try {
+        const result = await executeMayaTool(toolCall);
+        emit({ type: "tool.executed", name: toolCall.name });
+        log({ callId: call.callId, operation: call.tool, status: "ok" });
+        return { status: "ok", data: deepFreeze(result as Record<string, unknown>) };
+      } catch (err) {
+        console.error("Tool failed", err);
+        throw err;
+      }
+    }
 
     if (!tools[call.tool as ToolRegistryName]) {
       return {
