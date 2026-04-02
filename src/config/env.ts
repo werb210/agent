@@ -1,18 +1,35 @@
-type Env = {
-  API_URL: string;
-  JWT_TOKEN?: string;
-};
+const required = [
+  "TWILIO_ACCOUNT_SID",
+  "TWILIO_AUTH_TOKEN",
+  "TWILIO_PHONE_NUMBER",
+  "OPENAI_API_KEY",
+  "BASE_URL"
+] as const;
 
-if (!process.env.API_URL) {
-  throw new Error("Missing API_URL");
+for (const key of required) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required env: ${key}`);
+  }
 }
 
-export const env: Env = {
-  API_URL: process.env.API_URL,
-  JWT_TOKEN: process.env.JWT_TOKEN,
+export const ENV = {
+  PORT: process.env.PORT || "8080",
+  BASE_URL: process.env.BASE_URL!,
+  WS_URL: process.env.WS_URL || process.env.BASE_URL!,
+
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID!,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN!,
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER!,
+
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY!
 };
 
-export function getEnv(): Env {
+export const env = {
+  API_URL: ENV.BASE_URL,
+  JWT_TOKEN: process.env.JWT_TOKEN
+};
+
+export function getEnv() {
   return env;
 }
 
