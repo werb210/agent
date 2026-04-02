@@ -1,4 +1,4 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 type ModelProxy = {
   create: (args: unknown) => Promise<unknown>;
@@ -10,15 +10,15 @@ type ModelProxy = {
 };
 
 const modelProxy = (model: string): ModelProxy => ({
-  create: (args) => bfServerRequest("/api/applications/create", "POST", { model, action: "create", args }),
+  create: (args) => callBFServer("/api/applications/create", { model, action: "create", args }),
   findMany: async (args) => {
-    const result = await bfServerRequest("/api/crm/contacts", "GET", { model, action: "findMany", args });
+    const result = await callBFServer("/api/crm/contacts", { model, action: "findMany", args });
     return Array.isArray(result) ? result : [];
   },
-  findUnique: (args) => bfServerRequest("/api/applications/status", "GET", { model, action: "findUnique", args }),
-  findFirst: (args) => bfServerRequest("/api/staff/pipeline", "GET", { model, action: "findFirst", args }),
-  update: (args) => bfServerRequest("/api/applications/create", "POST", { model, action: "update", args }),
-  upsert: (args) => bfServerRequest("/api/applications/create", "POST", { model, action: "upsert", args })
+  findUnique: (args) => callBFServer("/api/applications/status", { model, action: "findUnique", args }),
+  findFirst: (args) => callBFServer("/api/staff/pipeline", { model, action: "findFirst", args }),
+  update: (args) => callBFServer("/api/applications/create", { model, action: "update", args }),
+  upsert: (args) => callBFServer("/api/applications/create", { model, action: "upsert", args })
 });
 
 export const prisma: Record<string, any> = new Proxy({}, {

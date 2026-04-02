@@ -1,24 +1,36 @@
 import { executeTool } from "../core/executeTool";
-import { serverPost } from "../lib/serverClient";
 import { endpoints } from "../contracts/endpoints";
+import { api } from "../lib/api";
 import {
   CreateLeadSchema,
   ScheduleCallSchema,
   UpdateCallStatusSchema
 } from "../schemas/tools";
 
+function authedPost<T>(path: string, payload: unknown, authToken: string): Promise<T> {
+  if (!authToken) {
+    throw new Error("Missing auth token");
+  }
+
+  return api<T>(path, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${authToken}` },
+    ...(payload ? { body: payload } : {}),
+  });
+}
+
 export async function createLead(payload: unknown, authToken: string): Promise<unknown> {
-  return executeTool(CreateLeadSchema, (data) => serverPost(endpoints.createLead, data, authToken), payload);
+  return executeTool(CreateLeadSchema, (data) => authedPost(endpoints.createLead, data, authToken), payload);
 }
 
 export async function startCall(payload: unknown, authToken: string): Promise<unknown> {
-  return executeTool(ScheduleCallSchema, (data) => serverPost(endpoints.startCall, data, authToken), payload);
+  return executeTool(ScheduleCallSchema, (data) => authedPost(endpoints.startCall, data, authToken), payload);
 }
 
 export async function updateCallStatus(payload: unknown, authToken: string): Promise<unknown> {
   return executeTool(
     UpdateCallStatusSchema,
-    (data) => serverPost(endpoints.updateCallStatus, data, authToken),
+    (data) => authedPost(endpoints.updateCallStatus, data, authToken),
     payload
   );
 }

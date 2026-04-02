@@ -1,4 +1,4 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export type MessageNotificationPayload = {
   messageId: string;
@@ -7,7 +7,7 @@ export type MessageNotificationPayload = {
 };
 
 export async function notifyMessage(payload: MessageNotificationPayload): Promise<void> {
-  await bfServerRequest("/api/notifications/message", "POST", {
+  await callBFServer("/api/notifications/message",  {
     ...payload,
     channels: ["portal_notification", "browser_push"]
   });

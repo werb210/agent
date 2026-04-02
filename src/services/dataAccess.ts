@@ -1,13 +1,13 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export async function findApplication(identifier: string) {
-  return bfServerRequest(`/api/applications/status?identifier=${encodeURIComponent(identifier)}`, "GET");
+  return callBFServer(`/api/applications/status?identifier=${encodeURIComponent(identifier)}`);
 }
 
 export async function getDocumentStatus(applicationId: string) {
-  return bfServerRequest(`/api/applications/status?applicationId=${encodeURIComponent(applicationId)}`, "GET");
+  return callBFServer(`/api/applications/status?applicationId=${encodeURIComponent(applicationId)}`);
 }
 
 export async function getLenderProductRanges(productType: string) {
-  return bfServerRequest(`/api/staff/pipeline?productType=${encodeURIComponent(productType)}`, "GET");
+  return callBFServer(`/api/staff/pipeline?productType=${encodeURIComponent(productType)}`);
 }

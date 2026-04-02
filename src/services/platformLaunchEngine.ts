@@ -1,5 +1,5 @@
 import { pool } from "../db";
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 type CampaignRow = {
   id: string;
@@ -47,7 +47,7 @@ export async function launchPlatformCampaign(campaignId: string): Promise<void> 
     cta: adData.cta
   };
 
-  const response = await bfServerRequest("/api/marketing/campaign", "POST", payload);
+  const response = await callBFServer<{ id?: string }>("/api/marketing/campaign", payload);
 
   await pool.request(
     `
@@ -56,6 +56,6 @@ export async function launchPlatformCampaign(campaignId: string): Promise<void> 
         status = 'launched'
     WHERE id = $2
   `,
-    [response.data.id || "mock-id", campaignId]
+    [response.id || "mock-id", campaignId]
   );
 }

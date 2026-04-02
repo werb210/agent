@@ -1,4 +1,4 @@
-import { bfServerRequest } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient";
 
 export type Transaction = {
   amount: number;
@@ -40,7 +40,7 @@ export async function runBankAnalysis(payload: BankAnalysisPayload): Promise<voi
     nsf_count: nsfEvents.length
   };
 
-  await bfServerRequest("/api/banking/analysis", "POST", {
+  await callBFServer("/api/banking/analysis",  {
     applicationId: payload.applicationId,
     statementId: payload.statementId,
     transactions,
