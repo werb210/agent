@@ -1,5 +1,5 @@
-import { ENV } from "../config/env";
+import { env } from "../config/env";
 
 export function validateEnv() {
-  return ENV;
+  return env;
 }

@@ -1,18 +1,10 @@
+import { apiFetch } from "./apiClient";
+
 export type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string }
   | { status: "ok"; data: T }
   | { status: "error"; error: string };
-
-const BASE_URL = process.env.API_URL || "";
-
-function buildUrl(path: string): string {
-  if (!path.startsWith("/")) {
-    throw new Error(`Invalid path: ${path}`);
-  }
-
-  return `${BASE_URL}${path}`;
-}
 
 export function normalize<T>(res: unknown): T {
   if (!res || typeof res !== "object") {
@@ -35,35 +27,17 @@ export function normalize<T>(res: unknown): T {
 }
 
 export async function callServer<T>(url: string, body: unknown, token: string, rid: string): Promise<T> {
-  const res = await globalThis["fetch"](buildUrl(url), {
+  const json = await apiFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      "x-request-id": rid
+      "x-request-id": rid,
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
 
-  if (res.status === 404) {
-    throw new Error("ENDPOINT_NOT_FOUND");
-  }
-
-  const json = await res.json();
-
-  if (json && typeof json === "object" && (json as { status?: unknown }).status === "error") {
-    throw new Error(String((json as { error?: unknown }).error ?? "INVALID_RESPONSE_FORMAT"));
-  }
-
-  if (json && typeof json === "object" && "success" in json && (json as { success?: unknown }).success === false) {
-    throw new Error(String((json as { error?: unknown }).error ?? "INVALID_RESPONSE_FORMAT"));
-  }
-
-  if (!json || typeof json !== "object" || !("data" in json)) {
-    throw new Error("INVALID_RESPONSE_FORMAT");
-  }
-
-  return (json as { data: T }).data;
+  return normalize<T>(json);
 }
 
 export async function serverPost<T>(
@@ -90,7 +64,7 @@ export async function safeCall<T>(fn: () => Promise<T>): Promise<T | { status: "
   } catch (error) {
     return {
       status: "error",
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

@@ -1,4 +1,5 @@
 import { apiRequest } from "../lib/api";
+import { API_ROUTES } from "../contracts/api";
 
 type CreateLeadPayload = {
   name: string;
@@ -10,9 +11,9 @@ type CreateLeadPayload = {
 };
 
 export const createLead = async (payload: CreateLeadPayload) => {
-  return apiRequest<unknown>("/api/applications", "POST", payload);
+  return apiRequest<unknown>(API_ROUTES.application.create, "POST", payload);
 };
 
 export const updateStage = async (id: string, stage: string) => {
-  return apiRequest<unknown>(`/api/crm/deals/${id}`, "PATCH", { stage });
+  return apiRequest<unknown>(API_ROUTES.crm.deal(id), "PATCH", { stage });
 };

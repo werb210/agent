@@ -1,60 +1,8 @@
 import { z } from "zod";
 
-export const SAFE_FALLBACKS = {
-  OPENAI_API_KEY: "dev-key",
-  TWILIO_ACCOUNT_SID: "dev-sid",
-  TWILIO_AUTH_TOKEN: "dev-token",
-  REDIS_URL: "redis://localhost:6379"
-} as const;
-
-const envSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1),
-  TWILIO_ACCOUNT_SID: z.string().min(1),
-  TWILIO_AUTH_TOKEN: z.string().min(1),
-  REDIS_URL: z.string().min(1)
-});
-
-const envWithFallbacks = {
-  ...process.env,
-  ...((process.env.NODE_ENV === "production" ? {} : SAFE_FALLBACKS) as Record<string, string>)
-};
-
-const parsed = envSchema.safeParse(envWithFallbacks);
-
-if (!parsed.success) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(`Environment validation failed: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
-  } else {
-    console.warn("Missing env var, using safe fallback");
-  }
-}
-
-export const ENV = parsed.success
-  ? parsed.data
-  : envSchema.parse({
-      ...SAFE_FALLBACKS,
-      ...process.env
-    });
-
-export const isProd = process.env.NODE_ENV === "production";
-export const isStaging = process.env.NODE_ENV === "staging";
-
-export function getEnv(name: string, fallback?: string): string {
-  const value = process.env[name];
-
-  if (!value) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`Missing required env var: ${name}`);
-    }
-    console.warn(`[ENV WARNING] ${name} missing, using fallback`);
-    return fallback || "dev";
-  }
-
-  return value;
-}
-
-export const API_BASE = "/api";
-
-if (!API_BASE) {
-  throw new Error("[ENV ERROR]");
-}
+export const env = z
+  .object({
+    API_URL: z.string().url(),
+    NODE_ENV: z.enum(["development", "test", "production"]),
+  })
+  .parse(process.env);

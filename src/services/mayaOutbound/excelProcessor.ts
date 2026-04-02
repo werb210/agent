@@ -1,10 +1,10 @@
 import ExcelJS from "exceljs";
 import { pool } from "../../db";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 
 export async function processExcel(filePath: string, campaignName: string) {
 
-  const campaignId = uuidv4();
+  const campaignId = randomUUID();
 
   await pool.request(
     "INSERT INTO maya_campaigns (id, name) VALUES ($1,$2)",

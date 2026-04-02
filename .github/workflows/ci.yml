@@ -1,4 +1,4 @@
-name: CI
+name: agent-ci
 
 on:
   push:
@@ -6,8 +6,11 @@ on:
   pull_request:
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
+    env:
+      API_URL: ${{ secrets.API_URL }}
+      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v4
@@ -17,5 +20,8 @@ jobs:
           node-version: 20
 
       - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run lint
       - run: npm run build
-      - run: npm test
+      - run: npm run test
