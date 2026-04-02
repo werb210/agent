@@ -1,5 +1,6 @@
 import { createLead, startCall, updateCallStatus } from "../src/tools";
 import { sendMessage } from "../src/api/maya";
+import { endpoints } from "../src/contracts/endpoints";
 
 describe("tool contract orchestration", () => {
   beforeEach(() => {
@@ -10,20 +11,20 @@ describe("tool contract orchestration", () => {
         return { json: async () => ({ success: false, error: "Missing auth token" }) } as Response;
       }
 
-      if (path.endsWith("/api/lead")) {
+      if (path.endsWith(endpoints.createLead)) {
         return { json: async () => ({ success: true, data: { saved: true } }) } as Response;
       }
-      if (path.endsWith("/api/call/start")) {
+      if (path.endsWith(endpoints.startCall)) {
         return { json: async () => ({ success: true, data: { started: true } }) } as Response;
       }
-      if (path.endsWith("/api/voice/status")) {
+      if (path.endsWith(endpoints.updateCallStatus)) {
         return { json: async () => ({ success: true, data: { recorded: true } }) } as Response;
       }
-      if (path.endsWith("/api/maya/message")) {
+      if (path.endsWith(endpoints.sendMessage)) {
         return { json: async () => ({ success: true, data: { reply: "ok" } }) } as Response;
       }
 
-      return { json: async () => ({ success: false, error: "Not found" }) } as Response;
+      return { status: 404, json: async () => ({ success: false, error: "Not found" }) } as Response;
     });
   });
 
