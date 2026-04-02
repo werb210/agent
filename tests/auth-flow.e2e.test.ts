@@ -1,5 +1,5 @@
 import { clearToken, getTokenOrFail, saveToken } from "../src/services/token";
-import { api } from "../src/lib/api";
+import { apiFetch } from "../src/utils/apiClient";
 
 describe("auth flow e2e", () => {
   beforeEach(() => {
@@ -23,25 +23,33 @@ describe("auth flow e2e", () => {
     expect(() => getTokenOrFail()).toThrow("[AUTH BLOCK]");
   });
 
-  it("API call returns status ok payload", async () => {
+  it("API call returns payload", async () => {
     saveToken("valid-token");
+    process.env.AGENT_API_TOKEN = "valid-token";
     (globalThis as any).fetch = jest.fn(async () => ({
-      json: async () => ({ status: "ok", data: { ok: true } })
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true }),
+      text: async () => "",
     }));
 
-    await expect(api("/api/ping")).resolves.toEqual({ ok: true });
+    await expect(apiFetch("/api/ping")).resolves.toEqual({ ok: true });
   });
 
   it("request can include bearer token header", async () => {
     saveToken("valid-token");
+    process.env.AGENT_API_TOKEN = "valid-token";
     (globalThis as any).fetch = jest.fn(async () => ({
-      json: async () => ({ status: "ok", data: { ok: true } })
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true }),
+      text: async () => "",
     }));
 
-    await api("/api/ping", {
+    await apiFetch("/api/ping", {
       method: "POST",
       headers: { Authorization: "Bearer valid-token" },
-      body: { ping: true },
+      body: JSON.stringify({ ping: true }),
     });
 
     const fetchArgs = ((globalThis as any).fetch as ReturnType<typeof jest.fn>).mock.calls[0];

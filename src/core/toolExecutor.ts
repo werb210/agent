@@ -1,29 +1,30 @@
-function getAgentAuthToken(): string {
-  const token = process.env.AGENT_API_TOKEN;
-  if (!token) {
-    throw new Error("MISSING_AUTH");
-  }
-  return token;
-}
+import { apiFetch } from "../utils/apiClient";
 
-export async function createLead(data: any) {
-  const token = getAgentAuthToken();
-
-  return {
-    status: "ok",
-    data,
-    tokenUsed: token,
-  };
-}
-
-export async function executeTool(operationOrCall: string | { name?: string; arguments?: any }, payload?: any) {
+export async function executeTool(
+  operationOrCall: string | { name?: string; arguments?: any },
+  payload?: any
+) {
   try {
-    const operation = typeof operationOrCall === "string" ? operationOrCall : String(operationOrCall?.name || "");
-    const input = typeof operationOrCall === "string" ? payload : operationOrCall?.arguments;
+    const operation = typeof operationOrCall === "string"
+      ? operationOrCall
+      : String(operationOrCall?.name || "");
+    const input = typeof operationOrCall === "string"
+      ? payload
+      : operationOrCall?.arguments;
 
     switch (operation) {
-      case "createLead":
-        return await createLead(input);
+      case "createLead": {
+        const res = await apiFetch("/api/v1/leads", {
+          method: "POST",
+          body: JSON.stringify(input),
+        });
+
+        return {
+          status: "ok",
+          data: res,
+        };
+      }
+
       default:
         throw new Error("UNKNOWN_OPERATION");
     }

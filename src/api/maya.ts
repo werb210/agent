@@ -1,10 +1,10 @@
 import { endpoints } from "../contracts/endpoints";
-import { api } from "../lib/api";
+import { apiFetch } from "../utils/apiClient";
 
 export async function callMaya(path: string, payload?: any) {
-  const result = await api(path, {
+  const result = await apiFetch(path, {
     method: payload ? "POST" : "GET",
-    ...(payload ? { body: payload } : {}),
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
 
   if (!result || typeof result !== "object") {
@@ -20,10 +20,10 @@ export async function sendMessage(message: string, authToken: string): Promise<u
     throw new Error("Missing auth token");
   }
 
-  const response = await api(endpoints.sendMessage, {
+  const response = await apiFetch(endpoints.sendMessage, {
     method: "POST",
     headers: { Authorization: `Bearer ${authToken}` },
-    body: { message },
+    body: JSON.stringify({ message }),
   });
 
   if (!response || typeof response !== "object") {
