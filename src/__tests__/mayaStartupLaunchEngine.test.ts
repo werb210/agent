@@ -1,35 +1,36 @@
+import { vi } from "vitest";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
 import { pool } from "../db";
 import { sendStartupNotification } from "../services/mayaStartupNotificationService";
 import { launchStartupCampaign } from "../services/mayaStartupCampaignService";
 import { logAudit } from "../infrastructure/mayaAudit";
 
-jest.mock("../db", () => ({
+vi.mock("../db", () => ({
   pool: {
-    query: jest.fn(),
-    request: jest.fn()
+    query: vi.fn(),
+    request: vi.fn()
   }
 }));
 
-jest.mock("../services/mayaStartupNotificationService", () => ({
-  sendStartupNotification: jest.fn()
+vi.mock("../services/mayaStartupNotificationService", () => ({
+  sendStartupNotification: vi.fn()
 }));
 
-jest.mock("../services/mayaStartupCampaignService", () => ({
-  launchStartupCampaign: jest.fn()
+vi.mock("../services/mayaStartupCampaignService", () => ({
+  launchStartupCampaign: vi.fn()
 }));
 
-jest.mock("../infrastructure/mayaAudit", () => ({
-  logAudit: jest.fn()
+vi.mock("../infrastructure/mayaAudit", () => ({
+  logAudit: vi.fn()
 }));
 
 describe("checkStartupProductLaunch", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("does nothing when startup product is not active", async () => {
-    (pool.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+    (pool.query as vi.Mock).mockResolvedValueOnce({ rows: [] });
 
     await checkStartupProductLaunch();
 
@@ -39,7 +40,7 @@ describe("checkStartupProductLaunch", () => {
   });
 
   it("notifies waiting contacts, launches campaign, and records logs", async () => {
-    (pool.query as jest.Mock)
+    (pool.query as vi.Mock)
       .mockResolvedValueOnce({ rows: [{ id: "product-1" }] })
       .mockResolvedValueOnce({
         rows: [
@@ -52,9 +53,9 @@ describe("checkStartupProductLaunch", () => {
     await checkStartupProductLaunch();
 
     expect(sendStartupNotification).toHaveBeenCalledTimes(2);
-    expect((pool.request as jest.Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
+    expect((pool.request as vi.Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
     expect(launchStartupCampaign).toHaveBeenCalledTimes(1);
-    expect((pool.request as jest.Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
+    expect((pool.request as vi.Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
     expect(logAudit).toHaveBeenCalledWith("maya", "startup_product_launch", {
       product_id: "product-1",
       notified: 2

@@ -1,11 +1,12 @@
+import { vi } from "vitest";
 import { runAgent } from "../agents/runAgent";
 import { execute } from "../ai/toolExecutor";
 
-jest.mock("../ai/toolExecutor", () => ({
-  execute: jest.fn()
+vi.mock("../ai/toolExecutor", () => ({
+  execute: vi.fn()
 }));
 
-const executeMock = execute as jest.MockedFunction<typeof execute>;
+const executeMock = execute as vi.MockedFunction<typeof execute>;
 
 describe("runAgent execution contract", () => {
   beforeEach(() => {

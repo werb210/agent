@@ -1,12 +1,13 @@
-jest.mock("../core/mayaProductIntelligence", () => ({
-  getAvailableProductCategories: jest.fn(),
+import { vi } from "vitest";
+vi.mock("../core/mayaProductIntelligence", () => ({
+  getAvailableProductCategories: vi.fn(),
 }));
 
 import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import * as productModule from "../core/mayaProductIntelligence";
 
 const mockedGetAvailableProductCategories =
-  productModule.getAvailableProductCategories as jest.MockedFunction<
+  productModule.getAvailableProductCategories as vi.MockedFunction<
     typeof productModule.getAvailableProductCategories
   >;
 

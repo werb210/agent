@@ -1,9 +1,10 @@
-jest.mock("../services/staffAvailability", () => ({
-  getAvailableStaff: jest.fn()
+import { vi } from "vitest";
+vi.mock("../services/staffAvailability", () => ({
+  getAvailableStaff: vi.fn()
 }));
 
-jest.mock("../services/mayaSettingsService", () => ({
-  getMayaSettings: jest.fn()
+vi.mock("../services/mayaSettingsService", () => ({
+  getMayaSettings: vi.fn()
 }));
 
 import { evaluateEscalation } from "../services/escalationEngine";
@@ -11,10 +12,10 @@ import * as staffModule from "../services/staffAvailability";
 import * as settingsModule from "../services/mayaSettingsService";
 
 const mockedGetAvailableStaff =
-  staffModule.getAvailableStaff as jest.Mock;
+  staffModule.getAvailableStaff as vi.Mock;
 
 const mockedGetMayaSettings =
-  settingsModule.getMayaSettings as jest.Mock;
+  settingsModule.getMayaSettings as vi.Mock;
 
 describe("evaluateEscalation", () => {
   beforeEach(() => {

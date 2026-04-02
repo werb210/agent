@@ -1,16 +1,20 @@
-jest.mock("../db", () => ({
+import { vi } from "vitest";
+
+vi.mock("../db", () => ({
   pool: {
-    request: jest
-      .fn()
-      .mockResolvedValueOnce({ rows: [{ avg_prob: "0.65" }] })
-      .mockResolvedValueOnce({ rows: [{ avg_prob: "0.55" }] }),
-    query: jest.fn()
+    request: vi.fn().mockResolvedValue({ rows: [{ avg_prob: "0.65" }] }),
+    query: vi.fn()
   }
 }));
 
 import { detectMLDrift } from "../core/mlDriftMonitor";
+import { pool } from "../db";
 
 describe("ML Drift Monitor", () => {
+  beforeEach(() => {
+    (pool.request as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rows: [{ avg_prob: "0.65" }] });
+  });
+
   it("drift score should be numeric", async () => {
     const drift = await detectMLDrift();
     expect(typeof drift).toBe("number");

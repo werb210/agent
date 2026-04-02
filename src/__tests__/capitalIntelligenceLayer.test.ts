@@ -1,17 +1,22 @@
-const queryMock = jest.fn();
+import { vi } from "vitest";
 
-jest.mock("../db", () => ({
+const { queryMock } = vi.hoisted(() => ({
+  queryMock: vi.fn(),
+}));
+
+vi.mock("../db", () => ({
   pool: {
     request: queryMock,
     query: queryMock
   }
 }));
 
-jest.mock("../core/mlClient", () => ({
-  getMLApprovalProbability: jest.fn().mockResolvedValue(0.95)
+vi.mock("../core/mlClient", () => ({
+  getMLApprovalProbability: vi.fn().mockResolvedValue(0.95)
 }));
 
 import { calculateFundingProbability } from "../core/probabilityEngine";
+import * as mlClient from "../core/mlClient";
 import { calculateDealLTV } from "../core/ltvEngine";
 import { generateRiskHeatmap } from "../core/portfolioRisk";
 import { routeDeal } from "../core/autoRouting";
@@ -22,6 +27,7 @@ import { forecast90Days } from "../core/capitalForecast";
 describe("capital intelligence layer", () => {
   beforeEach(() => {
     queryMock.mockReset();
+    (mlClient.getMLApprovalProbability as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(0.95);
   });
 
   it("calculates weighted funding probability", async () => {
