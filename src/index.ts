@@ -23,7 +23,7 @@ process.on("unhandledRejection", (err) => {
     callId: "runtime",
     operation: "unhandledRejection",
     status: "error",
-    err: err instanceof Error ? err.message : String(err)
+    err: err instanceof Error ? err.message : String(err),
   });
   process.exit(1);
 });
@@ -34,7 +34,7 @@ process.on("uncaughtException", (err) => {
     callId: "runtime",
     operation: "uncaughtException",
     status: "error",
-    err: err.message
+    err: err.message,
   });
   process.exit(1);
 });
@@ -52,7 +52,6 @@ export async function start() {
   if (started) throw new Error("DOUBLE_START");
   started = true;
 
-  await waitForReady();
   await checkHealth();
   log({ callId: "runtime", operation: "startup", status: "ok" });
 }
@@ -60,4 +59,18 @@ export async function start() {
 export async function initMaya() {
   registerListeners();
   return start();
+}
+
+async function bootstrap() {
+  await waitForReady();
+
+  // existing startup logic below
+  await initMaya();
+}
+
+if (process.env.NODE_ENV !== "test") {
+  bootstrap().catch((err) => {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  });
 }

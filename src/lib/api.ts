@@ -1,24 +1,13 @@
 import { env } from "../config/env";
 
-type ApiResponse<T> = {
-  status: "ok" | "error" | "not_ready";
-  data?: T;
-  error?: string;
-  rid?: string;
-};
-
-function getToken(): string | null {
-  return process.env.JWT_TOKEN || null;
-}
-
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = getToken();
-
+export async function apiFetch(path: string, options: any = {}) {
   const res = await fetch(`${env.API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(env.JWT_TOKEN
+        ? { Authorization: `Bearer ${env.JWT_TOKEN}` }
+        : {}),
       ...(options.headers || {}),
     },
   });
@@ -37,6 +26,13 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
   return res;
 }
+
+type ApiResponse<T> = {
+  status: "ok" | "error" | "not_ready";
+  data?: T;
+  error?: string;
+  rid?: string;
+};
 
 export async function api<T = unknown>(
   path: string,
