@@ -1,16 +1,15 @@
+import { vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { generateCreditSummary } from "../services/creditSummary";
+import * as realClient from "../brain/openaiClient";
+import * as mayaResilience from "../infrastructure/mayaResilience";
 
-jest.mock("../infrastructure/mayaResilience", () => ({
-  resilientLLM: jest.fn()
+vi.mock("../infrastructure/mayaResilience", () => ({
+  resilientLLM: vi.fn()
 }));
 
-const { resilientLLM } = jest.requireMock("../infrastructure/mayaResilience") as {
-  resilientLLM: jest.Mock;
-};
-
-const realClient = jest.requireActual("../brain/openaiClient");
+const resilientLLM = mayaResilience.resilientLLM as vi.Mock;
 
 describe("Maya V1 production hardening", () => {
   beforeEach(() => {

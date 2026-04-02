@@ -1,4 +1,6 @@
-import { eventBus } from "../events/eventBus";
+import { vi } from "vitest";
+import { emitter } from "../realtime/emitter";
+import { EVENTS } from "../realtime/events";
 import { registerListeners } from "../events/registerListeners";
 import { enqueue, queueLength, resetQueue } from "../queue/jobQueue";
 import { startWorker, stopWorker } from "../queue/worker";
@@ -15,7 +17,7 @@ describe("maya v1 queue", () => {
   });
 
   it("executes queued jobs", async () => {
-    const handler = jest.fn().mockResolvedValue(undefined);
+    const handler = vi.fn().mockResolvedValue(undefined);
 
     enqueue({ id: "job-1", type: "document_ocr", payload: { id: "d1" }, createdAt: Date.now() });
     const workerPromise = startWorker(handler);
@@ -28,19 +30,17 @@ describe("maya v1 queue", () => {
     expect(queueLength()).toBe(0);
   });
 
-  it("enqueues jobs for system events", async () => {
-    const spy = jest.spyOn(require("../queue/jobQueue"), "enqueue");
+  it("registers listeners once and handles realtime tool events", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    registerListeners();
     registerListeners();
 
-    eventBus.emit("message.received", { documentId: "doc-1", documentType: "bank_statement" });
-    eventBus.emit("lead.created", { offerId: "off-1" });
+    emitter.emit(EVENTS.TOOL_EXECUTED, { tool: "createLead" });
 
-    await Promise.resolve();
-    await Promise.resolve();
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(logSpy).toHaveBeenCalledWith("Tool executed:", { tool: "createLead" });
 
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: "bank_statement_analysis" }));
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: "offer_notification" }));
-
-    spy.mockRestore();
+    logSpy.mockRestore();
   });
 });

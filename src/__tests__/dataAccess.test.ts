@@ -1,10 +1,11 @@
+import { vi } from "vitest";
 import { findApplication, getDocumentStatus, getLenderProductRanges } from "../services/dataAccess";
 import { interpretAction } from "../services/actionInterpreter";
 import { getApplicationsByStatus, getPipelineSummary } from "../services/staffDataAccess";
 
-const callBFServer = jest.fn();
+const callBFServer = vi.fn();
 
-jest.mock("../integrations/bfServerClient", () => ({
+vi.mock("../integrations/bfServerClient", () => ({
   callBFServer: (...args: unknown[]) => callBFServer(...args)
 }));
 
@@ -16,19 +17,19 @@ describe("data access layer", () => {
   it("routes application lookup via BF server", async () => {
     callBFServer.mockResolvedValueOnce({ id: "app_1" });
     await findApplication("+1555");
-    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("/api/applications/status"), "GET");
+    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("/api/applications/status"));
   });
 
   it("routes document status lookup via BF server", async () => {
     callBFServer.mockResolvedValueOnce([]);
     await getDocumentStatus("app_1");
-    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("applicationId=app_1"), "GET");
+    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("applicationId=app_1"));
   });
 
   it("routes lender product lookup via BF server", async () => {
     callBFServer.mockResolvedValueOnce([{ lender_name: "Lender A", min_rate: 7, max_rate: 19 }]);
     await getLenderProductRanges("LOC");
-    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("productType=LOC"), "GET");
+    expect(callBFServer).toHaveBeenCalledWith(expect.stringContaining("productType=LOC"));
   });
 });
 

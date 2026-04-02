@@ -1,13 +1,14 @@
-jest.mock("../services/bookingEngine", () => ({
-  handleBooking: jest.fn()
+import { vi } from "vitest";
+vi.mock("../services/bookingEngine", () => ({
+  handleBooking: vi.fn()
 }));
 
-jest.mock("../services/mayaSettingsService", () => ({
-  getMayaSettings: jest.fn()
+vi.mock("../services/mayaSettingsService", () => ({
+  getMayaSettings: vi.fn()
 }));
 
-jest.mock("../services/outboundIntelligence", () => ({
-  triggerOutboundCall: jest.fn()
+vi.mock("../services/outboundIntelligence", () => ({
+  triggerOutboundCall: vi.fn()
 }));
 
 import { executeAction } from "../services/actionExecutor";
@@ -15,11 +16,11 @@ import * as bookingModule from "../services/bookingEngine";
 import * as settingsModule from "../services/mayaSettingsService";
 import * as outboundModule from "../services/outboundIntelligence";
 
-const mockedHandleBooking = bookingModule.handleBooking as jest.Mock;
+const mockedHandleBooking = bookingModule.handleBooking as vi.Mock;
 
-const mockedGetMayaSettings = settingsModule.getMayaSettings as jest.Mock;
+const mockedGetMayaSettings = settingsModule.getMayaSettings as vi.Mock;
 
-const mockedTriggerOutboundCall = outboundModule.triggerOutboundCall as jest.Mock;
+const mockedTriggerOutboundCall = outboundModule.triggerOutboundCall as vi.Mock;
 
 describe("executeAction governance", () => {
   beforeEach(() => {

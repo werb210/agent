@@ -5,18 +5,21 @@ const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]),
 });
 
-let cached: z.infer<typeof schema> | null = null;
+let cachedEnv: z.infer<typeof schema> | null = null;
+
+export function resetEnv() {
+  cachedEnv = null;
+}
 
 export function getEnv() {
-  if (!cached) {
-    const isTest = process.env.NODE_ENV === "test";
-
-    cached = schema.parse({
-      API_URL:
-        process.env.API_URL || (isTest ? "http://localhost:3000" : undefined),
+  if (!cachedEnv) {
+    cachedEnv = schema.parse({
       NODE_ENV: process.env.NODE_ENV || "development",
+      API_URL:
+        process.env.API_URL ||
+        (process.env.NODE_ENV === "test" ? "http://localhost:3000" : undefined),
     });
   }
 
-  return cached;
+  return cachedEnv;
 }

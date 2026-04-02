@@ -1,14 +1,19 @@
+import { vi } from "vitest";
 import { runMayaCore } from "../services/mayaCore";
+import * as openAiClient from "../brain/openaiClient";
 
-jest.mock("../brain/openaiClient");
+vi.mock("../brain/openaiClient", () => ({
+  runAI: vi.fn(),
+}));
+
+const runAI = openAiClient.runAI as unknown as ReturnType<typeof vi.fn>;
 
 describe("runMayaCore", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("injects stage into the system prompt", async () => {
-    const { runAI } = require("../brain/openaiClient");
     runAI.mockResolvedValue("Reply");
 
     await runMayaCore("hello", "qualifying", "client", []);
@@ -22,7 +27,6 @@ describe("runMayaCore", () => {
   });
 
   it("uses deterministic system prompt for client mode", async () => {
-    const { runAI } = require("../brain/openaiClient");
     runAI.mockResolvedValue("Reply");
 
     await runMayaCore("what products do you have", "new", "client", []);
@@ -36,7 +40,6 @@ describe("runMayaCore", () => {
   });
 
   it("returns fallback when AI returns null", async () => {
-    const { runAI } = require("../brain/openaiClient");
     runAI.mockResolvedValue(null);
 
     const reply = await runMayaCore("hello", "new", "client", []);
@@ -45,7 +48,6 @@ describe("runMayaCore", () => {
   });
 
   it("uses staff system prompt in staff mode", async () => {
-    const { runAI } = require("../brain/openaiClient");
     runAI.mockResolvedValue("Reply");
 
     await runMayaCore("give me summary", "qualifying", "staff", []);

@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, vi } from "vitest";
+import { beforeEach, vi } from "vitest";
 
-process.env.NODE_ENV = "test";
-process.env.API_URL = "http://localhost:3000";
+import { resetEnv } from "../config/env";
+
+(globalThis as any).jest = vi;
 
 class MemoryStorage {
   private readonly map = new Map<string, string>();
@@ -29,15 +30,23 @@ class MemoryStorage {
   addEventListener: vi.fn(),
 };
 
-beforeEach(() => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => ({
-      json: async () => ({ status: "ok", data: [] }),
-    }))
-  );
+global.fetch = vi.fn(async () => {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      status: "ok",
+      data: {},
+      approval_probability: 0.5,
+    }),
+  } as any;
 });
 
-afterEach(() => {
+beforeEach(() => {
+  resetEnv();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
+  vi.stubEnv("NODE_ENV", "test");
+  vi.stubEnv("API_URL", "http://localhost:3000");
 });
