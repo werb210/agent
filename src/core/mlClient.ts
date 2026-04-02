@@ -14,7 +14,7 @@ const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 export const mlBreaker = new CircuitBreaker({
   timeout: 3000,
-  failureThreshold: 3,
+  failureThreshold: 5,
   resetTimeout: 10000
 });
 
@@ -29,13 +29,19 @@ export async function getMLApprovalProbability(payload: any, role: string = "sys
   try {
     return await mlBreaker.execute(async () => {
       const start = Date.now();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
       const response = await nativeFetch(`${ML_URL}/predict-nn`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Internal-Secret": process.env.ML_INTERNAL_SECRET ?? ""
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
 
       if (!response.ok) {
