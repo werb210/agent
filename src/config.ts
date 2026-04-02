@@ -1,5 +1,3 @@
-export const API_URL = process.env.API_URL;
+import { env } from "./config/env";
 
-if (!API_URL) {
-  throw new Error('MISSING_API_URL');
-}
+export const API_URL = env.API_URL;

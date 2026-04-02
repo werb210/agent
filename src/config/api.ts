@@ -1,3 +1,3 @@
-export const API_BASE_URL =
-  process.env.API_BASE_URL ||
-  "https://boreal-staff-server.azurewebsites.net";
+import { env } from "./env";
+
+export const API_BASE = `${env.API_URL}/api/v1`;

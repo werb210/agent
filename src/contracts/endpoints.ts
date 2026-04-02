@@ -1,6 +1,8 @@
+import { API_ROUTES } from "./api";
+
 export const endpoints = {
-  createLead: "/api/v1/leads",
-  startCall: "/api/v1/calls/start",
-  updateCallStatus: "/api/v1/calls/status",
-  sendMessage: "/api/v1/maya/message"
+  createLead: API_ROUTES.leads.create,
+  startCall: API_ROUTES.calls.start,
+  updateCallStatus: API_ROUTES.calls.status,
+  sendMessage: API_ROUTES.maya.message,
 } as const;

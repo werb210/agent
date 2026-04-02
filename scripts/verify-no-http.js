@@ -6,7 +6,7 @@ const patterns = [
   { name: 'express', regex: /\bexpress\b/ },
   { name: 'fastify', regex: /\bfastify\b/ },
   { name: 'PORT=', regex: /PORT=/ },
-  { name: 'http://localhost', regex: /http:\/\/localhost/ }
+  { name: 'localhost host', regex: /localhost/ }
 ];
 
 const files = execSync('rg --files src tests test package.json', { encoding: 'utf8' })

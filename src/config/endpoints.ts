@@ -1,7 +1,7 @@
-import { endpoints } from "../contracts/endpoints";
+import { API_ROUTES } from "../contracts/api";
 
 export const ENDPOINTS = {
-  dialerToken: "/dialer/token",
-  callStart: endpoints.startCall,
-  voiceStatus: endpoints.updateCallStatus,
-};
+  dialerToken: API_ROUTES.dialer.token,
+  callStart: API_ROUTES.calls.start,
+  voiceStatus: API_ROUTES.calls.status,
+} as const;
