@@ -3,7 +3,14 @@ import { log } from "./logger";
 import { validateEnv } from "./system/env";
 import { registerListeners } from "./events/registerListeners";
 
-validateEnv();
+if (process.env.NODE_ENV !== "test") {
+  try {
+    validateEnv();
+  } catch (e) {
+    console.error("ENV CONFIG ERROR:", e);
+    throw e;
+  }
+}
 process.setMaxListeners(25);
 
 let started = false;

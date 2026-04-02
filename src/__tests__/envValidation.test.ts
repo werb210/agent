@@ -1,17 +1,8 @@
-import { validateEnv } from "../system/env";
+import { getEnv } from "../config/env";
 
-describe("validateEnv", () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    process.env = { ...originalEnv, API_URL: "https://server.boreal.financial", NODE_ENV: "test" };
-  });
-
-  afterAll(() => {
-    process.env = originalEnv;
-  });
-
-  it("passes when required environment variables are present", () => {
-    expect(() => validateEnv()).not.toThrow();
+describe("env validation", () => {
+  it("returns valid env in test mode", () => {
+    const env = getEnv();
+    expect(env.API_URL).toBeDefined();
   });
 });

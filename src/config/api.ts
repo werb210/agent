@@ -1,5 +1,6 @@
 import { getEnv } from "./env";
 
-const env = getEnv();
-
-export const API_BASE = `${env.API_URL}/api/v1`;
+export function getApiBase() {
+  const { API_URL } = getEnv();
+  return `${API_URL}/api/v1`;
+}
