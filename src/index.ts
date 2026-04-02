@@ -1,5 +1,8 @@
 import { checkHealth, cleanupResources } from "./health";
 import { log } from "./logger";
+import { validateEnv } from "./system/env";
+
+validateEnv();
 
 let started = false;
 
