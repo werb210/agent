@@ -23,11 +23,11 @@ export function registerListeners(): void {
 
   listenersRegistered = true;
 
-  eventBus.on("application_created", (event) => {
+  eventBus.on("call.started", (event) => {
     queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
   });
 
-  eventBus.on("document_uploaded", (event) => {
+  eventBus.on("message.received", (event) => {
     const documentType = String(event?.documentType ?? "").toLowerCase();
     queueEventJob(
       documentType.includes("bank") ? "bank_statement_analysis" : "document_ocr",
@@ -36,19 +36,19 @@ export function registerListeners(): void {
     );
   });
 
-  eventBus.on("documents_complete", (event) => {
+  eventBus.on("call.ended", (event) => {
     queueEventJob("application_summary", String(event?.applicationId ?? event?.id ?? ""), event);
   });
 
-  eventBus.on("offer_created", (event) => {
+  eventBus.on("lead.created", (event) => {
     queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
   });
 
-  eventBus.on("offer_accepted", (event) => {
+  eventBus.on("tool.executed", (event) => {
     queueEventJob("offer_notification", String(event?.offerId ?? event?.id ?? ""), event);
   });
 
-  eventBus.on("message_received", (event) => {
+  eventBus.on("message.received", (event) => {
     queueEventJob("message_notification", String(event?.messageId ?? event?.id ?? ""), event);
   });
 }

@@ -32,8 +32,8 @@ describe("maya v1 queue", () => {
     const spy = jest.spyOn(require("../queue/jobQueue"), "enqueue");
     registerListeners();
 
-    eventBus.emit("document_uploaded", { documentId: "doc-1", documentType: "bank_statement" });
-    eventBus.emit("offer_created", { offerId: "off-1" });
+    eventBus.emit("message.received", { documentId: "doc-1", documentType: "bank_statement" });
+    eventBus.emit("lead.created", { offerId: "off-1" });
 
     await Promise.resolve();
     await Promise.resolve();
