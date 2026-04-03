@@ -35,35 +35,31 @@ export async function api(path: string, options: RequestInit = {}) {
  * Core API wrapper for agent (server-to-server)
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
+  const base = process.env.API_BASE_URL || ENV.API_BASE_URL;
+  const token = process.env.AGENT_TOKEN || process.env.API_TOKEN || ENV.API_TOKEN || "";
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
-    Authorization: `Bearer ${ENV.API_TOKEN}`,
   };
 
-  const res: Response = await fetch(`${ENV.API_BASE_URL}${path}`, {
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res: Response = await fetch(`${base}${path}`, {
     ...options,
-    credentials: options.credentials ?? "include",
     headers,
   });
 
-  let data: unknown;
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
-  }
+  const data = await res.json().catch(() => ({}));
 
-  const status = res.status ?? 200;
-  const ok = typeof res.ok === "boolean" ? res.ok : status >= 200 && status < 300;
-
-  if (!ok) {
-    throw (
-      data || {
-        status: "error",
-        error: { message: "request_failed" },
-      }
-    );
+  if (!res.ok) {
+    const message =
+      typeof data === "object" && data !== null && "error" in data
+        ? String((data as { error?: unknown }).error || "API error")
+        : "API error";
+    throw new Error(message);
   }
 
   return data;

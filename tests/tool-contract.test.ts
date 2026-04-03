@@ -21,7 +21,11 @@ describe("tool contract orchestration", () => {
         return { json: async () => ({ status: "ok", data: { recorded: true } }) } as Response;
       }
       if (path.endsWith(endpoints.sendMessage)) {
-        return { json: async () => ({ status: "ok", data: { reply: "ok" } }) } as Response;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true, data: { reply: "ok" } }),
+        } as Response;
       }
 
       return { status: 404, json: async () => ({ status: "error", error: "Not found" }) } as Response;
@@ -41,7 +45,7 @@ describe("tool contract orchestration", () => {
   });
 
   it("Maya message → valid response", async () => {
-    await expect(sendMessage("hello", "token")).resolves.toEqual({ reply: "ok" });
+    await expect(sendMessage("hello", "token")).resolves.toEqual("ok");
   });
 
   it("Invalid payload → rejected", async () => {
