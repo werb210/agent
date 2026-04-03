@@ -17,11 +17,23 @@ function requireEnv(name: string): string {
 export const ENV = {
   PORT: process.env.PORT || "8080",
 
-  API_BASE_URL: process.env.API_BASE_URL || "http://localhost:8080",
+  API_BASE_URL:
+    process.env.API_BASE_URL ||
+    process.env.AGENT_API_BASE_URL ||
+    "http://localhost:8080",
   API_TOKEN: requireEnv("AGENT_API_TOKEN"),
 
-  BASE_URL: process.env.BASE_URL || process.env.API_BASE_URL || "http://localhost:8080",
-  WS_URL: process.env.WS_URL || process.env.BASE_URL || process.env.API_BASE_URL || "http://localhost:8080",
+  BASE_URL:
+    process.env.BASE_URL ||
+    process.env.API_BASE_URL ||
+    process.env.AGENT_API_BASE_URL ||
+    "http://localhost:8080",
+  WS_URL:
+    process.env.WS_URL ||
+    process.env.BASE_URL ||
+    process.env.API_BASE_URL ||
+    process.env.AGENT_API_BASE_URL ||
+    "http://localhost:8080",
 
   TWILIO_ACCOUNT_SID: requireEnv("TWILIO_ACCOUNT_SID"),
   TWILIO_AUTH_TOKEN: requireEnv("TWILIO_AUTH_TOKEN"),
