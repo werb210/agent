@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import fs from "fs";
 import path from "path";
 import { generateCreditSummary } from "../services/creditSummary";
@@ -9,7 +9,7 @@ vi.mock("../infrastructure/mayaResilience", () => ({
   resilientLLM: vi.fn()
 }));
 
-const resilientLLM = mayaResilience.resilientLLM as vi.Mock;
+const resilientLLM = mayaResilience.resilientLLM as Mock;
 
 describe("Maya V1 production hardening", () => {
   beforeEach(() => {

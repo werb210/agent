@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type MockedFunction, type Mock } from "vitest";
 import { runAgent } from "../agents/runAgent";
 import { execute } from "../ai/toolExecutor";
 
@@ -6,7 +6,7 @@ vi.mock("../ai/toolExecutor", () => ({
   execute: vi.fn()
 }));
 
-const executeMock = execute as vi.MockedFunction<typeof execute>;
+const executeMock = execute as MockedFunction<typeof execute>;
 
 describe("runAgent execution contract", () => {
   beforeEach(() => {

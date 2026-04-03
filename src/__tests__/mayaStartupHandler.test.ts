@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type MockedFunction, type Mock } from "vitest";
 vi.mock("../core/mayaProductIntelligence", () => ({
   getAvailableProductCategories: vi.fn(),
 }));
@@ -7,7 +7,7 @@ import { handleStartupInquiry } from "../core/mayaStartupHandler";
 import * as productModule from "../core/mayaProductIntelligence";
 
 const mockedGetAvailableProductCategories =
-  productModule.getAvailableProductCategories as vi.MockedFunction<
+  productModule.getAvailableProductCategories as MockedFunction<
     typeof productModule.getAvailableProductCategories
   >;
 

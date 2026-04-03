@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 vi.mock("../services/staffAvailability", () => ({
   getAvailableStaff: vi.fn()
 }));
@@ -12,10 +12,10 @@ import * as staffModule from "../services/staffAvailability";
 import * as settingsModule from "../services/mayaSettingsService";
 
 const mockedGetAvailableStaff =
-  staffModule.getAvailableStaff as vi.Mock;
+  staffModule.getAvailableStaff as Mock;
 
 const mockedGetMayaSettings =
-  settingsModule.getMayaSettings as vi.Mock;
+  settingsModule.getMayaSettings as Mock;
 
 describe("evaluateEscalation", () => {
   beforeEach(() => {

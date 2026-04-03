@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 vi.mock("../services/bookingEngine", () => ({
   handleBooking: vi.fn()
 }));
@@ -16,11 +16,11 @@ import * as bookingModule from "../services/bookingEngine";
 import * as settingsModule from "../services/mayaSettingsService";
 import * as outboundModule from "../services/outboundIntelligence";
 
-const mockedHandleBooking = bookingModule.handleBooking as vi.Mock;
+const mockedHandleBooking = bookingModule.handleBooking as Mock;
 
-const mockedGetMayaSettings = settingsModule.getMayaSettings as vi.Mock;
+const mockedGetMayaSettings = settingsModule.getMayaSettings as Mock;
 
-const mockedTriggerOutboundCall = outboundModule.triggerOutboundCall as vi.Mock;
+const mockedTriggerOutboundCall = outboundModule.triggerOutboundCall as Mock;
 
 describe("executeAction governance", () => {
   beforeEach(() => {

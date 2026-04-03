@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import { allocateMarketingBudget } from "../core/capitalAllocator";
 import { optimizeCommission } from "../core/commissionOptimizer";
 import { calculateDealPriority } from "../core/dealPriorityEngine";
@@ -17,11 +17,11 @@ vi.mock("../db", () => ({
 
 describe("self-optimizing intelligence core", () => {
   beforeEach(() => {
-    (pool.request as vi.Mock).mockReset();
+    (pool.request as Mock).mockReset();
   });
 
   it("trains and upserts feature weights from funded records", async () => {
-    (pool.request as vi.Mock)
+    (pool.request as Mock)
       .mockResolvedValueOnce({
         rows: [
           { funded: true, funding_amount: 100000, annual_revenue: 500000, time_in_business: 5 },
@@ -43,7 +43,7 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("scores lender fit using learned feature weights", async () => {
-    (pool.request as vi.Mock).mockResolvedValueOnce({
+    (pool.request as Mock).mockResolvedValueOnce({
       rows: [
         { feature: "funding_amount", weight: 100000 },
         { feature: "annual_revenue", weight: 250000 },
@@ -61,7 +61,7 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("classifies deal priority and strategic action", async () => {
-    (pool.request as vi.Mock).mockResolvedValue({
+    (pool.request as Mock).mockResolvedValue({
       rows: [
         { feature: "funding_amount", weight: 100000 },
         { feature: "annual_revenue", weight: 250000 },
@@ -91,7 +91,7 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("optimizes commission based on funded ticket averages", async () => {
-    (pool.request as vi.Mock)
+    (pool.request as Mock)
       .mockResolvedValueOnce({ rows: [{ avg_ticket: 600000 }] })
       .mockResolvedValueOnce({ rows: [] });
 
@@ -118,7 +118,7 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("ranks expansion markets by funded success rate", async () => {
-    (pool.request as vi.Mock).mockResolvedValueOnce({
+    (pool.request as Mock).mockResolvedValueOnce({
       rows: [
         { industry: "retail", wins: "10", total: "20" },
         { industry: "healthcare", wins: "8", total: "10" }
