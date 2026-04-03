@@ -8,27 +8,27 @@ describe("tool contract orchestration", () => {
       const path = String(_url);
       const auth = (init.headers as Record<string, string>).Authorization;
       if (!auth) {
-        return { json: async () => ({ status: "error", error: "Missing auth token" }) } as Response;
+        return { ok: false, status: 401, json: async () => ({ status: "error", error: "Missing auth token" }) } as Response;
       }
 
       if (path.endsWith(endpoints.createLead)) {
-        return { json: async () => ({ status: "ok", data: { saved: true } }) } as Response;
+        return { ok: true, status: 200, json: async () => ({ status: "ok", data: { saved: true } }) } as Response;
       }
       if (path.endsWith(endpoints.startCall)) {
-        return { json: async () => ({ status: "ok", data: { started: true } }) } as Response;
+        return { ok: true, status: 200, json: async () => ({ status: "ok", data: { started: true } }) } as Response;
       }
       if (path.endsWith(endpoints.updateCallStatus)) {
-        return { json: async () => ({ status: "ok", data: { recorded: true } }) } as Response;
+        return { ok: true, status: 200, json: async () => ({ status: "ok", data: { recorded: true } }) } as Response;
       }
       if (path.endsWith(endpoints.sendMessage)) {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ success: true, data: { reply: "ok" } }),
+          json: async () => ({ status: "ok", data: { reply: "ok" } }),
         } as Response;
       }
 
-      return { status: 404, json: async () => ({ status: "error", error: "Not found" }) } as Response;
+      return { ok: false, status: 404, json: async () => ({ status: "error", error: "Not found" }) } as Response;
     });
   });
 
