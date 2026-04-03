@@ -5,7 +5,7 @@ describe("Runtime Health", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    jest.spyOn(pool, "query").mockResolvedValue({ rows: [{ ok: 1 }], rowCount: 1 });
+    vi.spyOn(pool, "query").mockResolvedValue({ rows: [{ ok: 1 }], rowCount: 1 });
     process.env = {
       ...originalEnv,
       OPENAI_API_KEY: "test-openai-key",

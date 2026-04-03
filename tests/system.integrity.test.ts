@@ -1,10 +1,10 @@
 import { runAgent } from "../src/agents/runAgent";
 import { withRetry } from "../src/lib/retry";
 
-jest.mock("../src/tools", () => ({
-  createLead: jest.fn().mockResolvedValue({ id: "123" }),
-  startCall: jest.fn().mockResolvedValue({ callId: "call-1" }),
-  updateCallStatus: jest.fn().mockResolvedValue({ updated: true })
+vi.mock("../src/tools", () => ({
+  createLead: vi.fn().mockResolvedValue({ id: "123" }),
+  startCall: vi.fn().mockResolvedValue({ callId: "call-1" }),
+  updateCallStatus: vi.fn().mockResolvedValue({ updated: true })
 }));
 
 describe("system integrity", () => {

@@ -1,7 +1,7 @@
 import { saveToken } from "../src/services/token";
 
-jest.mock("../src/brain/openaiClient", () => ({
-  runAI: jest.fn(),
+vi.mock("../src/brain/openaiClient", () => ({
+  runAI: vi.fn(),
 }));
 
 class MemoryStorage {
@@ -31,7 +31,7 @@ const storage = new MemoryStorage();
   location: {
     href: ""
   },
-  addEventListener: jest.fn()
+  addEventListener: vi.fn()
 };
 
 beforeAll(() => {

@@ -6,7 +6,7 @@ describe("v1 hardening primitives", () => {
   beforeEach(() => {
     clearLocks();
     clearProcessedIds();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("deduplicates webhook event ids", () => {

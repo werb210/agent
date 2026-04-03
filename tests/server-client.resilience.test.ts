@@ -2,7 +2,7 @@ import { apiFetch } from "../src/utils/apiClient";
 
 describe("server client resilience", () => {
   it("returns json data", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
+    (globalThis as any).fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({ ok: true }),
@@ -16,7 +16,7 @@ describe("server client resilience", () => {
     delete process.env.AGENT_API_TOKEN;
     process.env.JWT_TOKEN = "runtime-token";
 
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
+    (globalThis as any).fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({ ok: true }),
@@ -43,7 +43,7 @@ describe("server client resilience", () => {
   });
 
   it("throws on non-ok response", async () => {
-    (globalThis as any).fetch = jest.fn().mockResolvedValueOnce({
+    (globalThis as any).fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 503,
       text: async () => "service unavailable",

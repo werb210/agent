@@ -1,10 +1,10 @@
-const query = jest.fn().mockResolvedValue({
+const query = vi.fn().mockResolvedValue({
   rows: [],
   rowCount: 0,
 });
 
-const request = jest.fn(() => ({
-  input: jest.fn().mockReturnThis(),
+const request = vi.fn(() => ({
+  input: vi.fn().mockReturnThis(),
   query,
 }));
 

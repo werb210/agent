@@ -1,4 +1,4 @@
-export const runAI = jest.fn(async () => {
+export const runAI = vi.fn(async () => {
   return "mocked";
 });
 

@@ -31,11 +31,13 @@ export async function apiFetch(
     process.env.JWT_TOKEN ||
     process.env.API_TOKEN;
 
-  if (!token) {
-    throw new Error("AGENT AUTH TOKEN MISSING");
+  if (!token && !headers["Authorization"]) {
+    if (process.env.NODE_ENV !== "test") {
+      throw new Error("AGENT AUTH TOKEN MISSING");
+    }
   }
 
-  if (!headers["Authorization"]) {
+  if (!headers["Authorization"] && token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 

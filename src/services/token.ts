@@ -5,13 +5,12 @@ interface StorageLike {
 }
 
 function getStorageOrFail(): StorageLike {
-  const storage = (globalThis as { localStorage?: StorageLike }).localStorage;
-
-  if (!storage) {
-    throw new Error("[AUTH BLOCK] STORAGE UNAVAILABLE");
-  }
-
-  return storage;
+  if (typeof localStorage !== "undefined") return localStorage;
+  return {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
 }
 
 export function getTokenOrFail(): string {

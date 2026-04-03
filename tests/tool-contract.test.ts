@@ -4,7 +4,7 @@ import { endpoints } from "../src/contracts/endpoints";
 
 describe("tool contract orchestration", () => {
   beforeEach(() => {
-    (global as any).fetch = jest.fn(async (_url: string, init: RequestInit) => {
+    (global as any).fetch = vi.fn(async (_url: string, init: RequestInit) => {
       const path = String(_url);
       const auth = (init.headers as Record<string, string>).Authorization;
       if (!auth) {

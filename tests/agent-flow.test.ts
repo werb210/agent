@@ -2,9 +2,9 @@ import { assertApiResponse } from "../src/lib/assertApiResponse";
 import { vi } from "vitest";
 
 vi.mock("../src/tools", () => ({
-  createLead: jest.fn(),
-  startCall: jest.fn(),
-  updateCallStatus: jest.fn()
+  createLead: vi.fn(),
+  startCall: vi.fn(),
+  updateCallStatus: vi.fn()
 }));
 
 import * as toolsModule from "../src/tools";
@@ -14,7 +14,7 @@ describe("agent deterministic flow", () => {
   const originalToken = process.env.AGENT_API_TOKEN;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env.AGENT_API_TOKEN = "valid-token";
   });
 
