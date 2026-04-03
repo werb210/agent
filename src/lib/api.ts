@@ -10,19 +10,22 @@ export async function apiCall(path: string, options: RequestInit = {}) {
     Authorization: `Bearer ${ENV.API_TOKEN}`
   };
 
-  const res = await fetch(`${ENV.API_BASE_URL}${path}`, {
+  const res: any = await fetch(`${ENV.API_BASE_URL}${path}`, {
     ...options,
     headers
   });
 
   let data;
   try {
-    data = await res.json();
+    data = await res.json?.();
   } catch {
     data = null;
   }
 
-  if (!res.ok) {
+  const status = res?.status ?? 200;
+  const ok = typeof res?.ok === "boolean" ? res.ok : status >= 200 && status < 300;
+
+  if (!ok) {
     throw (
       data || {
         status: "error",

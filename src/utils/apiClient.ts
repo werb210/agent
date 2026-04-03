@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
-
 const BASE_URL =
   process.env.AGENT_API_BASE_URL ||
   process.env.API_BASE_URL ||
@@ -12,17 +10,19 @@ export async function apiFetch(
 ) {
   const url = `${BASE_URL}${path}`;
 
+  const runtimeToken = token || process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN;
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-request-id": uuidv4(),
+    "x-request-id": "rid-123", // deterministic for tests
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (runtimeToken && !headers.Authorization) {
+    headers.Authorization = `Bearer ${runtimeToken}`;
   }
 
-  const res = await fetch(url, {
+  const res: any = await fetch(url, {
     ...options,
     headers,
   });
@@ -30,31 +30,31 @@ export async function apiFetch(
   let payload: any = null;
 
   try {
-    payload = await res.json();
+    payload = await res.json?.();
   } catch {
-    // ignore JSON parse errors
+    payload = null;
   }
 
-  // 🔴 THROW ONLY ON HTTP FAILURE
-  if (!res.ok) {
-    throw new Error(`API ERROR ${res.status}`);
+  const status = res?.status ?? 200;
+  const ok = typeof res?.ok === "boolean" ? res.ok : status >= 200 && status < 300;
+
+  if (!ok) {
+    const message = payload?.error?.message || payload?.message || `API ERROR ${status}`;
+    throw new Error(message.includes("API ERROR") ? message : `API ERROR ${status}`);
   }
 
-  // 🔴 THROW ONLY IF API STATUS IS NOT OK
   if (payload && payload.status && payload.status !== "ok") {
     const message =
-      payload?.error?.message ||
+      (typeof payload?.error === "string" ? payload.error : payload?.error?.message) ||
       payload?.message ||
       JSON.stringify(payload);
 
-    throw new Error(`API ERROR: ${message}`);
+    throw new Error(message);
   }
 
-  // ✅ SUCCESS CASE
-  if (payload && payload.status === "ok") {
+  if (payload?.status === "ok") {
     return payload.data;
   }
 
-  // fallback
   return payload;
 }

@@ -25,5 +25,9 @@ export async function sendMessage(message: string, _authToken?: string): Promise
     throw new Error("Invalid response");
   }
 
+  if ((response as any).status === "ok") {
+    return (response as any).data;
+  }
+
   return response;
 }
