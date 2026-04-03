@@ -43,6 +43,7 @@ export async function apiCall(path: string, options: RequestInit = {}) {
 
   const res: Response = await fetch(`${ENV.API_BASE_URL}${path}`, {
     ...options,
+    credentials: options.credentials ?? "include",
     headers,
   });
 

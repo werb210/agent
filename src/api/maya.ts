@@ -1,6 +1,8 @@
 import { endpoints } from "../lib/endpoints";
 import { apiCall } from "../lib/api";
 
+export const mayaEnabled = true;
+
 export async function callMaya(path: string, payload?: any) {
   const result = await apiCall(path, {
     method: payload ? "POST" : "GET",
@@ -15,19 +17,67 @@ export async function callMaya(path: string, payload?: any) {
   return result;
 }
 
-export async function sendMessage(message: string, _authToken?: string): Promise<unknown> {
-  const response = await apiCall(endpoints.mayaMessage, {
-    method: "POST",
-    body: JSON.stringify({ message }),
-  });
+function showFallbackMessage() {
+  return "Sorry, something went wrong. Please try again.";
+}
 
-  if (!response || typeof response !== "object") {
-    throw new Error("Invalid response");
+async function handleActions(actions: unknown) {
+  if (!Array.isArray(actions)) {
+    return;
   }
 
-  if ((response as any).status === "ok") {
-    return (response as any).data;
-  }
+  for (const action of actions) {
+    if (!action || typeof action !== "object" || !("type" in action)) {
+      continue;
+    }
 
-  return response;
+    if ((action as { type?: string }).type === "start_call") {
+      const payload = "payload" in action ? (action as { payload?: unknown }).payload : {};
+      await apiCall("/api/v1/call/start", {
+        method: "POST",
+        body: JSON.stringify(payload ?? {}),
+      });
+    }
+  }
+}
+
+export async function sendMessage(userInput: string, _authToken?: string): Promise<string> {
+  try {
+    const response = await apiCall(endpoints.mayaMessage, {
+      method: "POST",
+      body: JSON.stringify({
+        message: userInput,
+        context: {
+          source: "website",
+          timestamp: Date.now(),
+        },
+      }),
+    });
+
+    if (!response || typeof response !== "object") {
+      return showFallbackMessage();
+    }
+
+    if (!("success" in response) || !("data" in response)) {
+      return showFallbackMessage();
+    }
+
+    const envelope = response as {
+      success?: unknown;
+      data?: {
+        reply?: unknown;
+        actions?: unknown;
+      };
+    };
+
+    if (envelope.success !== true || !envelope.data || typeof envelope.data.reply !== "string") {
+      return showFallbackMessage();
+    }
+
+    await handleActions(envelope.data.actions);
+
+    return envelope.data.reply;
+  } catch {
+    return showFallbackMessage();
+  }
 }

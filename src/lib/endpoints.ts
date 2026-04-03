@@ -3,5 +3,5 @@ export const endpoints = {
   otpVerify: "/api/auth/otp/verify",
   voiceToken: "/api/voice/token",
   callStart: "/api/call/start",
-  mayaMessage: "/api/maya/message"
+  mayaMessage: "/api/v1/maya/message",
 } as const;
