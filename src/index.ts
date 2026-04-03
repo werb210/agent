@@ -1,18 +1,39 @@
-import express from "express";
-import http from "http";
-import voiceRouter from "./routes/voice";
-import { ENV } from "./config/env";
-import { createVoiceServer } from "./ws/voiceServer";
+import { execa } from "execa";
 
-const app = express();
+async function runCommand(cmd: string, args: string[]) {
+  try {
+    const subprocess = execa(cmd, args, {
+      stdio: "inherit",
+    });
 
-app.use(express.json());
-app.use("/voice", voiceRouter);
+    await subprocess;
+  } catch (err: any) {
+    console.error(`Command failed: ${cmd} ${args.join(" ")}`);
+    console.error(err.message);
+    process.exit(1);
+  }
+}
 
-const server = http.createServer(app);
+async function main() {
+  console.log("Agent starting...");
 
-createVoiceServer(server);
+  // enforce node version
+  const version = process.version;
+  if (!version.startsWith("v20")) {
+    console.error(`Invalid Node version: ${version}`);
+    process.exit(1);
+  }
 
-server.listen(Number(ENV.PORT), () => {
-  console.log(`Maya running on ${ENV.PORT}`);
-});
+  // install deps
+  await runCommand("npm", ["ci"]);
+
+  // build
+  await runCommand("npm", ["run", "build"]);
+
+  // run tests
+  await runCommand("npx", ["vitest", "run"]);
+
+  console.log("Agent completed successfully.");
+}
+
+main();
