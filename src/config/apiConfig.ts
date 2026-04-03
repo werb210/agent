@@ -1,7 +1,5 @@
-import { getApiBase } from "./api";
+import { API_BASE_URL } from "./api";
 
-export function getApiConfig() {
-  return {
-    baseUrl: getApiBase(),
-  } as const;
-}
+export const apiConfig = {
+  baseUrl: API_BASE_URL,
+};
