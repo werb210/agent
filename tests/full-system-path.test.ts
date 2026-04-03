@@ -3,7 +3,7 @@ import { endpoints } from "../src/contracts/endpoints";
 
 describe("full system path", () => {
   beforeEach(() => {
-    (global as any).fetch = jest.fn(async (url: string) => {
+    (global as any).fetch = vi.fn(async (url: string) => {
       const path = String(url);
 
       if (path.endsWith(endpoints.createLead)) {
@@ -33,7 +33,7 @@ describe("full system path", () => {
   });
 
   it("fails if lead creation layer breaks", async () => {
-    (global as any).fetch = jest.fn(async (url: string) => {
+    (global as any).fetch = vi.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
         return { json: async () => ({ status: "error", error: "lead failure" }) } as Response;
@@ -46,7 +46,7 @@ describe("full system path", () => {
   });
 
   it("fails if call start layer breaks", async () => {
-    (global as any).fetch = jest.fn(async (url: string) => {
+    (global as any).fetch = vi.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
         return { json: async () => ({ status: "ok", data: { id: "lead-1" } }) } as Response;
@@ -64,7 +64,7 @@ describe("full system path", () => {
   });
 
   it("fails if status update layer breaks", async () => {
-    (global as any).fetch = jest.fn(async (url: string) => {
+    (global as any).fetch = vi.fn(async (url: string) => {
       const path = String(url);
       if (path.endsWith(endpoints.createLead)) {
         return { json: async () => ({ status: "ok", data: { id: "lead-1" } }) } as Response;

@@ -26,7 +26,7 @@ describe("auth flow e2e", () => {
   it("API call returns payload", async () => {
     saveToken("valid-token");
     process.env.AGENT_API_TOKEN = "valid-token";
-    (globalThis as any).fetch = jest.fn(async () => ({
+    (globalThis as any).fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
       json: async () => ({ ok: true }),
@@ -39,7 +39,7 @@ describe("auth flow e2e", () => {
   it("request can include bearer token header", async () => {
     saveToken("valid-token");
     process.env.AGENT_API_TOKEN = "valid-token";
-    (globalThis as any).fetch = jest.fn(async () => ({
+    (globalThis as any).fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
       json: async () => ({ ok: true }),
@@ -52,7 +52,7 @@ describe("auth flow e2e", () => {
       body: JSON.stringify({ ping: true }),
     });
 
-    const fetchArgs = ((globalThis as any).fetch as ReturnType<typeof jest.fn>).mock.calls[0];
+    const fetchArgs = ((globalThis as any).fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(fetchArgs[1].headers.Authorization).toBe("Bearer valid-token");
     expect(fetchArgs[1].headers["Content-Type"]).toBe("application/json");
     expect(fetchArgs[1].body).toBe(JSON.stringify({ ping: true }));

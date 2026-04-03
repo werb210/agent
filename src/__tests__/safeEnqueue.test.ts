@@ -3,11 +3,11 @@ import { safeEnqueue } from "../queue/safeEnqueue";
 
 describe("safeEnqueue", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("retries until enqueue succeeds", async () => {
-    const enqueueSpy = jest.spyOn(queueModule, "enqueueJob")
+    const enqueueSpy = vi.spyOn(queueModule, "enqueueJob")
       .mockImplementationOnce(() => {
         throw new Error("temporary failure");
       })
@@ -29,7 +29,7 @@ describe("safeEnqueue", () => {
   });
 
   it("throws after max attempts are exhausted", async () => {
-    const enqueueSpy = jest.spyOn(queueModule, "enqueueJob").mockImplementation(() => {
+    const enqueueSpy = vi.spyOn(queueModule, "enqueueJob").mockImplementation(() => {
       throw new Error("persistent failure");
     });
 

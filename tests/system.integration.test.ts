@@ -6,7 +6,7 @@ describe("system integration", () => {
 
   beforeEach(() => {
     process.env.API_URL = "https://server.example.com";
-    (global as any).fetch = jest.fn(async (url: string) => {
+    (global as any).fetch = vi.fn(async (url: string) => {
       const path = String(url);
 
       if (path.endsWith(endpoints.createLead)) {

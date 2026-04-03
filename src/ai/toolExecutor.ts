@@ -95,6 +95,10 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
   try {
     validateTool(call.tool);
 
+    if (!process.env.AGENT_API_TOKEN) {
+      throw new Error("AGENT AUTH TOKEN MISSING");
+    }
+
     if (call.tool !== TOOL_REGISTRY.startCall && call.tool !== TOOL_REGISTRY.updateCallStatus) {
       const toolCall = validateToolCall({
         name: call.tool,
