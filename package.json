@@ -11,13 +11,29 @@
     "e2e": "tsx src/e2e.ts"
   },
   "dependencies": {
-    "execa": "^8.0.1"
+    "@azure/msal-node": "^5.1.2",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "bullmq": "^5.73.0",
+    "exceljs": "^4.4.0",
+    "execa": "^8.0.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "luxon": "^3.7.2",
+    "openai": "^6.33.0",
+    "pdfkit": "^0.18.0",
+    "pino": "^10.3.1",
+    "prom-client": "^15.1.3",
+    "readline-sync": "^1.4.10",
+    "tesseract.js": "^7.0.0",
+    "twilio": "^5.13.1",
+    "validator": "^13.15.35",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
+    "@types/node": "^20.19.39",
     "tsx": "^4.7.0",
-    "vitest": "^2.1.0",
-    "@types/node": "^20.11.0"
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20.10.0 <21.0.0"
