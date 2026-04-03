@@ -48,7 +48,7 @@ export async function sendMessage(userInput: string, _authToken?: string): Promi
       body: JSON.stringify({
         message: userInput,
         context: {
-          source: "website",
+          source: "agent",
           timestamp: Date.now(),
         },
       }),
@@ -75,9 +75,9 @@ export async function sendMessage(userInput: string, _authToken?: string): Promi
     }
 
     await handleActions(envelope.data.actions);
-
     return envelope.data.reply;
-  } catch {
+  } catch (err) {
+    console.error("Agent error:", err);
     return showFallbackMessage();
   }
 }

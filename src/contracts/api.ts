@@ -1,30 +1,30 @@
 export const API_ROUTES = {
   health: "/health",
   auth: {
-    otpStart: "/auth/otp/start",
-    otpVerify: "/auth/otp/verify",
+    otpStart: "/api/auth/otp/start",
+    otpVerify: "/api/auth/otp/verify",
   },
   application: {
-    create: "/applications",
-    upload: "/documents",
+    create: "/api/v1/applications",
+    upload: "/api/v1/documents",
   },
   leads: {
-    create: "/leads",
+    create: "/api/v1/crm/lead",
   },
   calls: {
-    start: "/calls/start",
-    status: "/calls/status",
+    start: "/api/v1/call/start",
+    status: "/api/v1/calls/status",
   },
   maya: {
-    message: "/maya/message",
+    message: "/api/v1/maya/message",
   },
   telephony: {
-    token: "/telephony/token",
+    token: "/api/v1/telephony/token",
   },
   dialer: {
-    token: "/dialer/token",
+    token: "/api/v1/dialer/token",
   },
   crm: {
-    deal: (id: string) => `/crm/deals/${id}`,
+    deal: (id: string) => `/api/v1/crm/deals/${id}`,
   },
 } as const;
