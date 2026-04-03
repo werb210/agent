@@ -3,8 +3,8 @@ import { apiCall } from "../lib/api";
 
 export const mayaEnabled = true;
 
-export async function callMaya(path: string, payload?: any) {
-  const result = await apiCall(path, {
+export async function callMaya(_path: string, payload?: any) {
+  const result = await apiCall("/api/v1/maya/message", {
     method: payload ? "POST" : "GET",
     ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
@@ -41,10 +41,11 @@ async function handleActions(actions: unknown) {
   }
 }
 
-export async function sendMessage(userInput: string, _authToken?: string): Promise<string> {
+export async function sendMessage(userInput: string, authToken?: string): Promise<string> {
   try {
     const response = await apiCall(endpoints.mayaMessage, {
       method: "POST",
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       body: JSON.stringify({
         message: userInput,
         context: {
@@ -58,24 +59,17 @@ export async function sendMessage(userInput: string, _authToken?: string): Promi
       return showFallbackMessage();
     }
 
-    if (!("success" in response) || !("data" in response)) {
-      return showFallbackMessage();
-    }
-
-    const envelope = response as {
-      success?: unknown;
-      data?: {
-        reply?: unknown;
-        actions?: unknown;
-      };
+    const mayaData = response as {
+      reply?: unknown;
+      actions?: unknown;
     };
 
-    if (envelope.success !== true || !envelope.data || typeof envelope.data.reply !== "string") {
+    if (typeof mayaData.reply !== "string") {
       return showFallbackMessage();
     }
 
-    await handleActions(envelope.data.actions);
-    return envelope.data.reply;
+    await handleActions(mayaData.actions);
+    return mayaData.reply;
   } catch (err) {
     console.error("Agent error:", err);
     return showFallbackMessage();

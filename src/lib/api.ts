@@ -36,7 +36,8 @@ export async function api(path: string, options: RequestInit = {}) {
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
   const base = process.env.API_BASE_URL || ENV.API_BASE_URL;
-  const token = process.env.AGENT_TOKEN || process.env.API_TOKEN || ENV.API_TOKEN || "";
+
+  const token = process.env.AGENT_TOKEN || "";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -44,23 +45,27 @@ export async function apiCall(path: string, options: RequestInit = {}) {
   };
 
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res: Response = await fetch(`${base}${path}`, {
+  const res = await fetch(`${base}${path}`, {
     ...options,
     headers,
   });
 
-  const data = await res.json().catch(() => ({}));
+  const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const message =
-      typeof data === "object" && data !== null && "error" in data
-        ? String((data as { error?: unknown }).error || "API error")
-        : "API error";
-    throw new Error(message);
+    throw new Error(
+      typeof json === "object" && json !== null && "error" in json
+        ? String((json as { error?: unknown }).error || "API error")
+        : "API error"
+    );
   }
 
-  return data;
+  if (json && typeof json === "object" && "data" in json) {
+    return (json as { data: unknown }).data;
+  }
+
+  return json;
 }
