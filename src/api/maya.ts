@@ -1,8 +1,8 @@
-import { endpoints } from "../contracts/endpoints";
-import { apiFetch } from "../utils/apiClient";
+import { endpoints } from "../lib/endpoints";
+import { apiCall } from "../lib/api";
 
 export async function callMaya(path: string, payload?: any) {
-  const result = await apiFetch(path, {
+  const result = await apiCall(path, {
     method: payload ? "POST" : "GET",
     ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
@@ -15,14 +15,9 @@ export async function callMaya(path: string, payload?: any) {
   return result;
 }
 
-export async function sendMessage(message: string, authToken: string): Promise<unknown> {
-  if (!authToken) {
-    throw new Error("Missing auth token");
-  }
-
-  const response = await apiFetch(endpoints.sendMessage, {
+export async function sendMessage(message: string, _authToken?: string): Promise<unknown> {
+  const response = await apiCall(endpoints.mayaMessage, {
     method: "POST",
-    headers: { Authorization: `Bearer ${authToken}` },
     body: JSON.stringify({ message }),
   });
 

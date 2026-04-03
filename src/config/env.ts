@@ -1,37 +1,44 @@
-const required = [
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_PHONE_NUMBER",
-  "OPENAI_API_KEY",
-  "BASE_URL"
-] as const;
-
-const isTest = process.env.NODE_ENV === "test";
-
-for (const key of required) {
-  if (!process.env[key]) {
-    if (isTest) {
-      process.env[key] = "test-placeholder";
-    } else {
-      throw new Error(`Missing required env: ${key}`);
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    if (process.env.NODE_ENV === "test") {
+      const placeholder = "test-placeholder";
+      process.env[name] = placeholder;
+      return placeholder;
     }
+    throw new Error(`Missing required env: ${name}`);
   }
+  return value;
 }
 
+/**
+ * Canonical config
+ */
 export const ENV = {
   PORT: process.env.PORT || "8080",
-  BASE_URL: process.env.BASE_URL!,
-  WS_URL: process.env.WS_URL || process.env.BASE_URL!,
 
-  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID!,
-  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN!,
-  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER!,
+  API_BASE_URL: process.env.API_BASE_URL || "http://localhost:8080",
+  API_TOKEN: requireEnv("AGENT_API_TOKEN"),
 
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY!
+  BASE_URL: process.env.BASE_URL || process.env.API_BASE_URL || "http://localhost:8080",
+  WS_URL: process.env.WS_URL || process.env.BASE_URL || process.env.API_BASE_URL || "http://localhost:8080",
+
+  TWILIO_ACCOUNT_SID: requireEnv("TWILIO_ACCOUNT_SID"),
+  TWILIO_AUTH_TOKEN: requireEnv("TWILIO_AUTH_TOKEN"),
+  TWILIO_PHONE_NUMBER: requireEnv("TWILIO_PHONE_NUMBER"),
+
+  OPENAI_API_KEY: requireEnv("OPENAI_API_KEY")
 };
 
+/**
+ * Startup validation
+ */
+if (!ENV.API_BASE_URL.startsWith("http")) {
+  throw new Error("Invalid API_BASE_URL");
+}
+
 export const env = {
-  API_URL: ENV.BASE_URL,
+  API_URL: ENV.API_BASE_URL,
   JWT_TOKEN: process.env.JWT_TOKEN
 };
 
