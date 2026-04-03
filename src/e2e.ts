@@ -1,4 +1,4 @@
-import { execa, ExecaChildProcess } from "execa";
+import { execa } from "execa";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -51,7 +51,7 @@ async function runChecks() {
   if (!appSubmit.ok) throw new Error("Application submit failed");
 }
 
-async function startServer(): Promise<ExecaChildProcess> {
+async function startServer(): Promise<any> {
   console.log("→ Starting BF-Server...");
 
   const server = execa("npm", ["run", "dev"], {
@@ -70,7 +70,7 @@ async function startServer(): Promise<ExecaChildProcess> {
 async function main() {
   console.log("=== E2E TEST START ===");
 
-  let server: ExecaChildProcess | null = null;
+  let server: any = null;
 
   try {
     server = await startServer();

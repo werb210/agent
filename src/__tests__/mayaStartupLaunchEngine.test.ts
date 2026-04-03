@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
 import { pool } from "../db";
 import { sendStartupNotification } from "../services/mayaStartupNotificationService";
@@ -30,7 +30,7 @@ describe("checkStartupProductLaunch", () => {
   });
 
   it("does nothing when startup product is not active", async () => {
-    (pool.query as vi.Mock).mockResolvedValueOnce({ rows: [] });
+    (pool.query as Mock).mockResolvedValueOnce({ rows: [] });
 
     await checkStartupProductLaunch();
 
@@ -40,7 +40,7 @@ describe("checkStartupProductLaunch", () => {
   });
 
   it("notifies waiting contacts, launches campaign, and records logs", async () => {
-    (pool.query as vi.Mock)
+    (pool.query as Mock)
       .mockResolvedValueOnce({ rows: [{ id: "product-1" }] })
       .mockResolvedValueOnce({
         rows: [
@@ -53,9 +53,9 @@ describe("checkStartupProductLaunch", () => {
     await checkStartupProductLaunch();
 
     expect(sendStartupNotification).toHaveBeenCalledTimes(2);
-    expect((pool.request as vi.Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
+    expect((pool.request as Mock).mock.calls.some((call) => String(call[0]).includes("UPDATE crm_contacts"))).toBe(true);
     expect(launchStartupCampaign).toHaveBeenCalledTimes(1);
-    expect((pool.request as vi.Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
+    expect((pool.request as Mock).mock.calls.some((call) => String(call[0]).includes("INSERT INTO maya_startup_launch_log"))).toBe(true);
     expect(logAudit).toHaveBeenCalledWith("maya", "startup_product_launch", {
       product_id: "product-1",
       notified: 2
