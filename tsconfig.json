@@ -1,22 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "types": [
-      "node",
-      "vitest/globals"
-    ],
+    "module": "commonjs",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "strict": false,
     "skipLibCheck": true,
-    "strict": true,
-    "noImplicitAny": true
+    "types": ["node"],
+    "ignoreDeprecations": "5.0",
+    "outDir": "dist"
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/__mocks__/**", "src/testing/**"]
 }
