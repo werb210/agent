@@ -35,39 +35,43 @@ export async function api(path: string, options: RequestInit = {}) {
  * Core API wrapper for agent (server-to-server)
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
-  const base = process.env.API_BASE_URL || ENV.API_BASE_URL;
-  if (!base) {
-    throw new Error("Missing API_BASE_URL");
-  }
+  const base = process.env.API_BASE_URL || process.env.API_URL || ENV.API_BASE_URL || "";
+  const url = /^https?:\/\//i.test(path) ? path : base ? `${base}${path}` : path;
 
-  const token = process.env.AGENT_API_TOKEN || "";
+  const token = process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN || "";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) || {}),
+    ...((options.headers as Record<string, string>) || {})
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${base}${path}`, {
+  const res = await fetch(url, {
     ...options,
-    headers,
+    headers
   });
 
   const json = await res.json().catch(() => ({}));
+  const ok = typeof res.ok === "boolean" ? res.ok : res.status >= 200 && res.status < 300;
 
-  if (!res.ok) {
-    throw new Error(
-      typeof json === "object" && json !== null && "error" in json
-        ? String((json as { error?: unknown }).error || "API error")
-        : "API error"
-    );
+  if (!ok) {
+    if (typeof json === "object" && json !== null && "error" in json) {
+      throw new Error(String((json as { error?: unknown }).error || `API ERROR ${res.status}`));
+    }
+    throw new Error(`API ERROR ${res.status}`);
   }
 
-  if (json && typeof json === "object" && "data" in json) {
-    return (json as { data: unknown }).data;
+  if (json && typeof json === "object") {
+    if ("status" in json && (json as { status?: unknown }).status === "error") {
+      throw new Error(String((json as { error?: unknown }).error || "API ERROR"));
+    }
+
+    if ("data" in json) {
+      return (json as { data: unknown }).data;
+    }
   }
 
   return json;
