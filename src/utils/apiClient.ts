@@ -1,60 +1,43 @@
-const BASE =
-  process.env.API_BASE_URL ||
-  process.env.AGENT_API_BASE_URL ||
-  'http://localhost:8080';
+const BASE_URL = process.env.API_BASE_URL;
 
 type ApiOptions = RequestInit & { headers?: Record<string, string> };
 
-export async function apiCall(path: string, options: ApiOptions = {}) {
-  const runtimeToken = process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN || '';
+export async function apiRequest(path: string, options: ApiOptions = {}) {
+  if (!BASE_URL) {
+    throw new Error('Missing API_BASE_URL');
+  }
 
-  const res = await fetch(`${BASE}${path}`, {
+  const token = process.env.AGENT_API_TOKEN;
+  const url = `${BASE_URL}${path}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${runtimeToken}`,
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
-  let text = 'Unknown error';
-  let json: unknown;
-
-  if (typeof res.json === 'function') {
-    try {
-      json = await res.json();
-      text = typeof json === 'string' ? json : JSON.stringify(json);
-    } catch {
-      json = undefined;
-    }
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
   }
 
-  if (!json && typeof res.text === 'function') {
-    text = await res.text();
-  }
-
-  const isOk =
-    typeof res.ok === 'boolean'
-      ? res.ok
-      : typeof res.status === 'number'
-        ? res.status >= 200 && res.status < 300
-        : true;
-
-  if (!isOk) {
-    throw new Error(`API ERROR ${res.status}`);
-  }
-
-  if (json && typeof json === 'object' && 'status' in json && (json as { status?: unknown }).status === 'error') {
-    const err = (json as { error?: unknown }).error;
-    throw new Error(typeof err === 'string' && err ? err : text);
-  }
-
-  if (json && typeof json === 'object' && 'data' in json) {
-    return (json as { data: unknown }).data;
-  }
-
-  return json;
+  return res.json();
 }
 
+export const apiCall = apiRequest;
 // Backward-compatible export used across the codebase.
-export const apiFetch = apiCall;
+export const apiFetch = apiRequest;
+
+export async function testConnection() {
+  if (!BASE_URL) {
+    throw new Error('Missing API_BASE_URL');
+  }
+
+  const res = await fetch(`${BASE_URL}/health`);
+  const body = await res.text();
+  console.log('API health:', body);
+  return body;
+}

@@ -4,7 +4,7 @@ const required = [
   'TWILIO_PHONE_NUMBER',
   'OPENAI_API_KEY',
   'BASE_URL',
-  'AGENT_API_TOKEN',
+  'API_BASE_URL',
 ];
 
 if (process.env.NODE_ENV !== 'test') {
@@ -13,15 +13,17 @@ if (process.env.NODE_ENV !== 'test') {
       throw new Error(`Missing required env var: ${key}`);
     }
   }
+
+  if (!process.env.AGENT_API_TOKEN) {
+    console.warn('AGENT_API_TOKEN not set — some features may fail');
+  }
 }
 
 export const ENV = {
   PORT: process.env.PORT || '8080',
   BASE_URL: process.env.BASE_URL || 'http://localhost:8080',
   API_BASE_URL:
-    process.env.API_BASE_URL ||
-    process.env.AGENT_API_BASE_URL ||
-    'http://localhost:8080',
+    process.env.API_BASE_URL || process.env.AGENT_API_BASE_URL || '',
   WS_URL:
     process.env.WS_URL ||
     process.env.BASE_URL ||
