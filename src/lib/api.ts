@@ -36,8 +36,11 @@ export async function api(path: string, options: RequestInit = {}) {
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
   const base = process.env.API_BASE_URL || ENV.API_BASE_URL;
+  if (!base) {
+    throw new Error("Missing API_BASE_URL");
+  }
 
-  const token = process.env.AGENT_TOKEN || "";
+  const token = process.env.AGENT_API_TOKEN || "";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
