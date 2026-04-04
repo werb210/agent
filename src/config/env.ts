@@ -15,7 +15,7 @@ if (process.env.NODE_ENV !== 'test') {
   }
 
   if (!process.env.AGENT_API_TOKEN) {
-    console.warn('AGENT_API_TOKEN not set — some features may fail');
+throw new Error("Missing AGENT_API_TOKEN");
   }
 }
 
