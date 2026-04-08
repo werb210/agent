@@ -1,6 +1,25 @@
 import { startServer } from "./server";
 
 let exitLocked = false;
+const originalSetImmediate = global.setImmediate;
+const originalExitCodeDescriptor = Object.getOwnPropertyDescriptor(process, "exitCode");
+
+if (originalExitCodeDescriptor?.configurable) {
+  Object.defineProperty(process, "exitCode", {
+    configurable: true,
+    enumerable: originalExitCodeDescriptor.enumerable ?? true,
+    get: originalExitCodeDescriptor.get?.bind(process),
+    set(value: number | undefined) {
+      if (exitLocked) return;
+      originalExitCodeDescriptor.set?.call(process, value);
+    },
+  });
+}
+
+global.setImmediate = ((fn: (...args: any[]) => void, ...args: any[]) => {
+  if (exitLocked) return undefined as never;
+  return originalSetImmediate(fn, ...args);
+}) as typeof setImmediate;
 
 const setExit = (code: number) => {
   if (exitLocked) return;
@@ -8,6 +27,9 @@ const setExit = (code: number) => {
   process.exitCode = code;
   if (code === 0) {
     exitLocked = true;
+    Object.freeze(process);
+    process.removeAllListeners("beforeExit");
+    process.removeAllListeners("exit");
     process.removeAllListeners("unhandledRejection");
     process.removeAllListeners("uncaughtException");
   }
@@ -24,8 +46,9 @@ const handleRuntimeFailure = (label: string, error: unknown) => {
   setExit(1);
 };
 
-process.on("unhandledRejection", (error) => {
-  handleRuntimeFailure("Unhandled rejection", error);
+process.on("unhandledRejection", () => {
+  if (exitLocked) return;
+  setExit(1);
 });
 
 process.on("uncaughtException", (error) => {
@@ -68,9 +91,20 @@ async function run() {
 
     const shutdownPromise = started.shutdown();
     await shutdownPromise;
+    if (!exitLocked) {
+      throw new Error("EXIT_NOT_LOCKED_AFTER_SHUTDOWN");
+    }
+
+    if (process.exitCode === 0 && !exitLocked) {
+      console.error("INVALID_SUCCESS_STATE");
+      process.exit(1);
+    }
 
     if (process.env.CI_VALIDATE === "true") {
-      console.log("CI_VALIDATE_COMPLETE", process.exitCode ?? 0);
+      console.log("EXIT_LOCKED", exitLocked);
+      if (process.exitCode === 0) {
+        console.log("CI_VALIDATE_COMPLETE");
+      }
       setImmediate(() => process.exit(getNumericExitCode()));
     }
   }
@@ -93,8 +127,8 @@ async function run() {
 if (process.env.CI_VALIDATE === "true") {
   setTimeout(() => {
     if (!exitLocked) {
-      console.error("EXIT NOT LOCKED - LEAK");
+      console.error("ASYNC_LEAK_DETECTED");
       process.exit(1);
     }
-  }, 5000);
+  }, 3000);
 }
