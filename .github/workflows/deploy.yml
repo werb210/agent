@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure commit is from PR merge
+        run: |
+          if ! git log -1 --pretty=%B | grep -q "Merge pull request"; then
+            echo "❌ Direct push to main detected"
+            exit 1
+          fi
+
+      - name: Verify dist exists
+        run: |
+          if [ ! -f dist/index.html ]; then
+            echo "❌ DIST_MISSING"
+            exit 1
+          fi
+
+      - name: Validate required env vars
+        run: |
+          required=("TWILIO_KEY" "OPENAI_API_KEY" "AGENT_API_TOKEN")
+          for var in "${required[@]}"; do
+            if [ -z "${!var}" ]; then
+              echo "❌ Missing env: $var"
+              exit 1
+            fi
+          done
+
+  deploy:
+    needs: guard
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://your-site.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        run: echo "🚀 Deploying..."
