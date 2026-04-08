@@ -28,10 +28,15 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Verify dist exists
+      - name: Verify build output
         run: |
-          if [ ! -f dist/index.html ]; then
-            echo "❌ DIST_MISSING"
+          if [ ! -d dist ]; then
+            echo "DIST_DIR_MISSING"
+            exit 1
+          fi
+
+          if [ ! -f dist/index.js ]; then
+            echo "ENTRYPOINT_MISSING"
             exit 1
           fi
 
