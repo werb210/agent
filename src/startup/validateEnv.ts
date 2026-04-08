@@ -23,6 +23,23 @@ const OPTIONAL_ENV_VARS = [
 ] as const;
 
 export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidationStatus {
+  if (env.NODE_ENV === "production") {
+    const required = [
+      "TWILIO_ACCOUNT_SID",
+      "TWILIO_AUTH_TOKEN",
+      "TWILIO_PHONE_NUMBER",
+      "OPENAI_API_KEY",
+      "AGENT_API_TOKEN",
+      "AGENT_SHARED_SECRET",
+    ] as const;
+
+    for (const key of required) {
+      if (!env[key]) {
+        throw new Error(`Missing required env: ${key}`);
+      }
+    }
+  }
+
   const missingRequired = REQUIRED_ENV_VARS.filter((key) => !env[key]);
   const missingOptional = OPTIONAL_ENV_VARS.filter((key) => !env[key]);
   const valid = missingRequired.length === 0;

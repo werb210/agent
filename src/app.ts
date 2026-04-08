@@ -12,6 +12,10 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean),
 );
 
+function checkTwilio(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER);
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -45,6 +49,9 @@ export function createApp(options: AppDeps = {}) {
   const envStatus = options.envStatus ?? validateEnv();
   const dependencies = options.deps ?? createDependencies();
   const app = express();
+  if (process.env.NODE_ENV === "production" && ALLOWED_ORIGINS.size === 0) {
+    throw new Error("CORS_ALLOWLIST_EMPTY");
+  }
 
   app.use(express.json());
 
@@ -139,6 +146,7 @@ export function createApp(options: AppDeps = {}) {
           externalApi,
           openai,
           twilio,
+          twilioConfigured: checkTwilio(),
         },
       });
     } catch (error) {

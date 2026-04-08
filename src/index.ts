@@ -1,4 +1,5 @@
 import { startServer } from "./server";
+import fs from "fs";
 
 async function validate(port: number): Promise<boolean> {
   const [health, ready] = await Promise.all([
@@ -10,6 +11,10 @@ async function validate(port: number): Promise<boolean> {
 }
 
 async function run() {
+  if (process.env.NODE_ENV === "production" && !fs.existsSync("./dist/index.js")) {
+    throw new Error("DIST_MISSING");
+  }
+
   const started = await startServer();
   const ciValidate = process.env.CI_VALIDATE === "true";
 

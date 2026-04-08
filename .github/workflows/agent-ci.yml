@@ -23,4 +23,23 @@ jobs:
 
       - run: npm run typecheck
 
+      - name: Check service readiness
+        run: |
+          node -e "
+            const required = [
+              'TWILIO_ACCOUNT_SID',
+              'OPENAI_API_KEY',
+              'AGENT_API_TOKEN'
+            ];
+            for (const k of required) {
+              if (!process.env[k]) {
+                process.exit(1);
+              }
+            }
+          "
+
+      - name: Ensure voice route exists
+        run: |
+          grep -R 'app.use(\"/voice\"' src/app.ts
+
       - run: npm run test
