@@ -3,6 +3,14 @@ import { randomUUID } from "crypto";
 import { createDependencies } from "./dependencies";
 import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types";
 import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv";
+import voiceRouter from "./routes/voice";
+
+const ALLOWED_ORIGINS = new Set(
+  (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
 
 declare global {
   namespace Express {
@@ -48,7 +56,24 @@ export function createApp(options: AppDeps = {}) {
     res.locals.requestId = requestId;
 
     res.setHeader("x-request-id", requestId);
-    res.setHeader("Access-Control-Allow-Origin", req.header("origin") || "*");
+
+    const requestOrigin = req.header("origin");
+    const allowAnyOrigin = ALLOWED_ORIGINS.size === 0;
+    const originAllowed = !requestOrigin || allowAnyOrigin || ALLOWED_ORIGINS.has(requestOrigin);
+
+    if (!originAllowed) {
+      res.status(403).json({
+        status: "error",
+        error: "Origin not allowed",
+      });
+      return;
+    }
+
+    if (requestOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", allowAnyOrigin ? requestOrigin : requestOrigin);
+      res.setHeader("Vary", "Origin");
+    }
+
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-request-id");
 
@@ -124,6 +149,8 @@ export function createApp(options: AppDeps = {}) {
   app.get("/", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok" });
   });
+
+  app.use("/voice", voiceRouter);
 
   app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
     const normalized = normalizeError(error);

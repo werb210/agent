@@ -55,7 +55,7 @@ async function safeClose(name: string, close?: () => Promise<void>) {
 export function createDependencies(env: NodeJS.ProcessEnv = process.env): RuntimeDependencies {
   const db = createAdapter({
     mode: "required",
-    configured: true,
+    configured: Boolean(env.DATABASE_URL),
   });
   const redis = createAdapter({
     mode: "required",
