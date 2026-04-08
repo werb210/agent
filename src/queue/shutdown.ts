@@ -34,7 +34,6 @@ export function registerShutdownHooks() {
 
     shuttingDown = true
     await shutdown()
-    process.exitCode = 0
     return
   }
 
