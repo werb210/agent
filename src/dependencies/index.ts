@@ -1,10 +1,12 @@
 import { RuntimeDependencies, type AdapterStatus } from "./types";
+import { pool } from "../db";
 
 type AdapterMode = "required" | "optional";
 
 type AdapterConfig = {
   mode: AdapterMode;
   configured: boolean;
+  check?: () => Promise<AdapterStatus>;
 };
 
 function createAdapter(config: AdapterConfig) {
@@ -26,6 +28,10 @@ function createAdapter(config: AdapterConfig) {
 
     if (!connected) {
       await connect();
+    }
+
+    if (config.check) {
+      return config.check();
     }
 
     return connected ? "ok" : "down";
@@ -53,9 +59,23 @@ async function safeClose(name: string, close?: () => Promise<void>) {
 }
 
 export function createDependencies(env: NodeJS.ProcessEnv = process.env): RuntimeDependencies {
+  async function checkDb(): Promise<AdapterStatus> {
+    try {
+      await pool.query("SELECT 1");
+      return "ok";
+    } catch {
+      return "down";
+    }
+  }
+
+  function checkTwilio(): boolean {
+    return Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER);
+  }
+
   const db = createAdapter({
     mode: "required",
     configured: Boolean(env.DATABASE_URL),
+    check: checkDb,
   });
   const redis = createAdapter({
     mode: "required",
@@ -67,7 +87,7 @@ export function createDependencies(env: NodeJS.ProcessEnv = process.env): Runtim
   });
   const twilio = createAdapter({
     mode: "optional",
-    configured: Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER),
+    configured: checkTwilio(),
   });
   const externalApi = createAdapter({
     mode: "required",

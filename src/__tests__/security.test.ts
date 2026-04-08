@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 import { validatePermissions } from "../security/permissions";
-import { verifySignature } from "../security/hmac";
+import { verifySignature as hmacVerify, verifySignature } from "../security/hmac";
 import { validateApiKey } from "../security/apiKeys";
 
 test("Website cannot forecast", () => {
@@ -27,4 +27,8 @@ test("validateApiKey resolves tiers and rejects unknown", () => {
   expect(validateApiKey("public_key_here")).toBe("PUBLIC");
   expect(validateApiKey("internal_key_here")).toBe("INTERNAL");
   expect(() => validateApiKey("bad_key")).toThrow("Invalid API key");
+});
+
+test("uses timingSafeEqual", () => {
+  expect(hmacVerify.toString()).toContain("timingSafeEqual");
 });
