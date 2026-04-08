@@ -15,21 +15,17 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install (non-fatal but visible)
-        run: |
-          if npm ci --ignore-scripts; then
-            echo "Install succeeded"
-          else
-            echo "Install failed due to registry restrictions (expected)"
-          fi
+      - run: npm ci
 
-      - name: Enforce no tests
-        run: |
-          chmod +x scripts/enforce-no-tests.sh
-          ./scripts/enforce-no-tests.sh
+      - name: Run tests
+        run: npm run test
 
       - name: Build
         run: npm run build
 
       - name: Verify artifact
-        run: test -f dist/index.html
+        run: |
+          if [ ! -f dist/index.js ]; then
+            echo "ENTRYPOINT_MISSING"
+            exit 1
+          fi
