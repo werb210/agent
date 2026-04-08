@@ -1,18 +1,14 @@
-const REQUIRED_ENV_VARS = ["BASE_URL", "SERVER_URL"];
-const REQUIRED_RUNTIME = [
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_PHONE_NUMBER",
-  "OPENAI_API_KEY",
-  "AGENT_API_TOKEN",
-];
-
-if (process.env.NODE_ENV !== "test") {
-  for (const key of [...REQUIRED_ENV_VARS, ...REQUIRED_RUNTIME]) {
-    if (!process.env[key]) {
-      throw new Error(`Missing required env var: ${key}`);
-    }
+function fromEnv(key: string, fallback: string): string {
+  const value = process.env[key];
+  if (value && value.trim().length > 0) {
+    return value;
   }
+
+  if (process.env.NODE_ENV === "test") {
+    return fallback;
+  }
+
+  return "";
 }
 
 export const ENV = {
@@ -21,11 +17,11 @@ export const ENV = {
   SERVER_URL: process.env.SERVER_URL || "http://localhost:8080",
   WS_URL:
     process.env.WS_URL || process.env.BASE_URL || "http://localhost:8080",
-  AGENT_API_TOKEN: process.env.AGENT_API_TOKEN || "test_token",
-  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || "test_sid",
-  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || "test_auth_token",
-  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || "+15555550123",
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || "test_key",
+  AGENT_API_TOKEN: fromEnv("AGENT_API_TOKEN", "test_token"),
+  TWILIO_ACCOUNT_SID: fromEnv("TWILIO_ACCOUNT_SID", "test_sid"),
+  TWILIO_AUTH_TOKEN: fromEnv("TWILIO_AUTH_TOKEN", "test_auth_token"),
+  TWILIO_PHONE_NUMBER: fromEnv("TWILIO_PHONE_NUMBER", "+15555550123"),
+  OPENAI_API_KEY: fromEnv("OPENAI_API_KEY", "test_key"),
 };
 
 const env = {

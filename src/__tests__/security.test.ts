@@ -13,7 +13,7 @@ test("Website cannot forecast", () => {
 test("verifySignature accepts correct signature", () => {
   const body = JSON.stringify({ hello: "world" });
   const signature = crypto
-    .createHmac("sha256", process.env.AGENT_SHARED_SECRET || "dev_secret")
+    .createHmac("sha256", process.env.AGENT_SHARED_SECRET || "test_secret")
     .update(body)
     .digest("hex");
 

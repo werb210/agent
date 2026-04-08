@@ -1,17 +1,32 @@
 import crypto from "crypto";
 
-const SHARED_SECRET = process.env.AGENT_SHARED_SECRET || "dev_secret";
+function getSharedSecret(): string {
+  const value = process.env.AGENT_SHARED_SECRET;
+
+  if (!value && process.env.NODE_ENV !== "test") {
+    throw new Error("Missing required env var: AGENT_SHARED_SECRET");
+  }
+
+  return value || "test_secret";
+}
 
 export function verifySignature(
   body: string,
   signature: string
 ): boolean {
   const computed = crypto
-    .createHmac("sha256", SHARED_SECRET)
+    .createHmac("sha256", getSharedSecret())
     .update(body)
     .digest("hex");
 
-  return computed === signature;
+  const computedBuf = Buffer.from(computed, "hex");
+  const signatureBuf = Buffer.from(signature, "hex");
+
+  if (computedBuf.length !== signatureBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(computedBuf, signatureBuf);
 }
 
 export function isFresh(timestamp: number): boolean {

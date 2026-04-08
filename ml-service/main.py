@@ -12,6 +12,8 @@ from time_series import forecast_revenue
 app = FastAPI()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is required")
 engine = create_engine(DATABASE_URL)
 
 model = LogisticRegression()

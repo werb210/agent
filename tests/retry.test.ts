@@ -11,7 +11,7 @@ describe("worker retries", () => {
   });
 
   it("retries failed jobs up to max attempts", async () => {
-    const handler = jest
+    const handler = vi
       .fn()
       .mockRejectedValueOnce(new Error("fail"))
       .mockRejectedValueOnce(new Error("fail"))

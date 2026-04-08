@@ -13,7 +13,7 @@ export const API_ROUTES = {
   },
   calls: {
     start: "/api/v1/call/start",
-    status: "/api/v1/calls/status",
+    status: "/api/v1/call/status",
   },
   maya: {
     message: "/api/v1/maya/message",
