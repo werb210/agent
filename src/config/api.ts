@@ -1,3 +1,3 @@
 import { ENV } from "./env";
 
-export const API_BASE_URL = ENV.API_BASE_URL;
+export const BASE_URL = ENV.BASE_URL;
