@@ -35,7 +35,7 @@ export async function api(path: string, options: RequestInit = {}) {
  * Core API wrapper for agent (server-to-server)
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
-  const base = process.env.API_BASE_URL || process.env.API_URL || ENV.API_BASE_URL || "";
+  const base = process.env.BASE_URL || process.env.API_URL || ENV.BASE_URL || "";
   const url = /^https?:\/\//i.test(path) ? path : base ? `${base}${path}` : path;
 
   const token = process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN || "";

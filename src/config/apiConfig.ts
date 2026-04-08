@@ -1,5 +1,5 @@
-import { API_BASE_URL } from "./api";
+import { BASE_URL } from "./api";
 
 export const apiConfig = {
-  baseUrl: API_BASE_URL,
+  baseUrl: BASE_URL,
 };

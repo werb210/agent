@@ -7,7 +7,7 @@ type ApiEnvelope = {
 };
 
 function resolveBaseUrl(): string {
-  return process.env.API_BASE_URL || process.env.API_URL || "";
+  return process.env.BASE_URL || process.env.API_URL || "";
 }
 
 function resolveUrl(path: string): string {
@@ -73,7 +73,7 @@ export const apiFetch = apiRequest;
 export async function testConnection() {
   const baseUrl = resolveBaseUrl();
   if (!baseUrl) {
-    throw new Error("Missing API_BASE_URL");
+    throw new Error("Missing BASE_URL");
   }
 
   const res = await fetch(`${baseUrl}/health`);
