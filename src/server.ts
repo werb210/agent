@@ -71,7 +71,6 @@ export async function startServer() {
 
     shuttingDown = true;
     await shutdown();
-    process.exitCode = 0;
     return;
   };
 
