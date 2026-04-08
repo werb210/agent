@@ -1,15 +1,10 @@
-export type EnvState = "valid" | "degraded";
+export type EnvMode = "valid" | "degraded";
 
 export interface EnvValidationStatus {
-  state: EnvState;
-  required: {
-    ok: boolean;
-    missing: string[];
-  };
-  optional: {
-    present: string[];
-    missing: string[];
-  };
+  valid: boolean;
+  missingRequired: string[];
+  missingOptional: string[];
+  mode: EnvMode;
   values: {
     port: number;
   };
@@ -29,24 +24,20 @@ const OPTIONAL_ENV_VARS = [
 
 export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidationStatus {
   const missingRequired = REQUIRED_ENV_VARS.filter((key) => !env[key]);
-  const presentOptional = OPTIONAL_ENV_VARS.filter((key) => Boolean(env[key]));
   const missingOptional = OPTIONAL_ENV_VARS.filter((key) => !env[key]);
+  const valid = missingRequired.length === 0;
 
-  const rawPort = env.PORT ?? (env.NODE_ENV === "test" ? "0" : "8080");
+  const fallbackPort = env.NODE_ENV === "test" ? "0" : "8080";
+  const rawPort = env.PORT ?? fallbackPort;
   const parsedPort = Number(rawPort);
 
   return {
-    state: missingRequired.length === 0 ? "valid" : "degraded",
-    required: {
-      ok: missingRequired.length === 0,
-      missing: missingRequired,
-    },
-    optional: {
-      present: [...presentOptional],
-      missing: [...missingOptional],
-    },
+    valid,
+    missingRequired,
+    missingOptional,
+    mode: valid ? "valid" : "degraded",
     values: {
-      port: Number.isFinite(parsedPort) ? parsedPort : 8080,
+      port: Number.isFinite(parsedPort) ? parsedPort : Number(fallbackPort),
     },
   };
 }

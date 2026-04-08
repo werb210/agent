@@ -6,6 +6,25 @@ export async function startServer() {
   const envStatus = validateEnv();
   const { app, dependencies } = createApp({ envStatus });
 
+  await dependencies.initAll();
+
+  const [db, redis, externalApi, openai, twilio] = await Promise.all([
+    dependencies.db.status(),
+    dependencies.redis.status(),
+    dependencies.externalApi.status(),
+    dependencies.openai.status(),
+    dependencies.twilio.status(),
+  ]);
+
+  console.log(
+    JSON.stringify({
+      event: "startup_summary",
+      envMode: envStatus.mode,
+      port: envStatus.values.port,
+      dependencies: { db, redis, externalApi, openai, twilio },
+    }),
+  );
+
   const server = await new Promise<Server>((resolve) => {
     const listeningServer = app.listen(envStatus.values.port, () => {
       resolve(listeningServer);
