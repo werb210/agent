@@ -31,39 +31,59 @@ export async function startServer() {
     });
   });
 
-  const shutdown = async () => {
-    await new Promise<void>((resolve, reject) => {
+  let shuttingDown = false;
+  let shutdownPromise: Promise<void> | null = null;
+
+  const closeServer = async () => {
+    if (!server.listening) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
       server.close((error) => {
         if (error) {
-          reject(error);
-          return;
+          console.error("Server close failed", error);
         }
 
         resolve();
       });
     });
-
-    await dependencies.closeAll();
   };
 
-  let shuttingDown = false;
-  const handleSignal = (signal: NodeJS.Signals) => {
+  const shutdown = async () => {
     if (shuttingDown) {
-      return;
+      return shutdownPromise;
     }
 
     shuttingDown = true;
 
+    shutdownPromise = (async () => {
+      try {
+        await dependencies.closeAll();
+      } catch (error) {
+        console.error("Dependency shutdown failure", error);
+      }
+
+      await closeServer();
+    })();
+
+    return shutdownPromise;
+  };
+
+  const handleSignal = (signal: NodeJS.Signals) => {
     shutdown()
-      .then(() => process.exit(0))
       .catch((error) => {
         console.error(`Shutdown failure on ${signal}`, error);
-        process.exit(1);
+      })
+      .finally(() => {
+        process.exit(0);
       });
   };
 
-  process.on("SIGINT", () => handleSignal("SIGINT"));
-  process.on("SIGTERM", () => handleSignal("SIGTERM"));
+  if (process.env.NODE_ENV !== "test") {
+    process.on("SIGINT", () => handleSignal("SIGINT"));
+    process.on("SIGTERM", () => handleSignal("SIGTERM"));
+  }
 
   return { server, envStatus, dependencies, shutdown };
 }

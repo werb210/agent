@@ -40,6 +40,18 @@ function createAdapter(config: AdapterConfig) {
   };
 }
 
+async function safeClose(name: string, close?: () => Promise<void>) {
+  if (!close) {
+    return;
+  }
+
+  try {
+    await close();
+  } catch (error) {
+    console.error(`Failed to close dependency: ${name}`, error);
+  }
+}
+
 export function createDependencies(env: NodeJS.ProcessEnv = process.env): RuntimeDependencies {
   const db = createAdapter({
     mode: "required",
@@ -72,7 +84,13 @@ export function createDependencies(env: NodeJS.ProcessEnv = process.env): Runtim
       await Promise.all([db.connect(), redis.connect(), openai.connect(), twilio.connect(), externalApi.connect()]);
     },
     async closeAll() {
-      await Promise.all([db.close(), redis.close(), openai.close(), twilio.close(), externalApi.close()]);
+      await Promise.all([
+        safeClose("db", db.close),
+        safeClose("redis", redis.close),
+        safeClose("openai", openai.close),
+        safeClose("twilio", twilio.close),
+        safeClose("externalApi", externalApi.close),
+      ]);
     },
   };
 }
