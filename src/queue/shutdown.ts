@@ -6,24 +6,42 @@ export function registerShutdownHooks() {
   }
 
   let shuttingDown = false
+  let shutdownPromise: Promise<void> | null = null
 
-  const shutdown = () => {
-    if (shuttingDown) {
-      return
+  const shutdown = async () => {
+    if (shutdownPromise) {
+      return shutdownPromise
     }
 
     shuttingDown = true
     console.info("Agent shutdown requested")
 
-    try {
-      stopWorker()
-    } catch (error) {
-      console.error("Worker shutdown failure", error)
-    }
+    shutdownPromise = (async () => {
+      try {
+        stopWorker()
+      } catch {
+        // never throw on teardown
+      }
+    })()
 
-    process.exit(0)
+    return shutdownPromise
   }
 
-  process.on("SIGINT", shutdown)
-  process.on("SIGTERM", shutdown)
+  const handle = async () => {
+    if (shuttingDown) {
+      return
+    }
+
+    shuttingDown = true
+    await shutdown()
+    process.exitCode = 0
+    return
+  }
+
+  process.on("SIGINT", () => {
+    void handle()
+  })
+  process.on("SIGTERM", () => {
+    void handle()
+  })
 }
