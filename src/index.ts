@@ -1,46 +1,44 @@
 import { startServer } from "./server";
 
 let exitLocked = false;
-let quietRuntimeFailures = false;
 
 const setExit = (code: number) => {
-  if (exitLocked) {
-    return;
-  }
+  if (exitLocked) return;
 
   process.exitCode = code;
   if (code === 0) {
     exitLocked = true;
+    process.removeAllListeners("unhandledRejection");
+    process.removeAllListeners("uncaughtException");
   }
 };
 
-process.on("unhandledRejection", (error) => {
-  if (quietRuntimeFailures) {
-    return;
-  }
+const getNumericExitCode = (): number => {
+  const value = process.exitCode;
+  return typeof value === "number" ? value : 0;
+};
 
-  console.error("Unhandled rejection", error);
+const handleRuntimeFailure = (label: string, error: unknown) => {
+  if (exitLocked) return;
+  console.error(label, error);
   setExit(1);
+};
+
+process.on("unhandledRejection", (error) => {
+  handleRuntimeFailure("Unhandled rejection", error);
 });
 
 process.on("uncaughtException", (error) => {
-  if (quietRuntimeFailures) {
-    return;
-  }
-
-  console.error("Uncaught exception", error);
-  setExit(1);
+  handleRuntimeFailure("Uncaught exception", error);
 });
 
-async function runValidationChecks(port: number) {
+async function validate(port: number): Promise<boolean> {
   const [health, ready] = await Promise.all([
     fetch(`http://127.0.0.1:${port}/health`),
     fetch(`http://127.0.0.1:${port}/ready`),
   ]);
 
-  if (!health.ok || !ready.ok) {
-    throw new Error(`CI validation failed: health=${health.status} ready=${ready.status}`);
-  }
+  return health.ok && ready.ok;
 }
 
 async function run() {
@@ -49,33 +47,54 @@ async function run() {
 
   if (!ciValidate) {
     setExit(0);
+    exitLocked = true;
     return;
   }
 
-  const leakGuardTimer = setTimeout(() => {
-    console.error("FORCED EXIT (LEAK DETECTED)");
-    process.exit(1);
-  }, 10_000);
-
   try {
     const port = started.envStatus.values.port;
-    await runValidationChecks(port);
+    const passed = await validate(port);
+
+    if (!passed) {
+      throw new Error("CI validation failed");
+    }
+
     setExit(0);
-  } catch (error) {
-    console.error("CI validation failure", error);
-    setExit(1);
+    exitLocked = true;
   } finally {
-    clearTimeout(leakGuardTimer);
-    await started.shutdown();
-    quietRuntimeFailures = exitLocked;
-    setImmediate(() => {
-      process.exit(process.exitCode ?? 0);
-    });
+    if (!exitLocked && process.exitCode == null) {
+      setExit(1);
+    }
+
+    const shutdownPromise = started.shutdown();
+    await shutdownPromise;
+
+    if (process.env.CI_VALIDATE === "true") {
+      console.log("CI_VALIDATE_COMPLETE", process.exitCode ?? 0);
+      setImmediate(() => process.exit(getNumericExitCode()));
+    }
   }
 }
 
-run().catch((error) => {
-  console.error("Failed to start service", error);
-  setExit(1);
-  return;
-});
+(async () => {
+  try {
+    await run();
+    if (!exitLocked) {
+      setExit(getNumericExitCode());
+    }
+  } catch (error) {
+    if (!exitLocked) {
+      console.error("Failed to start service", error);
+    }
+    setExit(1);
+  }
+})();
+
+if (process.env.CI_VALIDATE === "true") {
+  setTimeout(() => {
+    if (!exitLocked) {
+      console.error("EXIT NOT LOCKED - LEAK");
+      process.exit(1);
+    }
+  }, 5000);
+}
