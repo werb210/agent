@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install (non-fatal but visible)
+        run: |
+          if npm ci --ignore-scripts; then
+            echo "Install succeeded"
+          else
+            echo "Install failed due to registry restrictions (expected)"
+          fi
+
+      - name: Enforce no tests
+        run: |
+          chmod +x scripts/enforce-no-tests.sh
+          ./scripts/enforce-no-tests.sh
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify artifact
+        run: test -f dist/index.html
