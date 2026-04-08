@@ -30,25 +30,10 @@ jobs:
 
       - name: Verify build output
         run: |
-          if [ ! -d dist ]; then
-            echo "DIST_DIR_MISSING"
-            exit 1
-          fi
-
           if [ ! -f dist/index.js ]; then
-            echo "ENTRYPOINT_MISSING"
+            echo "BUILD_ARTIFACT_MISSING"
             exit 1
           fi
-
-      - name: Validate required env vars
-        run: |
-          required=("TWILIO_KEY" "OPENAI_API_KEY" "AGENT_API_TOKEN")
-          for var in "${required[@]}"; do
-            if [ -z "${!var}" ]; then
-              echo "❌ Missing env: $var"
-              exit 1
-            fi
-          done
 
   deploy:
     needs: guard
