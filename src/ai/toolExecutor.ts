@@ -5,6 +5,7 @@ import { validateToolCall } from "../core/validateTool";
 import { executeTool as executeMayaTool } from "../core/toolExecutor";
 import { emitter } from "../realtime/emitter";
 import { EVENTS } from "../realtime/events";
+import jwt from "jsonwebtoken";
 
 export type ToolExecutionCall = {
   callId: string;
@@ -73,6 +74,15 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10_000): Promise<T> {
 }
 
 function getAgentAuthToken(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    return jwt.sign(
+      { id: "agent-service", phone: "agent", role: "Staff" },
+      secret,
+      { expiresIn: "1h" }
+    );
+  }
+
   const token = process.env.AGENT_API_TOKEN;
   if (!token) {
     throw new Error("MISSING_AUTH");
@@ -95,7 +105,7 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
   try {
     validateTool(call.tool);
 
-    if (!process.env.AGENT_API_TOKEN) {
+    if (!process.env.JWT_SECRET && !process.env.AGENT_API_TOKEN) {
       throw new Error("AGENT AUTH TOKEN MISSING");
     }
 

@@ -1,4 +1,18 @@
 import { ENV } from "../config/env";
+import jwt from "jsonwebtoken";
+
+function getServiceToken(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET not configured");
+  }
+
+  return jwt.sign(
+    { id: "agent-service", phone: "agent", role: "Staff" },
+    secret,
+    { expiresIn: "1h" }
+  );
+}
 
 /**
  * Browser/client-safe API wrapper used by Maya conversational intents.
@@ -38,7 +52,12 @@ export async function apiCall(path: string, options: RequestInit = {}) {
   const base = process.env.BASE_URL || process.env.API_URL || ENV.BASE_URL || "";
   const url = /^https?:\/\//i.test(path) ? path : base ? `${base}${path}` : path;
 
-  const token = process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN || "";
+  let token = "";
+  try {
+    token = getServiceToken();
+  } catch {
+    token = process.env.AGENT_API_TOKEN || "";
+  }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

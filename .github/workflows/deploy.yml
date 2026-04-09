@@ -45,5 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy
-        run: echo "🚀 Deploying..."
+      - name: Azure deployment not yet configured
+        run: |
+          echo "⚠️  Azure deployment for agent is not configured."
+          echo "To deploy: set up Azure Web App publish profile as secret"
+          echo "AZURE_AGENT_PUBLISH_PROFILE and add deployment step here."
+          echo "See: https://docs.microsoft.com/azure/app-service/deploy-github-actions"
+          exit 1

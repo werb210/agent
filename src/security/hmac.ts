@@ -1,5 +1,8 @@
 import crypto from "crypto";
 
+// NOTE: verifySignature is not currently called anywhere.
+// It is intended for validating webhook callbacks from external services.
+// Wire this into webhook route handlers when those are implemented.
 function getSharedSecret(): string {
   const value = process.env.AGENT_SHARED_SECRET;
 
