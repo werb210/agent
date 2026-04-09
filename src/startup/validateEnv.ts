@@ -35,7 +35,11 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
 
     for (const key of required) {
       if (!env[key]) {
-        throw new Error(`Missing required env: ${key}`);
+        throw new Error(
+          `Missing required production env var: ${key}. ` +
+            `Set this in your deployment environment config (Azure App Service → Configuration, ` +
+            `or as a GitHub Actions secret). Do not commit real values to .env.production.`,
+        );
       }
     }
   }
