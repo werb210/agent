@@ -11,27 +11,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
 
-      - name: Install deps
+      - name: Install
         run: npm ci
 
       - name: Build
         run: npm run build --if-present
 
       # ---------------------------
-      # SAFE DEPLOY (NO FAIL)
+      # DEPLOY ONLY IF SECRET EXISTS
       # ---------------------------
-      - name: Deploy to Azure (if configured)
+      - name: Deploy to Azure
         if: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
         uses: azure/webapps-deploy@v3
         with:
           app-name: your-agent-app-name
           publish-profile: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE }}
 
-      - name: Skip deploy (no config)
+      # ---------------------------
+      # SAFE SKIP (NO FAILURE)
+      # ---------------------------
+      - name: Skip deploy
         if: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE == '' }}
-        run: echo "Skipping Azure deploy — no publish profile set."
+        run: echo "Skipping deploy — no Azure publish profile configured."
