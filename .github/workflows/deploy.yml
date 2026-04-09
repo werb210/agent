@@ -5,37 +5,37 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Verify build output
+        run: test -f dist/index.js && echo "BUILD OK"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-dist
+          path: dist/
 
-      - name: Install
-        run: npm ci
-
-      - name: Build
-        run: npm run build --if-present
-
-      # --------------------------------
-      # SAFE SECRET CHECK (VALID SYNTAX)
-      # --------------------------------
-      - name: Deploy to Azure
-        if: ${{ env.HAS_AZURE_PROFILE == 'true' }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: your-agent-app-name
+          app-name: boreal-agent
           publish-profile: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE }}
-
-      - name: Skip deploy (no secret)
-        if: ${{ env.HAS_AZURE_PROFILE != 'true' }}
-        run: echo "Skipping deploy — no Azure publish profile"
-    
-    env:
-      HAS_AZURE_PROFILE: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
+          package: dist/
