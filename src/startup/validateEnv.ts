@@ -10,7 +10,7 @@ export interface EnvValidationStatus {
   };
 }
 
-const REQUIRED_ENV_VARS = ["PORT"] as const;
+const REQUIRED_ENV_VARS = ["PORT", "SERVER_URL"] as const;
 
 const OPTIONAL_ENV_VARS = [
   "OPENAI_API_KEY",
