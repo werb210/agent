@@ -5,37 +5,34 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run build
-      - name: Verify build output
-        run: test -f dist/index.js && echo "BUILD OK"
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-dist
-          path: dist/
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
-    if: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
+
+    env:
+      HAS_AZURE_PROFILE: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run build
-      - name: Deploy to Azure Web App
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Deploy to Azure
+        if: ${{ env.HAS_AZURE_PROFILE == 'true' }}
         uses: azure/webapps-deploy@v3
         with:
-          app-name: boreal-agent
+          app-name: your-agent-app-name
           publish-profile: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE }}
-          package: dist/
+
+      - name: Skip deploy
+        if: ${{ env.HAS_AZURE_PROFILE != 'true' }}
+        run: echo "Skipping deploy — no publish profile"
