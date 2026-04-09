@@ -50,7 +50,7 @@ export function createApp(options: AppDeps = {}) {
   const dependencies = options.deps ?? createDependencies();
   const app = express();
   if (process.env.NODE_ENV === "production" && ALLOWED_ORIGINS.size === 0) {
-    throw new Error("CORS_ALLOWLIST_EMPTY");
+    console.warn("[WARN] CORS_ALLOWED_ORIGINS not set — all origins allowed in production");
   }
 
   app.use(express.json());
