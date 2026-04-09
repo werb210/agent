@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 type ApiOptions = RequestInit & { headers?: Record<string, string> };
 
 type ApiEnvelope = {
@@ -5,6 +6,19 @@ type ApiEnvelope = {
   data?: unknown;
   error?: unknown;
 };
+
+function getServiceToken(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET not configured");
+  }
+
+  return jwt.sign(
+    { id: "agent-service", phone: "agent", role: "Staff" },
+    secret,
+    { expiresIn: "1h" }
+  );
+}
 
 function resolveBaseUrl(): string {
   return process.env.BASE_URL || process.env.API_URL || "";
@@ -32,7 +46,12 @@ function isSuccessStatus(status: number | undefined): boolean {
 }
 
 export async function apiRequest(path: string, options: ApiOptions = {}) {
-  const token = process.env.AGENT_API_TOKEN || process.env.JWT_TOKEN;
+  let token = "";
+  try {
+    token = getServiceToken();
+  } catch {
+    token = process.env.AGENT_API_TOKEN || "";
+  }
 
   const headers = {
     "Content-Type": "application/json",

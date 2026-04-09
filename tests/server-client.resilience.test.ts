@@ -14,7 +14,7 @@ describe("server client resilience", () => {
 
   it("sends request id and auth headers through api options", async () => {
     delete process.env.AGENT_API_TOKEN;
-    process.env.JWT_TOKEN = "runtime-token";
+    process.env.JWT_SECRET = "test-secret";
 
     (globalThis as any).fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
@@ -31,15 +31,16 @@ describe("server client resilience", () => {
       body: JSON.stringify({ ping: true }),
     });
 
-    expect((globalThis as any).fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    const [url, options] = (globalThis as any).fetch.mock.calls[0];
+    expect(url).toEqual(expect.any(String));
+    expect(options).toEqual(
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: "Bearer runtime-token",
           "x-request-id": "rid-123",
         }),
       })
     );
+    expect((options as { headers: Record<string, string> }).headers.Authorization).toMatch(/^Bearer\s.+/);
   });
 
   it("throws on non-ok response", async () => {

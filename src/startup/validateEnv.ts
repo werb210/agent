@@ -10,7 +10,7 @@ export interface EnvValidationStatus {
   };
 }
 
-const REQUIRED_ENV_VARS = ["PORT", "SERVER_URL"] as const;
+const REQUIRED_ENV_VARS = ["PORT", "SERVER_URL", "JWT_SECRET"] as const;
 
 const OPTIONAL_ENV_VARS = [
   "OPENAI_API_KEY",
@@ -29,7 +29,7 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
       "TWILIO_AUTH_TOKEN",
       "TWILIO_PHONE_NUMBER",
       "OPENAI_API_KEY",
-      "AGENT_API_TOKEN",
+      "JWT_SECRET",
       "AGENT_SHARED_SECRET",
     ] as const;
 
