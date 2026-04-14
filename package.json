@@ -30,7 +30,7 @@
     "tesseract.js": "^7.0.0",
     "twilio": "^5.13.1",
     "validator": "^13.15.35",
-    "zod": "^4.3.6"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.60.1",
