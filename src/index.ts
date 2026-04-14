@@ -15,6 +15,15 @@ async function run() {
     throw new Error("DIST_MISSING");
   }
 
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.AGENT_API_TOKEN || process.env.AGENT_API_TOKEN === "test_token") {
+      throw new Error("[FATAL] AGENT_API_TOKEN must be set to a real value in production");
+    }
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "test_secret") {
+      throw new Error("[FATAL] JWT_SECRET must be set in production");
+    }
+  }
+
   const started = await startServer();
   const ciValidate = process.env.CI_VALIDATE === "true";
 

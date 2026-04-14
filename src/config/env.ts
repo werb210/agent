@@ -18,6 +18,7 @@ export const ENV = {
   WS_URL:
     process.env.WS_URL || process.env.BASE_URL || "http://localhost:8080",
   AGENT_API_TOKEN: fromEnv("AGENT_API_TOKEN", "test_token"),
+  JWT_SECRET: fromEnv("JWT_SECRET", "test_secret"),
   TWILIO_ACCOUNT_SID: fromEnv("TWILIO_ACCOUNT_SID", "test_sid"),
   TWILIO_AUTH_TOKEN: fromEnv("TWILIO_AUTH_TOKEN", "test_auth_token"),
   TWILIO_PHONE_NUMBER: fromEnv("TWILIO_PHONE_NUMBER", "+15555550123"),
