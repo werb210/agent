@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export type CallEvent = {
   callId: string;

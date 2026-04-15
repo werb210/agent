@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function recordReward(actionType: string, reward: number, metadata: unknown) {
   await pool.request(

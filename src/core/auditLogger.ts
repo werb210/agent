@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 type AuditPayload = {
   correlationId: string;

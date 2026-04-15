@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function calculateBrokerCompensation() {
   const brokers = await pool.request(`SELECT * FROM staff_calendar`);

@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 const pricing: Record<string, number> = {
   "gpt-4o": 0.00001,

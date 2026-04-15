@@ -1,7 +1,7 @@
 import { capitalEfficiencyIndex } from "./capitalEfficiency";
 import { optimizeCampaignBudget } from "./campaignOptimizer";
 import { safeExecute } from "./safeAsync";
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 type CampaignRow = {
   id: string;

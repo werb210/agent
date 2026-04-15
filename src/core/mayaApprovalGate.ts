@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { logMayaAction } from "../services/mayaActionLedger";
 import { detectPII } from "../compliance/piiDetection";
 import { flagSessionCompliance } from "../compliance/complianceFlag";

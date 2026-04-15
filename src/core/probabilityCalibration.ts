@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 type HistoricalProbabilityRow = {
   predicted_probability: string | number;

@@ -1,5 +1,5 @@
 import { RuntimeDependencies, type AdapterStatus } from "./types";
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 type AdapterMode = "required" | "optional";
 

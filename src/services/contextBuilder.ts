@@ -1,5 +1,5 @@
 import { AppError } from "../errors/AppError";
-import { db } from "./db";
+import { db } from "./db.js";
 
 type MayaContextParams = {
   applicationId: string;

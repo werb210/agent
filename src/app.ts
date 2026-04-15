@@ -4,6 +4,7 @@ import { createDependencies } from "./dependencies";
 import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types";
 import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv";
 import voiceRouter from "./routes/voice";
+import { mayaRouter } from "./api/maya";
 
 const ALLOWED_ORIGINS = new Set(
   (process.env.CORS_ALLOWED_ORIGINS ?? "")
@@ -159,6 +160,7 @@ export function createApp(options: AppDeps = {}) {
   });
 
   app.use("/voice", voiceRouter);
+  app.use(mayaRouter);
 
   app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {
     const normalized = normalizeError(error);

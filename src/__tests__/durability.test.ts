@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { clearExecutedToolKeys, executeTool } from "../lib/toolExecutor";
 
 describe("durable tool execution", () => {

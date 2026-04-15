@@ -1,6 +1,6 @@
 import { vi, type Mock } from "vitest";
 import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { sendStartupNotification } from "../services/mayaStartupNotificationService";
 import { launchStartupCampaign } from "../services/mayaStartupCampaignService";
 import { logAudit } from "../infrastructure/mayaAudit";

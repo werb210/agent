@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function detectCampaignAnomaly() {
   const result = await pool.request(`

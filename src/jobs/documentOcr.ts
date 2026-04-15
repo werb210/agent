@@ -1,43 +1,59 @@
-import { extractTextFromDocument } from "../engine/ocrEngine";
+import { callBFServer } from "../integrations/bfServerClient";
+import { logger } from "../infrastructure/logger";
 
-export type DocumentOcrPayload = {
+export interface OcrJob {
   documentId: string;
-  documentUrl: string;
-  documentType?: string;
-};
-
-type OcrResult = {
-  documentType: string;
-  fields: Record<string, string>;
-  confidence: number;
-};
-
-function detectDocumentType(payload: DocumentOcrPayload): string {
-  if (payload.documentType) return payload.documentType;
-
-  const url = payload.documentUrl.toLowerCase();
-  if (url.includes("bank")) return "bank_statement";
-  if (url.includes("tax")) return "tax_document";
-  return "general_document";
+  applicationId: string;
+  category: string;
+  storageUrl: string;
 }
 
-function toStructuredFields(rawText: string): Record<string, string> {
-  return {
-    rawText
-  };
+export async function processDocumentOcr(job: OcrJob): Promise<void> {
+  const downloadResponse = await fetch(job.storageUrl);
+  if (!downloadResponse.ok) {
+    throw new Error(`Unable to download document: ${downloadResponse.status}`);
+  }
+
+  const documentBuffer = Buffer.from(await downloadResponse.arrayBuffer());
+
+  const mlUrl = process.env.ML_SERVICE_URL ?? "http://localhost:8001";
+  const ocrResponse = await fetch(`${mlUrl}/ocr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: job.storageUrl,
+      category: job.category,
+      fileBase64: documentBuffer.toString("base64"),
+    }),
+  });
+
+  if (!ocrResponse.ok) {
+    throw new Error(`OCR service returned ${ocrResponse.status}`);
+  }
+
+  const ocrData = await ocrResponse.json();
+
+  const category = job.category.toLowerCase();
+  const isBanking = category.includes("banking") || category === "bank_statement";
+  const isFinancial = ["financial_statements", "income_statement", "balance_sheet"].includes(category);
+
+  if (isBanking) {
+    await callBFServer(`/api/applications/${job.applicationId}/banking-analysis`, {
+      documentId: job.documentId,
+      ocrData,
+    });
+  } else if (isFinancial) {
+    await callBFServer(`/api/applications/${job.applicationId}/financials`, {
+      documentId: job.documentId,
+      ocrData,
+    });
+  } else {
+    await callBFServer(`/api/documents/${job.documentId}/ocr-results`, {
+      ocrData,
+    });
+  }
+
+  logger.info("ocr_complete", { documentId: job.documentId, category: job.category });
 }
 
-export async function runDocumentOCR(payload: DocumentOcrPayload): Promise<OcrResult> {
-  const documentType = detectDocumentType(payload);
-  const text = await extractTextFromDocument(payload.documentUrl);
-
-  const result: OcrResult = {
-    documentType,
-    fields: toStructuredFields(text),
-    confidence: text ? 0.9 : 0
-  };
-
-  return result;
-}
-
-export default runDocumentOCR;
+export default processDocumentOcr;

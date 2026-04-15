@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
 
 type IndustryAggregateRow = {

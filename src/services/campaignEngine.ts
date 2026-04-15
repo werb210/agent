@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { logAudit } from "../infrastructure/mayaAudit";
 import { enforceKillSwitch } from "../core/mayaSafety";
 import { ENV } from "../infrastructure/env";

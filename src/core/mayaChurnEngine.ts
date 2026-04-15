@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function predictChurn(): Promise<void> {
   const clients = await pool.query<{ contact_id: string; last_activity: Date | string }>(

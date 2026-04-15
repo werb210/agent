@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { generateAdCopy } from "./adCopyEngine";
 import { launchPlatformCampaign } from "./platformLaunchEngine";
 

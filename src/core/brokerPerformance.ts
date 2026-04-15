@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 interface BrokerStatsRow {
   close_rate: number | null;

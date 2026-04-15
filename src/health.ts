@@ -1,5 +1,5 @@
 import { areToolHandlersLoaded } from "./ai/toolExecutor";
-import { pool } from "./db";
+import { pool } from "./db/index";
 
 export async function checkHealth(): Promise<{ status: "ok" }> {
   await pool.query("SELECT 1");
