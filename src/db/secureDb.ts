@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function secureQuery<T = any>(...args: any[]) {
   const statement = String(args.length >= 3 ? args[2] : args[0]);

@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function logAbuse(ip: string, route: string) {
   await pool.request(

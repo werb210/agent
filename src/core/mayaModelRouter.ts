@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { logLLMUsage } from "../infrastructure/mayaTelemetry";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 import { AppError } from "../errors/AppError";
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "sk-placeholder" });
 

@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function adjustMarketingAllocation() {
   const channels = await pool.request(`SELECT * FROM maya_marketing_metrics`);

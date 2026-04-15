@@ -2,7 +2,7 @@ import { determineTopIndustries } from "./industryTargetingEngine";
 import { generateAdCopy } from "./adCopyEngine";
 import { launchPlatformCampaign } from "./platformLaunchEngine";
 import { reinvestRevenue } from "./reinvestmentEngine";
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { enforceKillSwitch } from "../core/mayaSafety";
 
 export async function autonomousGrowthCycle(): Promise<void> {

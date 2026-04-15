@@ -1,5 +1,5 @@
 import { checkHealth } from "../health";
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 describe("Runtime Health", () => {
   const originalEnv = process.env;

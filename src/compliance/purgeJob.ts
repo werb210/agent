@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 const RETENTION_TABLES = new Set(["sessions"]);
 

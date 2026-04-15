@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function logMayaAction(actionType: string, payload: unknown, status = "executed") {
   await pool.request(

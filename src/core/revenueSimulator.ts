@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export interface RevenueSimulationInput {
   funding_amount: number;

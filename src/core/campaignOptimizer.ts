@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 import { getAverageReward } from "./reinforcementEngine";
 import { createCorrelationId, logAudit } from "./auditLogger";
 import { safeExecute } from "./safeAsync";

@@ -1,4 +1,4 @@
-import { pool } from "../db";
+import { pool } from "../db/index";
 
 export async function logDecision(type: string, input: any, output: any, explanation: string) {
   await pool.request(

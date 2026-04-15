@@ -1,3 +1,4 @@
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { endpoints } from "../lib/endpoints";
 import { apiCall } from "../lib/api";
 
@@ -75,3 +76,61 @@ export async function sendMessage(userInput: string, authToken?: string): Promis
     return showFallbackMessage();
   }
 }
+
+function safeHandler(handler: (req: Request, res: Response) => Promise<void>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    handler(req, res).catch(next);
+  };
+}
+
+
+async function postToBFServer(path: string, payload: unknown) {
+  const baseUrl = process.env.SERVER_URL || process.env.BASE_URL;
+  if (!baseUrl) throw new Error("SERVER_URL not configured");
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload ?? {}),
+  });
+
+  if (!response.ok) {
+    throw new Error(`BF-Server request failed: ${response.status}`);
+  }
+
+  return response.json().catch(() => null);
+}
+
+export const mayaRouter = Router();
+
+mayaRouter.post(
+  "/maya/escalate",
+  safeHandler(async (req, res) => {
+    const { reason, sessionId, applicationId } = req.body ?? {};
+
+    const result = await postToBFServer("/api/chat/escalate", {
+      reason: reason ?? "user_requested_human",
+      sessionId,
+      applicationId,
+    });
+
+    res.status(200).json(result ?? { ok: true, sessionId });
+  }),
+);
+
+mayaRouter.post(
+  "/maya/issue",
+  safeHandler(async (req, res) => {
+    const { message, screenshotBase64, applicationId, sessionId } = req.body ?? {};
+
+    const result = await postToBFServer("/api/issues", {
+      message,
+      screenshotBase64: screenshotBase64 ?? null,
+      applicationId: applicationId ?? null,
+      sessionId: sessionId ?? null,
+      source: "client_maya",
+    });
+
+    res.status(200).json(result ?? { ok: true });
+  }),
+);
