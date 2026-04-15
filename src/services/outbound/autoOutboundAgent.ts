@@ -1,16 +1,26 @@
 import { triggerOutboundCall } from "../twilioService";
-import { pool } from "../../db";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function autoOutboundHighValueLeads() {
-  const leads = await pool.request(
-    "SELECT id, phone, deal_value FROM leads WHERE contacted = false AND deal_value > 250000"
-  );
+  const contactResponse = await callBFServer<any>("/api/crm/contacts");
+  const contacts = Array.isArray(contactResponse)
+    ? contactResponse
+    : Array.isArray(contactResponse?.contacts)
+      ? contactResponse.contacts
+      : Array.isArray(contactResponse?.rows)
+        ? contactResponse.rows
+        : [];
 
-  for (const lead of leads.rows) {
+  const leads = contacts.filter((lead: any) => Number(lead?.deal_value ?? 0) > 250000);
+
+  for (const lead of leads) {
+    if (!lead?.phone) continue;
     await triggerOutboundCall(lead.phone);
-    await pool.request(
-      "UPDATE leads SET contacted = true WHERE id = $1",
-      [lead.id]
-    );
+    await callBFServer("/api/calls/log", {
+      leadId: lead.id,
+      phone: lead.phone,
+      status: "contacted",
+      source: "auto_outbound_high_value_leads",
+    });
   }
 }

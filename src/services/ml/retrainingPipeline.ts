@@ -1,15 +1,24 @@
-import { pool } from "../../db";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function exportTrainingDataset() {
-  const res = await pool.request(
-    "SELECT revenue, years_in_business, requested_amount, industry, funded FROM deal_features WHERE funded IS NOT NULL"
-  );
-  return res.rows;
+  const contacts = await callBFServer<any>("/api/crm/contacts");
+  if (Array.isArray(contacts)) {
+    return contacts;
+  }
+  if (Array.isArray(contacts?.rows)) {
+    return contacts.rows;
+  }
+  if (Array.isArray(contacts?.contacts)) {
+    return contacts.contacts;
+  }
+  return [];
 }
 
 export async function recordModelVersion(version: string, accuracy: number) {
-  await pool.request(
-    "INSERT INTO maya_model_versions (version, accuracy) VALUES ($1,$2)",
-    [version, accuracy]
-  );
+  await callBFServer("/api/crm/events", {
+    eventType: "model_version_recorded",
+    version,
+    accuracy,
+    recordedAt: new Date().toISOString(),
+  });
 }

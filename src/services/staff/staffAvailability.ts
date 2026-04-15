@@ -1,12 +1,24 @@
-import { pool } from "../../db";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function getAvailableStaff() {
+  const pipelineResponse = await callBFServer<any>("/api/staff/pipeline");
+  const staffList = Array.isArray(pipelineResponse)
+    ? pipelineResponse
+    : Array.isArray(pipelineResponse?.staff)
+      ? pipelineResponse.staff
+      : Array.isArray(pipelineResponse?.rows)
+        ? pipelineResponse.rows
+        : [];
 
-  const res = await pool.request(
-    "SELECT id, phone FROM staff WHERE status = 'online' AND on_call = false LIMIT 1"
-  );
+  const available = staffList.find((staff: any) => {
+    const status = String(staff?.status ?? "").toLowerCase();
+    return (status === "online" || status === "available") && !staff?.on_call && !staff?.onCall;
+  });
 
-  if (!res.rows.length) return null;
+  if (!available) return null;
 
-  return res.rows[0];
+  return {
+    id: available.id,
+    phone: available.phone,
+  };
 }

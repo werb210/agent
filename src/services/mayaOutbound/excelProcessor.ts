@@ -1,15 +1,15 @@
 import ExcelJS from "exceljs";
-import { pool } from "../../db";
 import { randomUUID } from "node:crypto";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function processExcel(filePath: string, campaignName: string) {
-
   const campaignId = randomUUID();
 
-  await pool.request(
-    "INSERT INTO maya_campaigns (id, name) VALUES ($1,$2)",
-    [campaignId, campaignName]
-  );
+  await callBFServer("/api/marketing/campaign", {
+    campaignId,
+    name: campaignName,
+    status: "created",
+  });
 
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(filePath);
@@ -40,50 +40,49 @@ export async function processExcel(filePath: string, campaignName: string) {
     rows.push(record);
   }
 
+  const contactsResponse = await callBFServer<any>("/api/crm/contacts");
+  const existingContacts = Array.isArray(contactsResponse)
+    ? contactsResponse
+    : Array.isArray(contactsResponse?.contacts)
+      ? contactsResponse.contacts
+      : Array.isArray(contactsResponse?.rows)
+        ? contactsResponse.rows
+        : [];
+
+  const existingKeys = new Set(
+    existingContacts.map((contact: any) => `${contact?.email ?? ""}|${contact?.phone ?? ""}`)
+  );
+
   let inserted = 0;
 
   for (const row of rows) {
+    const email = row["Email"] ?? "";
+    const phone = row["Phone"] ?? "";
+    const dedupeKey = `${email}|${phone}`;
 
-    const email = row["Email"];
-    const phone = row["Phone"];
+    if (existingKeys.has(dedupeKey)) continue;
 
-    // Duplicate detection in CRM
-    const existing = await pool.request(
-      "SELECT id FROM contacts WHERE email = $1 OR phone = $2",
-      [email, phone]
-    );
+    await callBFServer("/api/crm/events", {
+      eventType: "contact_imported",
+      campaignId,
+      companyName: row["Company name"],
+      contactName: row["Contact name"],
+      role: row["Role in company"],
+      email,
+      phone,
+    });
 
-    if (existing.rows.length > 0) continue;
+    await callBFServer("/api/marketing/campaign", {
+      campaignId,
+      action: "enqueue_contact",
+      companyName: row["Company name"],
+      contactName: row["Contact name"],
+      role: row["Role in company"],
+      email,
+      phone,
+    });
 
-    // Insert into CRM contacts table
-    await pool.request(
-      `INSERT INTO contacts
-       (company_name, contact_name, role, email, phone)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [
-        row["Company name"],
-        row["Contact name"],
-        row["Role in company"],
-        email,
-        phone
-      ]
-    );
-
-    // Insert into outbound queue
-    await pool.request(
-      `INSERT INTO maya_outbound_queue
-       (campaign_id, company_name, contact_name, role, email, phone)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
-      [
-        campaignId,
-        row["Company name"],
-        row["Contact name"],
-        row["Role in company"],
-        email,
-        phone
-      ]
-    );
-
+    existingKeys.add(dedupeKey);
     inserted++;
   }
 
