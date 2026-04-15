@@ -1,7 +1,6 @@
-import { pool } from "../../db";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function evaluateQualification(sessionId: string, userSpeech: string) {
-
   let score = 0;
   let intent = null;
   let escalation = null;
@@ -35,14 +34,14 @@ export async function evaluateQualification(sessionId: string, userSpeech: strin
     escalation = "high_intent";
   }
 
-  await pool.request(
-    `UPDATE maya_voice_sessions
-     SET qualification_score = qualification_score + $1,
-         intent = COALESCE(intent, $2),
-         escalation = $3
-     WHERE id = $4`,
-    [score, intent, escalation, sessionId]
-  );
+  await callBFServer("/api/crm/events", {
+    eventType: "qualification_scored",
+    sessionId,
+    score,
+    intent,
+    escalation,
+    userSpeech,
+  });
 
   return { score, intent, escalation };
 }

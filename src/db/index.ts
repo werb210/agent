@@ -1,17 +1,4 @@
-export type QueryResult<T = any> = { rows: T[]; rowCount: number };
-
-async function request<T = any>(_statement: string, _params: unknown[] = []): Promise<QueryResult<T>> {
-  return { rows: [], rowCount: 0 };
-}
-
-export const pool = {
-  request,
-  query: request,
-  async connect() {
-    return Promise.resolve();
-  },
-};
-
-export default {
-  pool,
-};
+// This file is intentionally empty.
+// All data access goes through callBFServer() in src/integrations/bfServerClient.ts
+// using real BF-Server API endpoints. Direct database access is not permitted.
+export {};

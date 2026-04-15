@@ -1,22 +1,32 @@
-import { pool } from "../../db";
 import { triggerOutboundCall } from "../twilioService";
 import { logDecision } from "../complianceLogger";
+import { callBFServer } from "../../integrations/bfServerClient";
 
 export async function runOutboundCampaign(campaignId: string) {
+  const contactsResponse = await callBFServer<any>("/api/crm/contacts");
+  const contacts = Array.isArray(contactsResponse)
+    ? contactsResponse
+    : Array.isArray(contactsResponse?.contacts)
+      ? contactsResponse.contacts
+      : Array.isArray(contactsResponse?.rows)
+        ? contactsResponse.rows
+        : [];
 
-  const leads = await pool.request(
-    "SELECT * FROM maya_outbound_queue WHERE campaign_id = $1 AND status = 'pending' LIMIT 25",
-    [campaignId]
-  );
+  const leads = contacts
+    .filter((lead: any) => lead?.campaign_id === campaignId || lead?.campaignId === campaignId)
+    .slice(0, 25);
 
-  for (const lead of leads.rows) {
+  for (const lead of leads) {
+    if (!lead?.phone) continue;
 
     await triggerOutboundCall(lead.phone);
 
-    await pool.request(
-      "UPDATE maya_outbound_queue SET status = 'called' WHERE id = $1",
-      [lead.id]
-    );
+    await callBFServer("/api/calls/log", {
+      campaignId,
+      leadId: lead.id,
+      phone: lead.phone,
+      status: "called",
+    });
 
     await logDecision(
       "outbound_call",
@@ -26,5 +36,5 @@ export async function runOutboundCampaign(campaignId: string) {
     );
   }
 
-  return leads.rows.length;
+  return leads.length;
 }
