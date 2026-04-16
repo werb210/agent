@@ -1,5 +1,5 @@
 import { checkHealth } from "../src/health";
-import { pool } from "../src/db";
+import { pool } from "../src/integrations/bfServerClient";
 
 describe("service smoke", () => {
   const originalEnv = process.env;

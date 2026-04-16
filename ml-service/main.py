@@ -90,7 +90,7 @@ def predict(payload: dict):
     if not model_trained:
         raise HTTPException(
             status_code=503,
-            detail="Model not yet trained. POST /train first."
+            detail="Logistic model not yet trained. POST /train first."
         )
     try:
         features = np.array([[

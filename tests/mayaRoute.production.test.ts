@@ -1,5 +1,5 @@
 import { checkHealth } from "../src/health";
-import { pool } from "../src/db";
+import { pool } from "../src/integrations/bfServerClient";
 
 describe("maya runtime regression guard", () => {
   beforeEach(() => {
