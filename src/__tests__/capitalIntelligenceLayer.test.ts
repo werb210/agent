@@ -4,11 +4,11 @@ const { queryMock } = vi.hoisted(() => ({
   queryMock: vi.fn(),
 }));
 
-vi.mock("../db", () => ({
+vi.mock("../integrations/bfServerClient", () => ({
   pool: {
     request: queryMock,
-    query: queryMock
-  }
+    query: queryMock,
+  },
 }));
 
 vi.mock("../core/mlClient", () => ({
