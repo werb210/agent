@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function routeDeal(sessionId: string) {
   const brokers = await pool.query<{ broker_id: string }>(`

@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function recordLiveScore(dealId: string, probability: number, cluster: string) {
   await pool.request(

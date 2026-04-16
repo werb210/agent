@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
 
 type ChannelPerformanceRow = {

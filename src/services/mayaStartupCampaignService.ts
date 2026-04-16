@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { generateAdCopy } from "./adCopyEngine";
 import { launchPlatformCampaign } from "./platformLaunchEngine";
 

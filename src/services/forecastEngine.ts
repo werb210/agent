@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { safeExecute } from "../core/safeAsync";
 import { logAudit } from "../infrastructure/mayaAudit";
 

@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 interface BrokerStatsRow {
   close_rate: number | null;

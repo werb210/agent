@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 import { AppError } from "../errors/AppError";
 

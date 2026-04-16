@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function rankLendersBayesian(payload: any) {
   const lenders = await pool.request(`

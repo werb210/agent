@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export interface RevenueSimulationInput {
   funding_amount: number;

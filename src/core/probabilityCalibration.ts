@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 type HistoricalProbabilityRow = {
   predicted_probability: string | number;

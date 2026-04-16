@@ -6,7 +6,7 @@ import { recordMetric } from "./metricsLogger";
 import { measureExecutionTime } from "./performanceTelemetry";
 import { calculateFeatureContributions } from "./explainability";
 import { generateReasoningSummary } from "./generateExplanation";
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { AppError } from "../errors/AppError";
 
 const nativeFetch = globalThis["fetch"];

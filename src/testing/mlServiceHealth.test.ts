@@ -1,5 +1,5 @@
 import { checkHealth } from "../health";
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 describe("Runtime Health", () => {
   const originalEnv = process.env;
