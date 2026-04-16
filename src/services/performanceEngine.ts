@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function recalculateBrokerPerformance() {
   const brokers = await pool.request("SELECT * FROM staff_calendar");

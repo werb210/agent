@@ -1,5 +1,5 @@
 import { RuntimeDependencies, type AdapterStatus } from "./types";
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 type AdapterMode = "required" | "optional";
 

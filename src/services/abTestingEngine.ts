@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function recordImpression(testId: number, variant: string) {
   await pool.request(

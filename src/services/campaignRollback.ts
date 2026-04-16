@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { logMayaAction } from "./mayaActionLedger";
 import { AppError } from "../errors/AppError";
 

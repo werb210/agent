@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function multiTouchAttribution(leadId: string) {
   const res = await pool.request(

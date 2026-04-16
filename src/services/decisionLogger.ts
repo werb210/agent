@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { CURRENT_AUTONOMY_LEVEL } from "../config/autonomy";
 
 

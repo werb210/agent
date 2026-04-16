@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 import { resilientLLM } from "../infrastructure/mayaResilience";
 
 export async function generateAdCopy(campaignId: string, industry: string): Promise<void> {

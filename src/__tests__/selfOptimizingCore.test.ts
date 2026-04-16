@@ -6,7 +6,7 @@ import { predictiveLenderScore } from "../core/lenderMatchEngine";
 import { identifyExpansionMarkets } from "../core/marketExpansionEngine";
 import { advancedStrategicDecision } from "../core/strategicEngine";
 import { retrainModel } from "../core/selfLearningEngine";
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 vi.mock("../db", () => ({
   pool: {

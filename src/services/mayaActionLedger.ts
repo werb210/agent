@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function logMayaAction(actionType: string, payload: unknown, status = "executed") {
   await pool.request(

@@ -1,4 +1,4 @@
-import { pool } from "../db/index";
+import { pool } from "../integrations/bfServerClient";
 
 export async function adjustMarketingAllocation() {
   const channels = await pool.request(`SELECT * FROM maya_marketing_metrics`);
