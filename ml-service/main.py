@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Header, HTTPException
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.exceptions import NotFittedError
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -17,8 +18,10 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL)
 
 model = LogisticRegression()
+model_trained = False
 
 nn_model = ApprovalNN()
+nn_model_trained = False
 optimizer = torch.optim.Adam(nn_model.parameters(), lr=0.001)
 loss_fn = nn.BCELoss()
 
@@ -37,16 +40,19 @@ def load_training_data():
 
 
 def train_model():
+    global model_trained
     df = load_training_data()
     if len(df) < 10:
         return None
     X = df[["funding_amount", "annual_revenue", "time_in_business"]]
     y = df["outcome"]
     model.fit(X, y)
+    model_trained = True
     return True
 
 
 def train_nn():
+    global nn_model_trained
     df = load_training_data()
     if len(df) < 20:
         return False
@@ -61,6 +67,7 @@ def train_nn():
         loss.backward()
         optimizer.step()
 
+    nn_model_trained = True
     return True
 
 
@@ -80,17 +87,33 @@ def train():
 
 @app.post("/predict")
 def predict(payload: dict):
-    features = np.array([[
-        payload["funding_amount"],
-        payload["annual_revenue"],
-        payload["time_in_business"],
-    ]])
-    prob = model.predict_proba(features)[0][1]
-    return {"approval_probability": float(prob)}
+    if not model_trained:
+        raise HTTPException(
+            status_code=503,
+            detail="Model not yet trained. POST /train first."
+        )
+    try:
+        features = np.array([[
+            payload["funding_amount"],
+            payload["annual_revenue"],
+            payload["time_in_business"],
+        ]])
+        prob = model.predict_proba(features)[0][1]
+        return {"approval_probability": float(prob)}
+    except NotFittedError:
+        raise HTTPException(
+            status_code=503,
+            detail="Model not fitted. POST /train first."
+        )
 
 
 @app.post("/predict-nn")
 def predict_nn(payload: dict):
+    if not nn_model_trained:
+        raise HTTPException(
+            status_code=503,
+            detail="Neural network not yet trained. POST /train first."
+        )
     features = torch.tensor([[
         payload["funding_amount"],
         payload["annual_revenue"],
@@ -108,4 +131,8 @@ def forecast(payload: dict):
 
 @app.get("/model-health")
 def model_health():
-    return {"model_loaded": True}
+    return {
+        "model_loaded": True,
+        "logistic_trained": model_trained,
+        "nn_trained": nn_model_trained,
+    }
