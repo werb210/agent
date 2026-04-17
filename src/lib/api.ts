@@ -1,4 +1,3 @@
-import { ENV } from "../config/env";
 import jwt from "jsonwebtoken";
 
 function getServiceToken(): string {
@@ -18,7 +17,7 @@ function getServiceToken(): string {
  * Browser/client-safe API wrapper used by Maya conversational intents.
  */
 export async function api(path: string, options: RequestInit = {}) {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${process.env.SERVER_URL ?? "https://server.boreal.financial"}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -49,9 +48,6 @@ export async function api(path: string, options: RequestInit = {}) {
  * Core API wrapper for agent (server-to-server)
  */
 export async function apiCall(path: string, options: RequestInit = {}) {
-  const base = process.env.BASE_URL || process.env.API_URL || ENV.BASE_URL || "";
-  const url = /^https?:\/\//i.test(path) ? path : base ? `${base}${path}` : path;
-
   let token = "";
   try {
     token = getServiceToken();
@@ -68,7 +64,7 @@ export async function apiCall(path: string, options: RequestInit = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(`${process.env.SERVER_URL ?? "https://server.boreal.financial"}${path}`, {
     ...options,
     headers
   });

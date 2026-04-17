@@ -4,7 +4,7 @@ import { trackLLMUsage } from "../infrastructure/llmCostTracker";
 import { AppError } from "../errors/AppError";
 import { pool } from "../integrations/bfServerClient";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "sk-placeholder" });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export type MayaTaskType =
   | "simple"
