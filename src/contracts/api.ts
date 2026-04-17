@@ -16,7 +16,7 @@ export const API_ROUTES = {
     status: "/api/v1/call/status",
   },
   maya: {
-    message: "/api/v1/maya/message",
+    message: "/api/maya/message",
   },
   telephony: {
     token: "/api/v1/telephony/token",

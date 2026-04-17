@@ -51,7 +51,7 @@ describe("tool contract orchestration", () => {
   it("Maya message → valid response", async () => {
     await expect(sendMessage("hello", "token")).resolves.toEqual("ok");
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://server.boreal.financial/api/v1/maya/message",
+      "https://server.boreal.financial/api/maya/message",
       expect.any(Object),
     );
   });
