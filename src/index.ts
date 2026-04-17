@@ -22,6 +22,16 @@ async function run() {
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "test_secret") {
       throw new Error("[FATAL] JWT_SECRET must be set in production");
     }
+    // AGENT_SHARED_SECRET is required for authenticated agent→server calls.
+    // Warn loudly rather than crashing so the agent starts in degraded mode and
+    // the portal health badge surfaces the problem instead of a dead service.
+    if (!process.env.AGENT_SHARED_SECRET) {
+      console.warn(
+        "[WARN] AGENT_SHARED_SECRET is not set. " +
+          "Authenticated agent→server calls will fail. " +
+          "Set this in Azure App Service → Configuration to match BF-Server JWT_SECRET.",
+      );
+    }
   }
 
   const started = await startServer();

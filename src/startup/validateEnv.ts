@@ -10,7 +10,7 @@ export interface EnvValidationStatus {
   };
 }
 
-const REQUIRED_ENV_VARS = ["PORT", "SERVER_URL", "JWT_SECRET"] as const;
+const REQUIRED_ENV_VARS = ["PORT", "SERVER_URL", "JWT_SECRET", "OPENAI_API_KEY"] as const;
 
 const OPTIONAL_ENV_VARS = [
   "OPENAI_API_KEY",
@@ -30,7 +30,6 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
       "TWILIO_PHONE_NUMBER",
       "OPENAI_API_KEY",
       "JWT_SECRET",
-      "AGENT_SHARED_SECRET",
     ] as const;
 
     for (const key of required) {
@@ -41,6 +40,14 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
             `or as a GitHub Actions secret). Do not commit real values to .env.production.`,
         );
       }
+    }
+
+    if (!env.AGENT_SHARED_SECRET) {
+      console.warn(
+        "[WARN] AGENT_SHARED_SECRET is not set. " +
+          "Authenticated agent→server calls will fail. " +
+          "Set this in Azure App Service → Configuration to match BF-Server JWT_SECRET.",
+      );
     }
   }
 
