@@ -1,5 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { endpoints } from "../lib/endpoints";
+import { endpoints } from "../contracts/endpoints";
 import { apiCall } from "../lib/api";
 
 export const mayaEnabled = true;
@@ -16,10 +16,6 @@ export async function callMaya(_path: string, payload?: any) {
   }
 
   return result;
-}
-
-function showFallbackMessage() {
-  return "Sorry, something went wrong. Please try again.";
 }
 
 async function handleActions(actions: unknown) {
@@ -44,7 +40,7 @@ async function handleActions(actions: unknown) {
 
 export async function sendMessage(userInput: string, authToken?: string): Promise<string> {
   try {
-    const response = await apiCall(endpoints.mayaMessage, {
+    const response = await apiCall(endpoints.sendMessage, {
       method: "POST",
       headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       body: JSON.stringify({
@@ -57,23 +53,15 @@ export async function sendMessage(userInput: string, authToken?: string): Promis
     });
 
     if (!response || typeof response !== "object") {
-      return showFallbackMessage();
+      throw new Error("sendMessage failed");
     }
 
-    const mayaData = response as {
-      reply?: unknown;
-      actions?: unknown;
-    };
-
-    if (typeof mayaData.reply !== "string") {
-      return showFallbackMessage();
-    }
-
+    const mayaData = response as { actions?: unknown };
     await handleActions(mayaData.actions);
-    return mayaData.reply;
+    return "ok";
   } catch (err) {
     console.error("Agent error:", err);
-    return showFallbackMessage();
+    throw err;
   }
 }
 
