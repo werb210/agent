@@ -3,6 +3,10 @@ import { sendMessage } from "../src/api/maya";
 import { endpoints } from "../src/contracts/endpoints";
 
 describe("tool contract orchestration", () => {
+  beforeAll(() => {
+    process.env.SERVER_URL = "https://server.boreal.financial";
+  });
+
   beforeEach(() => {
     (global as any).fetch = vi.fn(async (_url: string, init: RequestInit) => {
       const path = String(_url);
@@ -46,6 +50,10 @@ describe("tool contract orchestration", () => {
 
   it("Maya message → valid response", async () => {
     await expect(sendMessage("hello", "token")).resolves.toEqual("ok");
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://server.boreal.financial/api/v1/maya/message",
+      expect.any(Object),
+    );
   });
 
   it("Invalid payload → rejected", async () => {
