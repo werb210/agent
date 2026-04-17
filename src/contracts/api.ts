@@ -1,30 +1,35 @@
 export const API_ROUTES = {
   health: "/health",
   auth: {
-    otpStart: "/api/auth/otp/start",
+    otpStart:  "/api/auth/otp/start",
     otpVerify: "/api/auth/otp/verify",
   },
   application: {
-    create: "/api/v1/applications",
-    upload: "/api/v1/documents",
+    create: "/api/client/applications",
+    upload: "/api/client/documents/upload",
   },
   leads: {
-    create: "/api/v1/crm/lead",
+    create: "/api/crm/web-leads",
   },
   calls: {
-    start: "/api/v1/call/start",
-    status: "/api/v1/call/status",
+    start:  "/api/calls/start",
+    status: "/api/calls/:id/status",
+    end:    "/api/calls/:id/end",
+    log:    "/api/voice/calls/log",
   },
   maya: {
     message: "/api/maya/message",
+    chat:    "/api/maya/chat",
   },
   telephony: {
-    token: "/api/v1/telephony/token",
+    token:        "/api/telephony/token",
+    outboundCall: "/api/telephony/outbound-call",
   },
   dialer: {
-    token: "/api/v1/dialer/token",
+    token: "/api/telephony/token",
   },
   crm: {
-    deal: (id: string) => `/api/v1/crm/deals/${id}`,
+    contacts: "/api/crm/contacts",
+    deal: (id: string) => `/api/crm/contacts/${id}`,
   },
 } as const;
