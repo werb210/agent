@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "strict": false,
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node"],
-    "ignoreDeprecations": "5.0",
-    "outDir": "dist"
+    "noEmitOnError": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/__mocks__/**", "src/testing/**"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

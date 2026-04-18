@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { afterEach, vi } from "vitest";
 
 process.env.API_URL =
@@ -31,10 +32,9 @@ class MemoryStorage {
   addEventListener: vi.fn(),
 };
 (globalThis as any).jest = vi;
-(globalThis as any).jest.requireMock = (path: string) => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require(path);
-};
+const require = createRequire(import.meta.url);
+
+(globalThis as any).jest.requireMock = (path: string) => require(path);
 
 afterEach(() => {
   vi.clearAllMocks();
