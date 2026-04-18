@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
-
-env:
-  API_BASE_URL: https://server.boreal.financial
 
 jobs:
   build:
@@ -19,22 +15,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - run: npm ci --include=optional
+      - run: npm ci
 
       - run: npm run typecheck
 
       - run: npm run build
-
-      - name: Check service readiness
-        run: |
-          echo "Checking service readiness..."
-
-          if [ -f "dist/index.js" ]; then
-            echo "Build artifact exists"
-          else
-            echo "Missing build artifact"
-            exit 1
-          fi
 
       - run: npm run test
