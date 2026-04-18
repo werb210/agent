@@ -85,7 +85,7 @@ describe("startup env hardening", () => {
     warnSpy.mockRestore();
   });
 
-  it("returns 503 error from /health when OPENAI_API_KEY is missing", async () => {
+  it("returns 200 degraded from /health when OPENAI_API_KEY is missing", async () => {
     const status = validateEnv({
       NODE_ENV: "test",
       PORT: "8080",
@@ -94,8 +94,8 @@ describe("startup env hardening", () => {
     });
 
     const res = await fetchHealth(status);
-    expect(res.code).toBe(503);
-    expect(res.body.status).toBe("error");
+    expect(res.code).toBe(200);
+    expect(res.body.status).toBe("degraded");
   });
 
   it("returns 200 ok from /health when required vars are present", async () => {
