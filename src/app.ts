@@ -109,10 +109,8 @@ export function createApp(options: AppDeps = {}) {
       return res.status(200).json({ status: "ok" });
     }
 
-    const httpStatus = envStatus.mode === "valid" ? 200 : 503;
-
-    res.status(httpStatus).json({
-      status: envStatus.mode === "valid" ? "ok" : "error",
+    res.status(200).json({
+      status: envStatus.mode === "valid" ? "ok" : "degraded",
       data: {
         env: envStatus.mode,
         valid: envStatus.valid,
