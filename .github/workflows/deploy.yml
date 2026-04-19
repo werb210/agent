@@ -25,30 +25,9 @@ jobs:
       - name: Verify build
         run: ls -la dist
 
-      - name: Validate Azure credentials JSON shape
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          echo "$AZURE_CREDENTIALS" | jq -e '
-            has("clientId") and
-            has("clientSecret") and
-            has("subscriptionId") and
-            has("tenantId") and
-            has("activeDirectoryEndpointUrl") and
-            has("resourceManagerEndpointUrl") and
-            has("activeDirectoryGraphResourceId") and
-            has("sqlManagementEndpointUrl") and
-            has("galleryEndpointUrl") and
-            has("managementEndpointUrl")
-          ' >/dev/null
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Deploy
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
