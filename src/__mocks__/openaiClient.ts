@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 export const runAI = vi.fn(async () => {
   return "mocked";
 });
