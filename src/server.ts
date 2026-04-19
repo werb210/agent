@@ -26,7 +26,8 @@ export async function startServer() {
   );
 
   const server = await new Promise<Server>((resolve) => {
-    const listeningServer = app.listen(envStatus.values.port, () => {
+    const listeningServer = app.listen(envStatus.values.port, "0.0.0.0", () => {
+      console.log(`Server running on ${envStatus.values.port}`);
       resolve(listeningServer);
     });
   });
