@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { twiml } from "twilio";
+import twilio from "twilio";
 import { ENV } from "../config/env.js";
 
 const router = Router();
+const { twiml } = twilio;
 
 router.post("/", (_req, res) => {
   const response = new twiml.VoiceResponse();
