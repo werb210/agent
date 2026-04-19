@@ -1,4 +1,4 @@
-import { callBFServer } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient.js";
 
 export async function findApplication(identifier: string) {
   return callBFServer(`/api/applications/status?identifier=${encodeURIComponent(identifier)}`);

@@ -7,9 +7,9 @@ vi.mock("../services/mayaSettingsService", () => ({
   getMayaSettings: vi.fn()
 }));
 
-import { evaluateEscalation } from "../services/escalationEngine";
-import * as staffModule from "../services/staffAvailability";
-import * as settingsModule from "../services/mayaSettingsService";
+import { evaluateEscalation } from "../services/escalationEngine.js";
+import * as staffModule from "../services/staffAvailability.js";
+import * as settingsModule from "../services/mayaSettingsService.js";
 
 const mockedGetAvailableStaff =
   staffModule.getAvailableStaff as Mock;

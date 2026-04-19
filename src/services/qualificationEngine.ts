@@ -1,4 +1,4 @@
-import { SessionStage } from "../types/stages";
+import { SessionStage } from "../types/stages.js";
 
 export function determineNextStage(
   currentStage: SessionStage,

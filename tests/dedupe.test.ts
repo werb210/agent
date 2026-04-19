@@ -1,4 +1,4 @@
-import { shouldEnqueue } from "../src/queue/jobDeduper";
+import { shouldEnqueue } from "../src/queue/jobDeduper.js";
 
 describe("job dedupe", () => {
   it("suppresses duplicates in window", () => {

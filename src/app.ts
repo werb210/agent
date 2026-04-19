@@ -1,10 +1,10 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { randomUUID } from "crypto";
-import { createDependencies } from "./dependencies";
-import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types";
-import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv";
-import voiceRouter from "./routes/voice";
-import { mayaRouter } from "./api/maya";
+import { createDependencies } from "./dependencies/index.js";
+import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types.js";
+import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv.js";
+import voiceRouter from "./routes/voice.js";
+import { mayaRouter } from "./api/maya.js";
 
 const ALLOWED_ORIGINS = new Set(
   (process.env.CORS_ALLOWED_ORIGINS ?? "")

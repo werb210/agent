@@ -1,5 +1,5 @@
-import { checkHealth } from "../src/health";
-import { pool } from "../src/integrations/bfServerClient";
+import { checkHealth } from "../src/health.js";
+import { pool } from "../src/integrations/bfServerClient.js";
 
 describe("service smoke", () => {
   const originalEnv = process.env;

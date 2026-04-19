@@ -1,4 +1,4 @@
-import { log } from "../logger";
+import { log } from "../logger.js";
 
 export function logToolCall(callId: string, name: string, params: unknown): void {
   log({

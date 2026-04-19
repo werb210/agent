@@ -1,7 +1,7 @@
-import { runAI } from "../brain/openaiClient";
-import { SessionStage } from "../types/stages";
-import { MayaMode } from "../types/maya";
-import { MAYA_SYSTEM_PROMPT } from "../prompts/system";
+import { runAI } from "../brain/openaiClient.js";
+import { SessionStage } from "../types/stages.js";
+import { MayaMode } from "../types/maya.js";
+import { MAYA_SYSTEM_PROMPT } from "../prompts/system.js";
 
 type ConversationTurn = {
   role: "user" | "assistant";

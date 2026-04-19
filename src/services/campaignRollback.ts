@@ -1,6 +1,6 @@
-import { pool } from "../integrations/bfServerClient";
-import { logMayaAction } from "./mayaActionLedger";
-import { AppError } from "../errors/AppError";
+import { pool } from "../integrations/bfServerClient.js";
+import { logMayaAction } from "./mayaActionLedger.js";
+import { AppError } from "../errors/AppError.js";
 
 export async function snapshotCampaign(campaignId: string, config: unknown) {
   await pool.request(

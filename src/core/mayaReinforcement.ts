@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function updatePerformanceScore(campaignId: string): Promise<void> {
   const performance = await pool.query<{ roi: number | null; expected_roi: number | null }>(

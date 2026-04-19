@@ -1,5 +1,5 @@
-import { runLoadTest } from "./loadTest";
-import { validatePerformance } from "./performanceCheck";
+import { runLoadTest } from "./loadTest.js";
+import { validatePerformance } from "./performanceCheck.js";
 
 export async function preDeployValidation() {
   const loadResult = await runLoadTest();

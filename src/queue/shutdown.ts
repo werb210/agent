@@ -1,4 +1,4 @@
-import { stopWorker } from "./worker"
+import { stopWorker } from "./worker.js"
 
 export function registerShutdownHooks() {
   if (process.env.NODE_ENV === "test") {

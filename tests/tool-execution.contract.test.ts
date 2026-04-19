@@ -1,7 +1,7 @@
-import { runAgent } from "../src/agents/runAgent";
+import { runAgent } from "../src/agents/runAgent.js";
 import { vi } from "vitest";
 
-vi.mock("../src/tools", () => ({
+vi.mock("../src/tools/index.js", () => ({
   createLead: vi.fn().mockResolvedValue({ id: "lead-1" }),
   startCall: vi.fn().mockResolvedValue({ callId: "call-1" }),
   updateCallStatus: vi.fn().mockResolvedValue({ updated: true })

@@ -1,6 +1,6 @@
-import { createCorrelationId, logAudit } from "./auditLogger";
-import { requireCapability } from "../security/capabilityGuard";
-import { AppError } from "../errors/AppError";
+import { createCorrelationId, logAudit } from "./auditLogger.js";
+import { requireCapability } from "../security/capabilityGuard.js";
+import { AppError } from "../errors/AppError.js";
 
 const allowedTransitions: Record<string, string[]> = {
   new: ["qualifying"],

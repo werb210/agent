@@ -1,6 +1,6 @@
-import { createLead, startCall, updateCallStatus } from "../src/tools";
-import { sendMessage } from "../src/api/maya";
-import { endpoints } from "../src/contracts/endpoints";
+import { createLead, startCall, updateCallStatus } from "../src/tools/index.js";
+import { sendMessage } from "../src/api/maya.js";
+import { endpoints } from "../src/contracts/endpoints.js";
 
 describe("tool contract orchestration", () => {
   beforeAll(() => {

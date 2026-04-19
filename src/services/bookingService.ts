@@ -1,5 +1,5 @@
-import { getGraphToken } from "./msAuth";
-import { pool } from "../integrations/bfServerClient";
+import { getGraphToken } from "./msAuth.js";
+import { pool } from "../integrations/bfServerClient.js";
 import twilio from "twilio";
 
 const nativeFetch = globalThis["fetch"];

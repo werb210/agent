@@ -1,5 +1,5 @@
-import { getQueueLength } from "../queue/queue"
-import { getWorkerMetrics } from "../queue/worker"
+import { getQueueLength } from "../queue/queue.js"
+import { getWorkerMetrics } from "../queue/worker.js"
 
 export function getQueueMetrics() {
   return {

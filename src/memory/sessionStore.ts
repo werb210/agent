@@ -1,4 +1,4 @@
-import { pool } from "../config/pool";
+import { pool } from "../config/pool.js";
 
 export async function getSession(sessionId: string) {
   const result = await pool.request(

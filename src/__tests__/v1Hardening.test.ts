@@ -1,6 +1,6 @@
-import { acquireLock, clearLocks, releaseLock } from "../services/lock.service";
-import { clearProcessedIds, isDuplicate } from "../services/idempotency.service";
-import { withRetry } from "../lib/retry";
+import { acquireLock, clearLocks, releaseLock } from "../services/lock.service.js";
+import { clearProcessedIds, isDuplicate } from "../services/idempotency.service.js";
+import { withRetry } from "../lib/retry.js";
 
 describe("v1 hardening primitives", () => {
   beforeEach(() => {

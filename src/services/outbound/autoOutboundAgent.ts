@@ -1,5 +1,5 @@
-import { triggerOutboundCall } from "../twilioService";
-import { callBFServer } from "../../integrations/bfServerClient";
+import { triggerOutboundCall } from "../twilioService.js";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function autoOutboundHighValueLeads() {
   const contactResponse = await callBFServer<any>("/api/crm/contacts");

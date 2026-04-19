@@ -1,5 +1,5 @@
-import { getAvailableStaff } from "./staffAvailability";
-import { getMayaSettings } from "./mayaSettingsService";
+import { getAvailableStaff } from "./staffAvailability.js";
+import { getMayaSettings } from "./mayaSettingsService.js";
 
 interface EscalationResult {
   shouldEscalate: boolean;

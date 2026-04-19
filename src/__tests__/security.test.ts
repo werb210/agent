@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
-import { validatePermissions } from "../security/permissions";
-import { verifySignature as hmacVerify, verifySignature } from "../security/hmac";
-import { validateApiKey } from "../security/apiKeys";
+import { validatePermissions } from "../security/permissions.js";
+import { verifySignature as hmacVerify, verifySignature } from "../security/hmac.js";
+import { validateApiKey } from "../security/apiKeys.js";
 
 test("Website cannot forecast", () => {
   expect(() =>

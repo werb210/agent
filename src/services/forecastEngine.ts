@@ -1,6 +1,6 @@
-import { pool } from "../integrations/bfServerClient";
-import { safeExecute } from "../core/safeAsync";
-import { logAudit } from "../infrastructure/mayaAudit";
+import { pool } from "../integrations/bfServerClient.js";
+import { safeExecute } from "../core/safeAsync.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
 
 export async function generateRevenueForecast() {
   return safeExecute(async () => {

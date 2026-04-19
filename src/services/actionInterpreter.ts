@@ -1,5 +1,5 @@
-import { MayaAction } from '../types/actions';
-import { validateToolCall } from '../core/validateTool';
+import { MayaAction } from '../types/actions.js';
+import { validateToolCall } from '../core/validateTool.js';
 
 export function parseToolCall(input: any) {
   if (!input?.tool_calls?.length) return null;

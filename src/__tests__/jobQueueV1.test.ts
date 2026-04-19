@@ -1,9 +1,9 @@
 import { vi } from "vitest";
-import { emitter } from "../realtime/emitter";
-import { EVENTS } from "../realtime/events";
-import { registerListeners } from "../events/registerListeners";
-import { enqueue, queueLength, resetQueue } from "../queue/jobQueue";
-import { startWorker, stopWorker } from "../queue/worker";
+import { emitter } from "../realtime/emitter.js";
+import { EVENTS } from "../realtime/events.js";
+import { registerListeners } from "../events/registerListeners.js";
+import { enqueue, queueLength, resetQueue } from "../queue/jobQueue.js";
+import { startWorker, stopWorker } from "../queue/worker.js";
 import { setTimeout as sleep } from "node:timers/promises";
 
 describe("maya v1 queue", () => {

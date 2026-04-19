@@ -1,5 +1,5 @@
-import type { MayaRequest, MayaResponse } from "../../types/maya";
-import { callBFServer } from "../../integrations/bfServerClient";
+import type { MayaRequest, MayaResponse } from "../../types/maya.js";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 type ApplicationRecord = {
   id: string;

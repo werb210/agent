@@ -1,4 +1,4 @@
-import { resilientLLM } from "../infrastructure/mayaResilience";
+import { resilientLLM } from "../infrastructure/mayaResilience.js";
 
 export async function generateUnderwritingMemo(input: {
   requestedAmount: number;

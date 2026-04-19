@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { endpoints } from "../contracts/endpoints";
-import { apiCall } from "../lib/api";
+import { endpoints } from "../contracts/endpoints.js";
+import { apiCall } from "../lib/api.js";
 
 export const mayaEnabled = true;
 

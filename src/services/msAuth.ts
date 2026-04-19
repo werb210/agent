@@ -1,5 +1,5 @@
 import { ConfidentialClientApplication } from "@azure/msal-node";
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 
 function buildClient() {
   const clientId = process.env.MS_CLIENT_ID;

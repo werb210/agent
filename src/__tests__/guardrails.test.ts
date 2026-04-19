@@ -1,5 +1,5 @@
-import { complianceFilter } from "../guardrails/complianceFilter";
-import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard";
+import { complianceFilter } from "../guardrails/complianceFilter.js";
+import { sanitizeRateLanguage } from "../guardrails/rateRangeGuard.js";
 
 describe("guardrails", () => {
   it("replaces specific rates with safe language", () => {

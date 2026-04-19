@@ -1,12 +1,12 @@
-import type { Job } from "../queue/jobQueue";
-import bankStatementAnalysis from "./bankStatementAnalysis";
-import processDocumentOcr, { type OcrJob } from "./documentOcr";
-import applicationSummary from "./applicationSummary";
-import offerNotification from "./offerNotification";
-import messageNotification from "./messageNotification";
-import { processCallTranscript, type CallTranscriptJob } from "./callTranscript";
+import type { Job } from "../queue/jobQueue.js";
+import bankStatementAnalysis from "./bankStatementAnalysis.js";
+import processDocumentOcr, { type OcrJob } from "./documentOcr.js";
+import applicationSummary from "./applicationSummary.js";
+import offerNotification from "./offerNotification.js";
+import messageNotification from "./messageNotification.js";
+import { processCallTranscript, type CallTranscriptJob } from "./callTranscript.js";
 
-export { processCallTranscript } from "./callTranscript";
+export { processCallTranscript } from "./callTranscript.js";
 
 export const jobHandlers = {
   bankStatementAnalysis,

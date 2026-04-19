@@ -1,4 +1,4 @@
-import { createCorrelationId, logAudit } from "../core/auditLogger";
+import { createCorrelationId, logAudit } from "../core/auditLogger.js";
 
 export async function logLLMUsage(model: string, task: string) {
   await logAudit({

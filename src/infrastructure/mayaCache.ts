@@ -1,4 +1,4 @@
-import { redis } from "./redis";
+import { redis } from "./redis.js";
 
 export async function cacheSet(key: string, value: unknown, ttl = 300) {
   await redis.set(key, JSON.stringify(value), "EX", ttl);

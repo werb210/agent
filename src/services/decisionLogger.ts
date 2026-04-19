@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { CURRENT_AUTONOMY_LEVEL } from "../config/autonomy";
+import { pool } from "../integrations/bfServerClient.js";
+import { CURRENT_AUTONOMY_LEVEL } from "../config/autonomy.js";
 
 
 interface LogParams {

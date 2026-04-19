@@ -1,7 +1,7 @@
 import twilio from "twilio";
-import { logAudit } from "../infrastructure/mayaAudit";
-import { enforceKillSwitch } from "../core/mayaSafety";
-import { logger } from "../infrastructure/logger";
+import { logAudit } from "../infrastructure/mayaAudit.js";
+import { enforceKillSwitch } from "../core/mayaSafety.js";
+import { logger } from "../infrastructure/logger.js";
 
 type StartupNotificationContact = {
   id: string;

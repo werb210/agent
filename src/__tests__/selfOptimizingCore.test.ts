@@ -1,12 +1,12 @@
 import { vi, type Mock } from "vitest";
-import { allocateMarketingBudget } from "../core/capitalAllocator";
-import { optimizeCommission } from "../core/commissionOptimizer";
-import { calculateDealPriority } from "../core/dealPriorityEngine";
-import { predictiveLenderScore } from "../core/lenderMatchEngine";
-import { identifyExpansionMarkets } from "../core/marketExpansionEngine";
-import { advancedStrategicDecision } from "../core/strategicEngine";
-import { retrainModel } from "../core/selfLearningEngine";
-import { pool } from "../integrations/bfServerClient";
+import { allocateMarketingBudget } from "../core/capitalAllocator.js";
+import { optimizeCommission } from "../core/commissionOptimizer.js";
+import { calculateDealPriority } from "../core/dealPriorityEngine.js";
+import { predictiveLenderScore } from "../core/lenderMatchEngine.js";
+import { identifyExpansionMarkets } from "../core/marketExpansionEngine.js";
+import { advancedStrategicDecision } from "../core/strategicEngine.js";
+import { retrainModel } from "../core/selfLearningEngine.js";
+import { pool } from "../integrations/bfServerClient.js";
 
 vi.mock("../db", () => ({
   pool: {

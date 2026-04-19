@@ -1,4 +1,4 @@
-import { validateStateTransition } from "../core/stateMachine";
+import { validateStateTransition } from "../core/stateMachine.js";
 
 describe("validateStateTransition", () => {
   it("allows valid transitions", () => {

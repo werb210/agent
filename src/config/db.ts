@@ -1,4 +1,4 @@
-import { callBFServer } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient.js";
 
 type ModelProxy = {
   create: (args: unknown) => Promise<unknown>;

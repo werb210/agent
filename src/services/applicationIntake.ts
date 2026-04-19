@@ -1,4 +1,4 @@
-import { callBFServer } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient.js";
 
 type ApplicationContext = {
   revenue?: number;

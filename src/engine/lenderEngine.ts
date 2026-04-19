@@ -1,4 +1,4 @@
-import { getLenderMatchesFromMatrix } from "./lenderMatrixEngine";
+import { getLenderMatchesFromMatrix } from "./lenderMatrixEngine.js";
 
 export async function matchLenders(data: any, tier: string) {
   const amount = Number(data.funding_amount ?? 0);

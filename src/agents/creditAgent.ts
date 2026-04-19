@@ -1,6 +1,6 @@
-import { MayaAgent } from "./baseAgent";
-import { calculateFundingProbability } from "../core/probabilityEngine";
-import { createCorrelationId, logAudit } from "../core/auditLogger";
+import { MayaAgent } from "./baseAgent.js";
+import { calculateFundingProbability } from "../core/probabilityEngine.js";
+import { createCorrelationId, logAudit } from "../core/auditLogger.js";
 
 export class CreditAgent implements MayaAgent {
   name = "CreditAgent";

@@ -1,11 +1,11 @@
-import { executeTool } from "../core/executeTool";
-import { endpoints } from "../contracts/endpoints";
-import { apiFetch } from "../utils/apiClient";
+import { executeTool } from "../core/executeTool.js";
+import { endpoints } from "../contracts/endpoints.js";
+import { apiFetch } from "../utils/apiClient.js";
 import {
   CreateLeadSchema,
   ScheduleCallSchema,
   UpdateCallStatusSchema
-} from "../schemas/tools";
+} from "../schemas/tools.js";
 
 function authedPost<T>(path: string, payload: unknown, authToken: string): Promise<T> {
   if (!authToken) {

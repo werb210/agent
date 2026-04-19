@@ -1,4 +1,4 @@
-import { pool } from "../config/pool";
+import { pool } from "../config/pool.js";
 
 export async function createLenderDeals(lenderNames: string[], sessionId: string) {
   if (!lenderNames.length) {

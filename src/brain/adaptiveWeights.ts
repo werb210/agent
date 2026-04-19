@@ -1,4 +1,4 @@
-import { prisma } from "../config/db";
+import { prisma } from "../config/db.js";
 
 export async function calculateIndustryPerformance() {
   const fundedDeals = await prisma.callOutcome.findMany({

@@ -1,4 +1,4 @@
-import { callBFServer } from "../integrations/bfServerClient";
+import { callBFServer } from "../integrations/bfServerClient.js";
 
 export async function captureStartupLead(data: {
   name: string;

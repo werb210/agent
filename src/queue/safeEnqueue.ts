@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { enqueueJob, type Job } from "./queue";
-import { defaultRetryPolicy, shouldRetry, type RetryPolicy } from "./policies/retryPolicy";
+import { enqueueJob, type Job } from "./queue.js";
+import { defaultRetryPolicy, shouldRetry, type RetryPolicy } from "./policies/retryPolicy.js";
 
 type EnqueueInput = Omit<Job, "id" | "createdAt"> & Partial<Pick<Job, "id" | "createdAt">>;
 

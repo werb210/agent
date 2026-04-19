@@ -1,7 +1,7 @@
-import { extractApplicationFields, hasRequiredApplicationFields } from "../services/applicationIntake";
-import { getCappedBudgetAdjustment, suggestAdjustments } from "../services/marketingAdvisor";
-import { calculateFundingProbability } from "../services/probabilityEngine";
-import { calculateROI } from "../services/roiEngine";
+import { extractApplicationFields, hasRequiredApplicationFields } from "../services/applicationIntake.js";
+import { getCappedBudgetAdjustment, suggestAdjustments } from "../services/marketingAdvisor.js";
+import { calculateFundingProbability } from "../services/probabilityEngine.js";
+import { calculateROI } from "../services/roiEngine.js";
 
 describe("marketing intelligence services", () => {
   it("groups ROI data by source", () => {

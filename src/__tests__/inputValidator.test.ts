@@ -1,4 +1,4 @@
-import { validateQualificationInput } from "../core/inputValidator";
+import { validateQualificationInput } from "../core/inputValidator.js";
 
 describe("validateQualificationInput", () => {
   it("accepts valid qualification input", () => {

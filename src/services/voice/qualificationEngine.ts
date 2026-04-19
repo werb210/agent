@@ -1,4 +1,4 @@
-import { callBFServer } from "../../integrations/bfServerClient";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function evaluateQualification(sessionId: string, userSpeech: string) {
   let score = 0;

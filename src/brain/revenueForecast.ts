@@ -1,5 +1,5 @@
-import { prisma } from "../config/db";
-import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
+import { prisma } from "../config/db.js";
+import { cacheGet, cacheSet } from "../infrastructure/mayaCache.js";
 
 type RevenueForecast = {
   pipelineValue: number;

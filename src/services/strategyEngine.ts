@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { logAudit } from "../infrastructure/mayaAudit";
+import { pool } from "../integrations/bfServerClient.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
 
 export async function generateStrategicPlan() {
   const revenueData = await pool.request(`

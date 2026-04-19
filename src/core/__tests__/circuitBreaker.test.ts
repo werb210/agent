@@ -1,4 +1,4 @@
-import { CircuitBreaker } from "../circuitBreaker";
+import { CircuitBreaker } from "../circuitBreaker.js";
 
 describe("CircuitBreaker overload protection", () => {
   it("times out a slow operation", async () => {

@@ -1,4 +1,4 @@
-import { logger } from "../infrastructure/logger";
+import { logger } from "../infrastructure/logger.js";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const INTEGRATION_TIMEOUT_MS = 3_000;

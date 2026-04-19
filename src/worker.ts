@@ -1,4 +1,4 @@
-import "./infrastructure/env";
-import { startMayaWorkers } from "./core/mayaQueue";
+import "./infrastructure/env.js";
+import { startMayaWorkers } from "./core/mayaQueue.js";
 
 startMayaWorkers();

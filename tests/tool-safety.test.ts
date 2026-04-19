@@ -1,13 +1,13 @@
-import { execute } from "../src/ai/toolExecutor";
+import { execute } from "../src/ai/toolExecutor.js";
 import { vi } from "vitest";
 
-vi.mock("../src/tools", () => ({
+vi.mock("../src/tools/index.js", () => ({
   createLead: vi.fn(),
   startCall: vi.fn(),
   updateCallStatus: vi.fn()
 }));
 
-import * as toolsModule from "../src/tools";
+import * as toolsModule from "../src/tools/index.js";
 const startCall = toolsModule.startCall as unknown as ReturnType<typeof vi.fn>;
 
 describe("tool safety boundaries", () => {

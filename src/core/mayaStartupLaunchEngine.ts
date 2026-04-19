@@ -1,8 +1,8 @@
-import { pool } from "../integrations/bfServerClient";
-import { logAudit } from "../infrastructure/mayaAudit";
-import { launchStartupCampaign } from "../services/mayaStartupCampaignService";
-import { sendStartupNotification } from "../services/mayaStartupNotificationService";
-import { decryptAndMaskContact } from "../compliance/piiCrypto";
+import { pool } from "../integrations/bfServerClient.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
+import { launchStartupCampaign } from "../services/mayaStartupCampaignService.js";
+import { sendStartupNotification } from "../services/mayaStartupNotificationService.js";
+import { decryptAndMaskContact } from "../compliance/piiCrypto.js";
 
 type StartupProductRow = { id: string };
 

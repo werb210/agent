@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { recordMetric } from "./metricsLogger";
+import { pool } from "../integrations/bfServerClient.js";
+import { recordMetric } from "./metricsLogger.js";
 
 type AggregateRow = {
   total: string | number | null;

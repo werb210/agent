@@ -1,4 +1,4 @@
-import { getEnv } from "./config/env";
+import { getEnv } from "./config/env.js";
 
 export function getApiUrl() {
   const { API_URL } = getEnv();

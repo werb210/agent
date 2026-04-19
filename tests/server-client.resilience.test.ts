@@ -1,4 +1,4 @@
-import { apiFetch } from "../src/utils/apiClient";
+import { apiFetch } from "../src/utils/apiClient.js";
 
 describe("server client resilience", () => {
   it("returns json data", async () => {

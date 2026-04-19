@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 type AuditPayload = {
   correlationId: string;

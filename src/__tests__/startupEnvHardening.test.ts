@@ -1,6 +1,7 @@
-import { createApp } from "../app";
-import { validateEnv } from "../startup/validateEnv";
-import type { RuntimeDependencies } from "../dependencies/types";
+import { describe, expect, it, vi } from "vitest";
+import { createApp } from "../app.js";
+import { validateEnv } from "../startup/validateEnv.js";
+import type { RuntimeDependencies } from "../dependencies/types.js";
 import http from "http";
 
 function buildDeps(): RuntimeDependencies {
@@ -79,7 +80,7 @@ describe("startup env hardening", () => {
         TWILIO_ACCOUNT_SID: "sid",
         TWILIO_AUTH_TOKEN: "token",
         TWILIO_PHONE_NUMBER: "+15555555555",
-      }),
+      } as any),
     ).not.toThrow();
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("AGENT_SHARED_SECRET is not set"));
     warnSpy.mockRestore();
@@ -91,7 +92,7 @@ describe("startup env hardening", () => {
       PORT: "8080",
       SERVER_URL: "https://example.com",
       JWT_SECRET: "jwt-secret",
-    });
+    } as any);
 
     const res = await fetchHealth(status);
     expect(res.code).toBe(200);
@@ -105,7 +106,7 @@ describe("startup env hardening", () => {
       SERVER_URL: "https://example.com",
       JWT_SECRET: "jwt-secret",
       OPENAI_API_KEY: "openai-key",
-    });
+    } as any);
 
     const res = await fetchHealth(status);
     expect(res.code).toBe(200);

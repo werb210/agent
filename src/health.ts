@@ -1,5 +1,5 @@
-import { areToolHandlersLoaded } from "./ai/toolExecutor";
-import { pool } from "./integrations/bfServerClient";
+import { areToolHandlersLoaded } from "./ai/toolExecutor.js";
+import { pool } from "./integrations/bfServerClient.js";
 
 export async function checkHealth(): Promise<{ status: "ok" }> {
   await pool.query("SELECT 1");

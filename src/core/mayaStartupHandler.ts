@@ -1,4 +1,4 @@
-import { getAvailableProductCategories } from "./mayaProductIntelligence";
+import { getAvailableProductCategories } from "./mayaProductIntelligence.js";
 
 export async function handleStartupInquiry(message: string): Promise<{
   status: "available" | "not_available";

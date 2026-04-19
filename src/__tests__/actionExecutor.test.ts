@@ -11,10 +11,10 @@ vi.mock("../services/outboundIntelligence", () => ({
   triggerOutboundCall: vi.fn()
 }));
 
-import { executeAction } from "../services/actionExecutor";
-import * as bookingModule from "../services/bookingEngine";
-import * as settingsModule from "../services/mayaSettingsService";
-import * as outboundModule from "../services/outboundIntelligence";
+import { executeAction } from "../services/actionExecutor.js";
+import * as bookingModule from "../services/bookingEngine.js";
+import * as settingsModule from "../services/mayaSettingsService.js";
+import * as outboundModule from "../services/outboundIntelligence.js";
 
 const mockedHandleBooking = bookingModule.handleBooking as Mock;
 

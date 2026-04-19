@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { AppError } from "../errors/AppError";
+import { pool } from "../integrations/bfServerClient.js";
+import { AppError } from "../errors/AppError.js";
 
 
 export interface CampaignMetrics {

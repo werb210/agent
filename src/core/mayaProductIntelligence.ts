@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function getAvailableProductCategories(): Promise<string[]> {
   const result = await pool.request(`

@@ -1,13 +1,13 @@
-import { createCorrelationId, logAudit } from "./auditLogger";
-import { CircuitBreaker } from "./circuitBreaker";
-import { requireCapability } from "../security/capabilityGuard";
-import { featureFlags } from "../security/featureFlags";
-import { recordMetric } from "./metricsLogger";
-import { measureExecutionTime } from "./performanceTelemetry";
-import { calculateFeatureContributions } from "./explainability";
-import { generateReasoningSummary } from "./generateExplanation";
-import { pool } from "../integrations/bfServerClient";
-import { AppError } from "../errors/AppError";
+import { createCorrelationId, logAudit } from "./auditLogger.js";
+import { CircuitBreaker } from "./circuitBreaker.js";
+import { requireCapability } from "../security/capabilityGuard.js";
+import { featureFlags } from "../security/featureFlags.js";
+import { recordMetric } from "./metricsLogger.js";
+import { measureExecutionTime } from "./performanceTelemetry.js";
+import { calculateFeatureContributions } from "./explainability.js";
+import { generateReasoningSummary } from "./generateExplanation.js";
+import { pool } from "../integrations/bfServerClient.js";
+import { AppError } from "../errors/AppError.js";
 
 const nativeFetch = globalThis["fetch"];
 const ML_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";

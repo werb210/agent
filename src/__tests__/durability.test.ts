@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { clearExecutedToolKeys, executeTool } from "../lib/toolExecutor";
+import { pool } from "../integrations/bfServerClient.js";
+import { clearExecutedToolKeys, executeTool } from "../lib/toolExecutor.js";
 
 describe("durable tool execution", () => {
   beforeEach(() => {

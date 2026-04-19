@@ -1,1 +1,1 @@
-export { registerListeners as registerSystemEventListeners } from "./registerListeners";
+export { registerListeners as registerSystemEventListeners } from "./registerListeners.js";

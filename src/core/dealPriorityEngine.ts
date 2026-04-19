@@ -1,4 +1,4 @@
-import { PredictivePayload, predictiveLenderScore } from "./lenderMatchEngine";
+import { PredictivePayload, predictiveLenderScore } from "./lenderMatchEngine.js";
 
 export async function calculateDealPriority(payload: PredictivePayload) {
   const lenderScore = await predictiveLenderScore(payload);

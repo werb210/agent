@@ -1,4 +1,4 @@
-import { createCorrelationId, logAudit as logStructuredAudit } from "../core/auditLogger";
+import { createCorrelationId, logAudit as logStructuredAudit } from "../core/auditLogger.js";
 
 export async function logAudit(actor: string, action: string, metadata: unknown) {
   await logStructuredAudit({

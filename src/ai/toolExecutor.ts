@@ -1,10 +1,10 @@
-import { createLead, startCall, updateCallStatus } from "../tools";
-import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry";
-import { log } from "../logger";
-import { validateToolCall } from "../core/validateTool";
-import { executeTool as executeMayaTool } from "../core/toolExecutor";
-import { emitter } from "../realtime/emitter";
-import { EVENTS } from "../realtime/events";
+import { createLead, startCall, updateCallStatus } from "../tools/index.js";
+import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry.js";
+import { log } from "../logger.js";
+import { validateToolCall } from "../core/validateTool.js";
+import { executeTool as executeMayaTool } from "../core/toolExecutor.js";
+import { emitter } from "../realtime/emitter.js";
+import { EVENTS } from "../realtime/events.js";
 import jwt from "jsonwebtoken";
 
 export type ToolExecutionCall = {

@@ -1,5 +1,5 @@
-import { createLead, startCall, updateCallStatus } from "../src/tools";
-import { endpoints } from "../src/contracts/endpoints";
+import { createLead, startCall, updateCallStatus } from "../src/tools/index.js";
+import { endpoints } from "../src/contracts/endpoints.js";
 
 describe("full system path", () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-import { API_ROUTES } from "./api";
+import { API_ROUTES } from "./api.js";
 
 export const endpoints = {
   createLead: API_ROUTES.leads.create,

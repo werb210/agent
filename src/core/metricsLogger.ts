@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function recordMetric(name: string, value: number, metadata?: any) {
   await pool.request(

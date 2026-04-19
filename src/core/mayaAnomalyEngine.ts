@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function detectRevenueAnomalies(): Promise<void> {
   const revenue = await pool.query<{ total: string }>(

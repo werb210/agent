@@ -1,4 +1,4 @@
-import { runAI } from "../brain/openaiClient";
+import { runAI } from "../brain/openaiClient.js";
 
 export async function generateCreditMemo(deal: any) {
   const prompt = `

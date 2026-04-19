@@ -1,6 +1,6 @@
 import { vi, type MockedFunction, type Mock } from "vitest";
-import { runAgent } from "../agents/runAgent";
-import { execute } from "../ai/toolExecutor";
+import { runAgent } from "../agents/runAgent.js";
+import { execute } from "../ai/toolExecutor.js";
 
 vi.mock("../ai/toolExecutor", () => ({
   execute: vi.fn()

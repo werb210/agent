@@ -1,9 +1,9 @@
-import { generateStrategicPlan } from "../services/strategyEngine";
-import { autonomousGrowthCycle } from "../services/autonomousGrowth";
-import { generateRevenueForecast } from "../services/forecastEngine";
-import { calculateBrokerCompensation } from "../services/compensationEngine";
-import { detectRevenueAnomalies } from "./mayaAnomalyEngine";
-import { predictChurn } from "./mayaChurnEngine";
+import { generateStrategicPlan } from "../services/strategyEngine.js";
+import { autonomousGrowthCycle } from "../services/autonomousGrowth.js";
+import { generateRevenueForecast } from "../services/forecastEngine.js";
+import { calculateBrokerCompensation } from "../services/compensationEngine.js";
+import { detectRevenueAnomalies } from "./mayaAnomalyEngine.js";
+import { predictChurn } from "./mayaChurnEngine.js";
 
 export async function runFullMayaCycle(): Promise<void> {
   await generateRevenueForecast();

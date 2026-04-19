@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { twiml } from "twilio";
-import { ENV } from "../config/env";
+import { ENV } from "../config/env.js";
 
 const router = Router();
 

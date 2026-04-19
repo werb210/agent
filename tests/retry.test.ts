@@ -1,5 +1,5 @@
-import { enqueueJob, resetQueueForTests } from "../src/queue/queue";
-import { startWorker, stopWorker } from "../src/queue/worker";
+import { enqueueJob, resetQueueForTests } from "../src/queue/queue.js";
+import { startWorker, stopWorker } from "../src/queue/worker.js";
 
 describe("worker retries", () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { SessionStage } from "../types/stages";
+import { pool } from "../integrations/bfServerClient.js";
+import { SessionStage } from "../types/stages.js";
 
 type SessionState = {
   stage: SessionStage;

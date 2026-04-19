@@ -1,10 +1,10 @@
 import { Worker } from "bullmq";
-import { redisConnection } from "../infrastructure/redis";
-import { runAdvancedIntelligence, runFullMayaCycle } from "./mayaOrchestrator";
-import { generateStrategicPlan } from "../services/strategyEngine";
-import { autonomousGrowthCycle } from "../services/autonomousGrowth";
-import { checkStartupProductLaunch } from "./mayaStartupLaunchEngine";
-import { logger } from "../infrastructure/logger";
+import { redisConnection } from "../infrastructure/redis.js";
+import { runAdvancedIntelligence, runFullMayaCycle } from "./mayaOrchestrator.js";
+import { generateStrategicPlan } from "../services/strategyEngine.js";
+import { autonomousGrowthCycle } from "../services/autonomousGrowth.js";
+import { checkStartupProductLaunch } from "./mayaStartupLaunchEngine.js";
+import { logger } from "../infrastructure/logger.js";
 
 export function startMayaWorkers() {
   new Worker(

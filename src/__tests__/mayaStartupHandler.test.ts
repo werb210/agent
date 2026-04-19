@@ -3,8 +3,8 @@ vi.mock("../core/mayaProductIntelligence", () => ({
   getAvailableProductCategories: vi.fn(),
 }));
 
-import { handleStartupInquiry } from "../core/mayaStartupHandler";
-import * as productModule from "../core/mayaProductIntelligence";
+import { handleStartupInquiry } from "../core/mayaStartupHandler.js";
+import * as productModule from "../core/mayaProductIntelligence.js";
 
 const mockedGetAvailableProductCategories =
   productModule.getAvailableProductCategories as MockedFunction<

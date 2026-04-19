@@ -7,8 +7,8 @@ vi.mock("../db", () => ({
   }
 }));
 
-import { detectMLDrift } from "../core/mlDriftMonitor";
-import { pool } from "../integrations/bfServerClient";
+import { detectMLDrift } from "../core/mlDriftMonitor.js";
+import { pool } from "../integrations/bfServerClient.js";
 
 describe("ML Drift Monitor", () => {
   beforeEach(() => {

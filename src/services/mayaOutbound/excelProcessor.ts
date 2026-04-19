@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { randomUUID } from "node:crypto";
-import { callBFServer } from "../../integrations/bfServerClient";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function processExcel(filePath: string, campaignName: string) {
   const campaignId = randomUUID();

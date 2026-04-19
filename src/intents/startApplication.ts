@@ -1,5 +1,5 @@
-import { api } from "../lib/api";
-import { withTimeout } from "../lib/withTimeout";
+import { api } from "../lib/api.js";
+import { withTimeout } from "../lib/withTimeout.js";
 
 export async function startApplication(_input: string, context: unknown) {
   const normalizedContext = (context ?? {}) as { name?: string; email?: string };

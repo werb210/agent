@@ -1,5 +1,5 @@
-import { calculateConfidence } from "../core/mayaConfidence";
-import { resilientLLM } from "../infrastructure/mayaResilience";
+import { calculateConfidence } from "../core/mayaConfidence.js";
+import { resilientLLM } from "../infrastructure/mayaResilience.js";
 
 const SYSTEM_PROMPT = `
 You are Maya, a 27-year-old booking agent for Boreal Financial.

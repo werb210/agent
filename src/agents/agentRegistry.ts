@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 export type AgentType = "sales" | "marketing" | "risk";
 
 export interface MayaAgent<TInput = unknown, TOutput = unknown> {

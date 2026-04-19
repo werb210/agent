@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 const pricing: Record<string, number> = {
   "gpt-4o": 0.00001,

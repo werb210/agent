@@ -1,5 +1,5 @@
-import { PredictivePayload } from "./lenderMatchEngine";
-import { calculateDealPriority } from "./dealPriorityEngine";
+import { PredictivePayload } from "./lenderMatchEngine.js";
+import { calculateDealPriority } from "./dealPriorityEngine.js";
 
 type StrategicPayload = PredictivePayload & {
   product_type?: string;

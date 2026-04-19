@@ -1,4 +1,4 @@
-import { dequeue } from "./jobQueue"
+import { dequeue } from "./jobQueue.js"
 import { setTimeout as sleep } from "node:timers/promises";
 
 const MAX_ATTEMPTS = 3

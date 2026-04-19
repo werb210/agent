@@ -1,4 +1,4 @@
-import { API_ROUTES } from "../contracts/api";
+import { API_ROUTES } from "../contracts/api.js";
 
 export const ENDPOINTS = {
   dialerToken: API_ROUTES.dialer.token,

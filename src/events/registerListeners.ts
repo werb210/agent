@@ -1,5 +1,5 @@
-import { emitter } from '../realtime/emitter';
-import { EVENTS } from '../realtime/events';
+import { emitter } from '../realtime/emitter.js';
+import { EVENTS } from '../realtime/events.js';
 
 let listenersRegistered = false;
 

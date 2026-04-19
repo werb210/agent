@@ -1,4 +1,4 @@
-import { PII_FIELDS } from "./piiMap";
+import { PII_FIELDS } from "./piiMap.js";
 
 export function detectPII(payload: any) {
   const found = [];
