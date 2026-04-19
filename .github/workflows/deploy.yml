@@ -1,47 +1,33 @@
-name: Deploy Agent
+name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest
 
-    env:
-      HAS_AZURE_PROFILE: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE != '' }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Install deps
+      - name: Install
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Prepare deploy package
-        run: |
-          rm -rf deploy_package
-          mkdir -p deploy_package
-          cp -R dist deploy_package/dist
-          cp package.json package-lock.json deploy_package/
-          cp -R node_modules deploy_package/node_modules
+      - name: Verify build
+        run: ls -la dist
 
-      - name: Deploy to Azure
-        if: ${{ env.HAS_AZURE_PROFILE == 'true' }}
+      - name: Deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: your-agent-app-name
-          publish-profile: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE }}
-          package: deploy_package
-
-      - name: Skip deploy
-        if: ${{ env.HAS_AZURE_PROFILE != 'true' }}
-        run: echo "Skipping deploy — no publish profile"
+          app-name: <YOUR-APP-SERVICE-NAME>
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
