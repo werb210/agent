@@ -20,11 +20,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install
+      - name: Install deps
         run: npm ci
 
       - name: Build
-        run: npm run build --if-present
+        run: npm run build
+
+      - name: Prepare deploy package
+        run: |
+          rm -rf deploy_package
+          mkdir -p deploy_package
+          cp -R dist deploy_package/dist
+          cp package.json package-lock.json deploy_package/
+          cp -R node_modules deploy_package/node_modules
 
       - name: Deploy to Azure
         if: ${{ env.HAS_AZURE_PROFILE == 'true' }}
@@ -32,6 +40,7 @@ jobs:
         with:
           app-name: your-agent-app-name
           publish-profile: ${{ secrets.AZURE_AGENT_PUBLISH_PROFILE }}
+          package: deploy_package
 
       - name: Skip deploy
         if: ${{ env.HAS_AZURE_PROFILE != 'true' }}
