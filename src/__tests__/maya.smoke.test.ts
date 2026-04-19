@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { callMaya } from "../api/maya";
+import { callMaya } from "../api/maya.js";
 
 describe("Maya real integration", () => {
   it("POST /api/v1/maya/message", async () => {

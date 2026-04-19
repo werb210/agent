@@ -1,8 +1,8 @@
 import OpenAI, { toFile } from "openai";
-import { calculateConfidence } from "../core/mayaConfidence";
-import { resilientLLM } from "../infrastructure/mayaResilience";
-import { trackLLMUsage } from "../infrastructure/llmCostTracker";
-import { AppError } from "../errors/AppError";
+import { calculateConfidence } from "../core/mayaConfidence.js";
+import { resilientLLM } from "../infrastructure/mayaResilience.js";
+import { trackLLMUsage } from "../infrastructure/llmCostTracker.js";
+import { AppError } from "../errors/AppError.js";
 
 const nativeFetch = globalThis["fetch"];
 if (!process.env.OPENAI_API_KEY) {

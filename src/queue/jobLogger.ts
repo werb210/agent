@@ -1,5 +1,5 @@
-import { logger } from "../infrastructure/logger";
-import { Job } from "./jobQueue";
+import { logger } from "../infrastructure/logger.js";
+import { Job } from "./jobQueue.js";
 
 type JobStatus = "started" | "completed" | "failed";
 

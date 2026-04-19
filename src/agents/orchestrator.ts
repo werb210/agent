@@ -1,11 +1,11 @@
-import { getAgent } from "./agentRegistry";
-import { publishAgentMessage } from "./communicationBus";
+import { getAgent } from "./agentRegistry.js";
+import { publishAgentMessage } from "./communicationBus.js";
 import {
   MarketingAgentResult,
   MayaAgentPayload,
   RiskAgentResult,
   SalesAgentResult
-} from "./agentTypes";
+} from "./agentTypes.js";
 
 export interface MayaOrchestrationResult {
   sales: SalesAgentResult;

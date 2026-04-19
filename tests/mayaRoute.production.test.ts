@@ -1,5 +1,5 @@
-import { checkHealth } from "../src/health";
-import { pool } from "../src/integrations/bfServerClient";
+import { checkHealth } from "../src/health.js";
+import { pool } from "../src/integrations/bfServerClient.js";
 
 describe("maya runtime regression guard", () => {
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe("maya runtime regression guard", () => {
   });
 
   it("fails when handlers are not loaded", async () => {
-    const mod = await import("../src/ai/toolExecutor");
+    const mod = await import("../src/ai/toolExecutor.js");
     const handlers = vi.spyOn(mod, "areToolHandlersLoaded");
     handlers.mockReturnValue(false);
 

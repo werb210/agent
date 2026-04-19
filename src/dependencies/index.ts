@@ -1,5 +1,5 @@
-import { RuntimeDependencies, type AdapterStatus } from "./types";
-import { pool } from "../integrations/bfServerClient";
+import { RuntimeDependencies, type AdapterStatus } from "./types.js";
+import { pool } from "../integrations/bfServerClient.js";
 
 type AdapterMode = "required" | "optional";
 

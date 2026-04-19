@@ -1,11 +1,11 @@
-import { getDynamicEscalationThreshold } from "../services/adaptiveThreshold";
-import { evaluateConfidence } from "../services/confidenceEngine";
-import { clusterAdjustedProbability, refineProbability } from "../services/probabilityEngine";
-import { getRecommendedAdjustments } from "../services/budgetReallocationEngine";
-import { shouldRetryCall } from "../services/outboundIntelligence";
-import { classifyDeal } from "../services/dealClusterEngine";
-import { evaluateCampaignAdjustment } from "../services/marketingExecutionEngine";
-import { buildLenderRecommendationMessage, rankLenders, scoreLenderMatch } from "../services/lenderMatchingEngine";
+import { getDynamicEscalationThreshold } from "../services/adaptiveThreshold.js";
+import { evaluateConfidence } from "../services/confidenceEngine.js";
+import { clusterAdjustedProbability, refineProbability } from "../services/probabilityEngine.js";
+import { getRecommendedAdjustments } from "../services/budgetReallocationEngine.js";
+import { shouldRetryCall } from "../services/outboundIntelligence.js";
+import { classifyDeal } from "../services/dealClusterEngine.js";
+import { evaluateCampaignAdjustment } from "../services/marketingExecutionEngine.js";
+import { buildLenderRecommendationMessage, rankLenders, scoreLenderMatch } from "../services/lenderMatchingEngine.js";
 
 describe("adaptive threshold", () => {
   it("returns aggressive threshold for high booking conversion", () => {

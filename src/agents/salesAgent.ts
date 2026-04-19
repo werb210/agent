@@ -1,5 +1,5 @@
-import { MayaAgent } from "./agentRegistry";
-import { MayaAgentPayload, SalesAgentResult } from "./agentTypes";
+import { MayaAgent } from "./agentRegistry.js";
+import { MayaAgentPayload, SalesAgentResult } from "./agentTypes.js";
 
 export const salesAgent: MayaAgent<MayaAgentPayload, SalesAgentResult> = {
   async execute(input: MayaAgentPayload): Promise<SalesAgentResult> {

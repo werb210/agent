@@ -1,4 +1,4 @@
-import { RoiSummary } from "./roiEngine";
+import { RoiSummary } from "./roiEngine.js";
 
 export function suggestAdjustments(roiData: RoiSummary): string[] {
   const suggestions: string[] = [];

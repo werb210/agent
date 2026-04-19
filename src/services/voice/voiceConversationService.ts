@@ -1,12 +1,12 @@
-import { runAI } from "../../brain/openaiClient";
-import { logDecision } from "../complianceLogger";
-import { evaluateQualification } from "./qualificationEngine";
-import { getAvailableStaff } from "../staff/staffAvailability";
-import { createBooking } from "../booking/o365BookingService";
-import { getState, saveState } from "../../lib/conversationState";
-import { saveEvent } from "../../lib/eventStore";
-import { logger } from "../../infrastructure/logger";
-import { callBFServer } from "../../integrations/bfServerClient";
+import { runAI } from "../../brain/openaiClient.js";
+import { logDecision } from "../complianceLogger.js";
+import { evaluateQualification } from "./qualificationEngine.js";
+import { getAvailableStaff } from "../staff/staffAvailability.js";
+import { createBooking } from "../booking/o365BookingService.js";
+import { getState, saveState } from "../../lib/conversationState.js";
+import { saveEvent } from "../../lib/eventStore.js";
+import { logger } from "../../infrastructure/logger.js";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function handleVoiceInput(sessionId: string, userSpeech: string) {
   const existingState = await getState(sessionId);

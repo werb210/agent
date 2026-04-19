@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 type StalledRow = {
   id: string;

@@ -1,4 +1,4 @@
-import { saveToken } from "../src/services/token";
+import { saveToken } from "../src/services/token.js";
 
 vi.mock("../src/brain/openaiClient", () => ({
   runAI: vi.fn(),

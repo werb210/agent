@@ -1,9 +1,9 @@
-import { MayaAction } from "../types/actions";
-import { handleBooking } from "./bookingEngine";
-import { getMayaSettings } from "./mayaSettingsService";
-import { getPipelineSummary, getApplicationsByStatus } from "./staffDataAccess";
-import { triggerOutboundCall } from "./outboundIntelligence";
-import { logAudit } from "../infrastructure/mayaAudit";
+import { MayaAction } from "../types/actions.js";
+import { handleBooking } from "./bookingEngine.js";
+import { getMayaSettings } from "./mayaSettingsService.js";
+import { getPipelineSummary, getApplicationsByStatus } from "./staffDataAccess.js";
+import { triggerOutboundCall } from "./outboundIntelligence.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
 
 export async function executeAction(action: MayaAction, context: any) {
   const settings = await getMayaSettings();

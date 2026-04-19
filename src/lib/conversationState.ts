@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function saveState(callId: string, state: unknown) {
   await pool.query(

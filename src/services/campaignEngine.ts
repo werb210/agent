@@ -1,12 +1,12 @@
-import { pool } from "../integrations/bfServerClient";
-import { logAudit } from "../infrastructure/mayaAudit";
-import { enforceKillSwitch } from "../core/mayaSafety";
-import { ENV } from "../infrastructure/env";
-import { snapshotCampaign } from "./campaignRollback";
-import { requireApproval } from "../core/mayaApprovalGate";
-import { logMayaAction } from "./mayaActionLedger";
-import { escalateIfAnomaly } from "../core/mayaEscalation";
-import { AppError } from "../errors/AppError";
+import { pool } from "../integrations/bfServerClient.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
+import { enforceKillSwitch } from "../core/mayaSafety.js";
+import { ENV } from "../infrastructure/env.js";
+import { snapshotCampaign } from "./campaignRollback.js";
+import { requireApproval } from "../core/mayaApprovalGate.js";
+import { logMayaAction } from "./mayaActionLedger.js";
+import { escalateIfAnomaly } from "../core/mayaEscalation.js";
+import { AppError } from "../errors/AppError.js";
 
 export async function launchAutonomousCampaigns() {
   enforceKillSwitch();

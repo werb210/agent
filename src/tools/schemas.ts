@@ -3,4 +3,4 @@ export {
   ScheduleCallSchema,
   UpdateCallStatusSchema,
   MayaMessageSchema
-} from "../schemas/tools";
+} from "../schemas/tools.js";

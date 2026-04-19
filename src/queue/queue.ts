@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { enqueue, dequeue, queueLength, snapshot, resetQueue, type Job } from "./jobQueue";
+import { enqueue, dequeue, queueLength, snapshot, resetQueue, type Job } from "./jobQueue.js";
 
 export type { Job };
 

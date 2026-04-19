@@ -1,5 +1,5 @@
-import { LeadInput } from "../types/lead";
-import { optimizeCommission } from "./commissionOptimizer";
+import { LeadInput } from "../types/lead.js";
+import { optimizeCommission } from "./commissionOptimizer.js";
 
 export async function scoreLead(lead: LeadInput) {
   let score = 0;

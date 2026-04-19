@@ -1,6 +1,6 @@
 import readline from "readline-sync";
 import crypto from "crypto";
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 
 const nativeFetch = globalThis["fetch"];
 const AGENT_URL = process.env.AGENT_URL || "http://127.0.0.1:4000/ai/execute";

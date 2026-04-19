@@ -1,5 +1,5 @@
-import { MayaAgent } from "./baseAgent";
-import { detectStalledDeals } from "../core/churnDetection";
+import { MayaAgent } from "./baseAgent.js";
+import { detectStalledDeals } from "../core/churnDetection.js";
 
 export class OperationsAgent implements MayaAgent {
   name = "OperationsAgent";

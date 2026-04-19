@@ -1,6 +1,6 @@
-import { getQueueMetrics } from "../observability/queueMetrics"
-import { enqueueJob, resetQueueForTests } from "../queue/queue"
-import { resetWorkerMetricsForTests } from "../queue/worker"
+import { getQueueMetrics } from "../observability/queueMetrics.js"
+import { enqueueJob, resetQueueForTests } from "../queue/queue.js"
+import { resetWorkerMetricsForTests } from "../queue/worker.js"
 
 describe("queue health metrics", () => {
   beforeEach(() => {

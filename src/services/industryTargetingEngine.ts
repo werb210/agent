@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { cacheGet, cacheSet } from "../infrastructure/mayaCache";
+import { pool } from "../integrations/bfServerClient.js";
+import { cacheGet, cacheSet } from "../infrastructure/mayaCache.js";
 
 type IndustryAggregateRow = {
   industry: string;

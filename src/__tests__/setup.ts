@@ -7,7 +7,7 @@ process.env.AGENT_API_TOKEN ||= "test-token";
 
 import { beforeEach, vi } from "vitest";
 
-import { resetEnv } from "../config/env";
+import { resetEnv } from "../config/env.js";
 
 (globalThis as any).jest = vi;
 

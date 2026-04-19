@@ -1,4 +1,4 @@
-import { checkHealth } from "../health";
+import { checkHealth } from "../health.js";
 
 export async function runLoadTest(): Promise<{
   iterations: number;

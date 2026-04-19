@@ -1,7 +1,7 @@
-import { pool } from "../integrations/bfServerClient";
-import { getAverageReward } from "./reinforcementEngine";
-import { createCorrelationId, logAudit } from "./auditLogger";
-import { safeExecute } from "./safeAsync";
+import { pool } from "../integrations/bfServerClient.js";
+import { getAverageReward } from "./reinforcementEngine.js";
+import { createCorrelationId, logAudit } from "./auditLogger.js";
+import { safeExecute } from "./safeAsync.js";
 
 export async function optimizeCampaignBudget(campaignId: string, correlationId?: string) {
   return safeExecute(async () => {

@@ -1,6 +1,6 @@
-import { decrypt, encrypt } from "./encryption";
-import { maskEmail, maskPhone } from "./masking";
-import { logPIIAccess } from "./piiAccessLogger";
+import { decrypt, encrypt } from "./encryption.js";
+import { maskEmail, maskPhone } from "./masking.js";
+import { logPIIAccess } from "./piiAccessLogger.js";
 
 export function encryptPIIFields(payload: { [key: string]: any; email?: string; phone?: string }) {
   const next = { ...payload };

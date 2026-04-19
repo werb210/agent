@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, vi } from "vitest";
-import { saveToken } from "../src/services/token";
+import { saveToken } from "../src/services/token.js";
 
 class MemoryStorage {
   private readonly map = new Map<string, string>();

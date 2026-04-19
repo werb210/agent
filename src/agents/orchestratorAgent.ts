@@ -1,6 +1,6 @@
-import { requireCapability } from "../security/capabilityGuard";
-import { ToolExecutionCall } from "../ai/toolExecutor";
-import { runAgent } from "./runAgent";
+import { requireCapability } from "../security/capabilityGuard.js";
+import { ToolExecutionCall } from "../ai/toolExecutor.js";
+import { runAgent } from "./runAgent.js";
 
 export class OrchestratorAgent {
   constructor(private role: string = "system") {}

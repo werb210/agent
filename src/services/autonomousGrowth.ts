@@ -1,9 +1,9 @@
-import { determineTopIndustries } from "./industryTargetingEngine";
-import { generateAdCopy } from "./adCopyEngine";
-import { launchPlatformCampaign } from "./platformLaunchEngine";
-import { reinvestRevenue } from "./reinvestmentEngine";
-import { pool } from "../integrations/bfServerClient";
-import { enforceKillSwitch } from "../core/mayaSafety";
+import { determineTopIndustries } from "./industryTargetingEngine.js";
+import { generateAdCopy } from "./adCopyEngine.js";
+import { launchPlatformCampaign } from "./platformLaunchEngine.js";
+import { reinvestRevenue } from "./reinvestmentEngine.js";
+import { pool } from "../integrations/bfServerClient.js";
+import { enforceKillSwitch } from "../core/mayaSafety.js";
 
 export async function autonomousGrowthCycle(): Promise<void> {
   enforceKillSwitch();

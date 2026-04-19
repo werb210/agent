@@ -1,7 +1,7 @@
-import { MayaAgent } from "./baseAgent";
-import { capitalEfficiencyIndex } from "../core/capitalEfficiency";
-import type { MayaAgent as RegistryAgent } from "./agentRegistry";
-import type { MarketingAgentResult, MayaAgentPayload } from "./agentTypes";
+import { MayaAgent } from "./baseAgent.js";
+import { capitalEfficiencyIndex } from "../core/capitalEfficiency.js";
+import type { MayaAgent as RegistryAgent } from "./agentRegistry.js";
+import type { MarketingAgentResult, MayaAgentPayload } from "./agentTypes.js";
 
 export class MarketingAgent implements MayaAgent {
   name = "MarketingAgent";

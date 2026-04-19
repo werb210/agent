@@ -1,5 +1,5 @@
-import { getMLApprovalProbability } from "./mlClient";
-import { validateQualificationInput } from "./inputValidator";
+import { getMLApprovalProbability } from "./mlClient.js";
+import { validateQualificationInput } from "./inputValidator.js";
 
 export async function calculateFundingProbability(payload: any, correlationId?: string, role: string = "system") {
   validateQualificationInput(payload);

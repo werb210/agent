@@ -1,5 +1,5 @@
-import { apiFetch } from "../utils/apiClient";
-import { API_ROUTES } from "../contracts/api";
+import { apiFetch } from "../utils/apiClient.js";
+import { API_ROUTES } from "../contracts/api.js";
 
 type CreateLeadPayload = {
   name: string;

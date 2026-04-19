@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 import { setTimeout as sleep } from "node:timers/promises";
 interface CircuitOptions {
   timeout: number;

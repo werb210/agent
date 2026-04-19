@@ -1,4 +1,4 @@
-import { callBFServer } from "../../integrations/bfServerClient";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function exportTrainingDataset() {
   const contacts = await callBFServer<any>("/api/crm/contacts");

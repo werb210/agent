@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { safeExecute } from "./safeAsync";
+import { pool } from "../integrations/bfServerClient.js";
+import { safeExecute } from "./safeAsync.js";
 
 type LenderStatsRow = {
   avg_funding: string | number | null;

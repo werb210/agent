@@ -1,8 +1,8 @@
 import OpenAI from "openai";
-import { logLLMUsage } from "../infrastructure/mayaTelemetry";
-import { trackLLMUsage } from "../infrastructure/llmCostTracker";
-import { AppError } from "../errors/AppError";
-import { pool } from "../integrations/bfServerClient";
+import { logLLMUsage } from "../infrastructure/mayaTelemetry.js";
+import { trackLLMUsage } from "../infrastructure/llmCostTracker.js";
+import { AppError } from "../errors/AppError.js";
+import { pool } from "../integrations/bfServerClient.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 

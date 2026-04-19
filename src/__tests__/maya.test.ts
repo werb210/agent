@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, expect, test, vi } from "vitest";
-import { handleMessage } from "../core/handleMessage";
+import { handleMessage } from "../core/handleMessage.js";
 
 describe("Maya message handler hardening", () => {
   beforeEach(() => {

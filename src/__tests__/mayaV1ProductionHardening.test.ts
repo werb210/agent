@@ -1,9 +1,9 @@
 import { vi, type Mock } from "vitest";
 import fs from "fs";
 import path from "path";
-import { generateCreditSummary } from "../services/creditSummary";
-import * as realClient from "../brain/openaiClient";
-import * as mayaResilience from "../infrastructure/mayaResilience";
+import { generateCreditSummary } from "../services/creditSummary.js";
+import * as realClient from "../brain/openaiClient.js";
+import * as mayaResilience from "../infrastructure/mayaResilience.js";
 
 vi.mock("../infrastructure/mayaResilience", () => ({
   resilientLLM: vi.fn()

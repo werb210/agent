@@ -1,4 +1,4 @@
-import { safeExecute } from "./safeAsync";
+import { safeExecute } from "./safeAsync.js";
 
 export function simulatePortfolioVolatility(currentValue: number) {
   const simulations = 1000;

@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 const activeSessions = new Map<string, number>();
 
 export function startSession(identity: string) {

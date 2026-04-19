@@ -1,4 +1,4 @@
-import { startServer } from "./server";
+import { startServer } from "./server.js";
 import fs from "fs";
 import { fileURLToPath } from "url";
 

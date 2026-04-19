@@ -1,5 +1,5 @@
-import { pool } from "../config/pool";
-import { closingProbabilityFromVelocity } from "./predictiveEngine";
+import { pool } from "../config/pool.js";
+import { closingProbabilityFromVelocity } from "./predictiveEngine.js";
 
 export async function trackDealEvent(sessionId: string, eventType: string) {
   await pool.request(

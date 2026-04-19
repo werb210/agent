@@ -1,7 +1,7 @@
-import { registerAgent } from "./agentRegistry";
-import { marketingAgent } from "./marketingAgent";
-import { riskAgent } from "./riskAgent";
-import { salesAgent } from "./salesAgent";
+import { registerAgent } from "./agentRegistry.js";
+import { marketingAgent } from "./marketingAgent.js";
+import { riskAgent } from "./riskAgent.js";
+import { salesAgent } from "./salesAgent.js";
 
 export function registerMayaAgents(): void {
   registerAgent("sales", salesAgent);

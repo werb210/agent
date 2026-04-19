@@ -1,5 +1,5 @@
-import { callBFServer } from "../integrations/bfServerClient";
-import { logger } from "../infrastructure/logger";
+import { callBFServer } from "../integrations/bfServerClient.js";
+import { logger } from "../infrastructure/logger.js";
 
 export interface CallTranscriptJob {
   callSid: string;

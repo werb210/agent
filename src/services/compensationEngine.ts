@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function calculateBrokerCompensation() {
   const brokers = await pool.request(`SELECT * FROM staff_calendar`);

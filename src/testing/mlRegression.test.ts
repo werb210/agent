@@ -1,5 +1,5 @@
-import { generateSyntheticDeal } from "./syntheticDealGenerator";
-import { getMLApprovalProbability } from "../core/mlClient";
+import { generateSyntheticDeal } from "./syntheticDealGenerator.js";
+import { getMLApprovalProbability } from "../core/mlClient.js";
 
 describe("ML Regression Stability", () => {
   it("should return probability between 0 and 1", async () => {

@@ -1,5 +1,5 @@
-import { clearToken, getTokenOrFail, saveToken } from "../src/services/token";
-import { apiFetch } from "../src/utils/apiClient";
+import { clearToken, getTokenOrFail, saveToken } from "../src/services/token.js";
+import { apiFetch } from "../src/utils/apiClient.js";
 
 describe("auth flow e2e", () => {
   beforeEach(() => {

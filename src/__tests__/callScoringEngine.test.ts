@@ -1,4 +1,4 @@
-import { scoreCall } from "../engine/callScoringEngine";
+import { scoreCall } from "../engine/callScoringEngine.js";
 
 describe("scoreCall", () => {
   it("increases score for positive signals", () => {

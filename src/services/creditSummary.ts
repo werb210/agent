@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { resilientLLM } from "../infrastructure/mayaResilience";
-import { AppError } from "../errors/AppError";
-import { sanitizeModelInput } from "./inputSanitizer";
+import { resilientLLM } from "../infrastructure/mayaResilience.js";
+import { AppError } from "../errors/AppError.js";
+import { sanitizeModelInput } from "./inputSanitizer.js";
 
 const creditSummaryZodSchema = z.object({
   transaction: z.string(),

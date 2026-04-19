@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function predictChurn(): Promise<void> {
   const clients = await pool.query<{ contact_id: string; last_activity: Date | string }>(

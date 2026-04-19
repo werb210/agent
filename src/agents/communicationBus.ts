@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { AgentType } from "./agentRegistry";
+import { AgentType } from "./agentRegistry.js";
 
 export interface AgentBusMessage {
   from: AgentType;

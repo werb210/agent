@@ -1,5 +1,5 @@
-import { API_ROUTES } from "../contracts/api";
-import { apiFetch } from "../utils/apiClient";
+import { API_ROUTES } from "../contracts/api.js";
+import { apiFetch } from "../utils/apiClient.js";
 
 export async function fetchToken() {
   return apiFetch(API_ROUTES.dialer.token, { method: "GET" });

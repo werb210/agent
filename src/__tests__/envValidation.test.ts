@@ -1,4 +1,4 @@
-import { ENV, getEnv } from "../config/env";
+import { ENV, getEnv } from "../config/env.js";
 
 describe("env validation", () => {
   it("returns valid env in test mode", () => {

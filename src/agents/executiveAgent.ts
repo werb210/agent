@@ -1,6 +1,6 @@
-import { MayaAgent } from "./baseAgent";
-import { forecast90Days } from "../core/capitalForecast";
-import { capitalEfficiencyIndex } from "../core/capitalEfficiency";
+import { MayaAgent } from "./baseAgent.js";
+import { forecast90Days } from "../core/capitalForecast.js";
+import { capitalEfficiencyIndex } from "../core/capitalEfficiency.js";
 
 export class ExecutiveAgent implements MayaAgent {
   name = "ExecutiveAgent";

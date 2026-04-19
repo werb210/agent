@@ -1,7 +1,7 @@
-import { logger } from "../infrastructure/logger";
-import { createO365Booking } from "./o365Booking";
-import { checkO365Availability } from "./o365Availability";
-import { sendSMS } from "./smsService";
+import { logger } from "../infrastructure/logger.js";
+import { createO365Booking } from "./o365Booking.js";
+import { checkO365Availability } from "./o365Availability.js";
+import { sendSMS } from "./smsService.js";
 
 interface BookingParams {
   startISO: string;

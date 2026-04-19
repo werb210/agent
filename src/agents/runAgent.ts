@@ -1,4 +1,4 @@
-import { execute, ToolExecutionCall } from "../ai/toolExecutor";
+import { execute, ToolExecutionCall } from "../ai/toolExecutor.js";
 import { performance } from "node:perf_hooks";
 
 const activeCalls = new Set<string>();

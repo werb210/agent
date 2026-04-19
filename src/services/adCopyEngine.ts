@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { resilientLLM } from "../infrastructure/mayaResilience";
+import { pool } from "../integrations/bfServerClient.js";
+import { resilientLLM } from "../infrastructure/mayaResilience.js";
 
 export async function generateAdCopy(campaignId: string, industry: string): Promise<void> {
   const prompt = `

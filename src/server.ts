@@ -1,6 +1,6 @@
 import type { Server } from "http";
-import { createApp } from "./app";
-import { validateEnv } from "./startup/validateEnv";
+import { createApp } from "./app.js";
+import { validateEnv } from "./startup/validateEnv.js";
 
 export async function startServer() {
   const envStatus = validateEnv();

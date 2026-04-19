@@ -1,4 +1,4 @@
-import { getDynamicEscalationThreshold } from "./adaptiveThreshold";
+import { getDynamicEscalationThreshold } from "./adaptiveThreshold.js";
 
 interface ConfidenceInput {
   aiConfidence: number;

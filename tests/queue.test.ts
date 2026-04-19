@@ -1,4 +1,4 @@
-import { enqueueJob, getQueueLength, resetQueueForTests } from "../src/queue/queue";
+import { enqueueJob, getQueueLength, resetQueueForTests } from "../src/queue/queue.js";
 
 describe("queue", () => {
   beforeEach(() => {

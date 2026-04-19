@@ -1,4 +1,4 @@
-import { pool } from "../config/pool";
+import { pool } from "../config/pool.js";
 
 export async function evaluateLenders(deal: any) {
   const result = await pool.request("SELECT * FROM lenders");

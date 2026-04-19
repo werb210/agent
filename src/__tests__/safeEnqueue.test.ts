@@ -1,5 +1,5 @@
-import * as queueModule from "../queue/queue";
-import { safeEnqueue } from "../queue/safeEnqueue";
+import * as queueModule from "../queue/queue.js";
+import { safeEnqueue } from "../queue/safeEnqueue.js";
 
 describe("safeEnqueue", () => {
   afterEach(() => {

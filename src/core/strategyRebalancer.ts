@@ -1,7 +1,7 @@
-import { capitalEfficiencyIndex } from "./capitalEfficiency";
-import { optimizeCampaignBudget } from "./campaignOptimizer";
-import { safeExecute } from "./safeAsync";
-import { pool } from "../integrations/bfServerClient";
+import { capitalEfficiencyIndex } from "./capitalEfficiency.js";
+import { optimizeCampaignBudget } from "./campaignOptimizer.js";
+import { safeExecute } from "./safeAsync.js";
+import { pool } from "../integrations/bfServerClient.js";
 
 type CampaignRow = {
   id: string;

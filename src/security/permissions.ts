@@ -1,5 +1,5 @@
-import { Mode, Task } from "../types/agent";
-import { AppError } from "../errors/AppError";
+import { Mode, Task } from "../types/agent.js";
+import { AppError } from "../errors/AppError.js";
 
 const permissionMatrix: Record<Mode, Task[]> = {
   WEBSITE_VISITOR: ["chat"],

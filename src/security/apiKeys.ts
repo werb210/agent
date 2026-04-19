@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 export function validateApiKey(key: string) {
   const publicKey = process.env.AGENT_PUBLIC_KEY;
   const internalKey = process.env.AGENT_INTERNAL_KEY;

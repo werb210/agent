@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 import { db } from "./db.js";
 
 type MayaContextParams = {

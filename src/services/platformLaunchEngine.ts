@@ -1,5 +1,5 @@
-import { pool } from "../integrations/bfServerClient";
-import { callBFServer } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
+import { callBFServer } from "../integrations/bfServerClient.js";
 
 type CampaignRow = {
   id: string;

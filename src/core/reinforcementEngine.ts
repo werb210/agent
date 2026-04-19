@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function recordReward(actionType: string, reward: number, metadata: unknown) {
   await pool.request(

@@ -1,4 +1,4 @@
-import { determineNextStage } from "../services/qualificationEngine";
+import { determineNextStage } from "../services/qualificationEngine.js";
 
 describe("determineNextStage", () => {
   it("moves new sessions into qualifying on first message", () => {

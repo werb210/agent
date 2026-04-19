@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 export function validatePerformance(result: any) {
   if (result.errors > 0) {
     throw new AppError("internal_error", 500, "Load test failed: errors detected");

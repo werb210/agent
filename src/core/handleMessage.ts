@@ -1,6 +1,6 @@
-import { routeIntent } from "./intentRouter";
-import { safeReply } from "./safeReply";
-import { log } from "../system/logger";
+import { routeIntent } from "./intentRouter.js";
+import { safeReply } from "./safeReply.js";
+import { log } from "../system/logger.js";
 
 export async function handleMessage(input: string, context: unknown) {
   if (!input || typeof input !== "string") {

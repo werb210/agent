@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function logDecision(type: string, input: any, output: any, explanation: string) {
   await pool.request(

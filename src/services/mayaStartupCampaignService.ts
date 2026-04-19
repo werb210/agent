@@ -1,6 +1,6 @@
-import { pool } from "../integrations/bfServerClient";
-import { generateAdCopy } from "./adCopyEngine";
-import { launchPlatformCampaign } from "./platformLaunchEngine";
+import { pool } from "../integrations/bfServerClient.js";
+import { generateAdCopy } from "./adCopyEngine.js";
+import { launchPlatformCampaign } from "./platformLaunchEngine.js";
 
 type CampaignInsertRow = { id: string };
 

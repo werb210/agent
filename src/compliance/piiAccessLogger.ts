@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function logPIIAccess(userId: string, field: string, entityId: string) {
   await pool.request(

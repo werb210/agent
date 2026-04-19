@@ -1,4 +1,4 @@
-import { pool } from "../integrations/bfServerClient";
+import { pool } from "../integrations/bfServerClient.js";
 
 export async function secureQuery<T = any>(...args: any[]) {
   const statement = String(args.length >= 3 ? args[2] : args[0]);

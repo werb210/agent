@@ -1,6 +1,6 @@
-import { triggerOutboundCall } from "../twilioService";
-import { logDecision } from "../complianceLogger";
-import { callBFServer } from "../../integrations/bfServerClient";
+import { triggerOutboundCall } from "../twilioService.js";
+import { logDecision } from "../complianceLogger.js";
+import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function runOutboundCampaign(campaignId: string) {
   const contactsResponse = await callBFServer<any>("/api/crm/contacts");

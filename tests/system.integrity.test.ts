@@ -1,7 +1,7 @@
-import { runAgent } from "../src/agents/runAgent";
-import { withRetry } from "../src/lib/retry";
+import { runAgent } from "../src/agents/runAgent.js";
+import { withRetry } from "../src/lib/retry.js";
 
-vi.mock("../src/tools", () => ({
+vi.mock("../src/tools/index.js", () => ({
   createLead: vi.fn().mockResolvedValue({ id: "123" }),
   startCall: vi.fn().mockResolvedValue({ callId: "call-1" }),
   updateCallStatus: vi.fn().mockResolvedValue({ updated: true })

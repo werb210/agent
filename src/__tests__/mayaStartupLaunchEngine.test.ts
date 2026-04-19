@@ -1,9 +1,9 @@
 import { vi, type Mock } from "vitest";
-import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine";
-import { pool } from "../integrations/bfServerClient";
-import { sendStartupNotification } from "../services/mayaStartupNotificationService";
-import { launchStartupCampaign } from "../services/mayaStartupCampaignService";
-import { logAudit } from "../infrastructure/mayaAudit";
+import { checkStartupProductLaunch } from "../core/mayaStartupLaunchEngine.js";
+import { pool } from "../integrations/bfServerClient.js";
+import { sendStartupNotification } from "../services/mayaStartupNotificationService.js";
+import { launchStartupCampaign } from "../services/mayaStartupCampaignService.js";
+import { logAudit } from "../infrastructure/mayaAudit.js";
 
 vi.mock("../db", () => ({
   pool: {

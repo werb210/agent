@@ -1,6 +1,6 @@
 import { vi } from "vitest";
-import { runMayaCore } from "../services/mayaCore";
-import * as openAiClient from "../brain/openaiClient";
+import { runMayaCore } from "../services/mayaCore.js";
+import * as openAiClient from "../brain/openaiClient.js";
 
 vi.mock("../brain/openaiClient", () => ({
   runAI: vi.fn(),

@@ -15,14 +15,14 @@ vi.mock("../core/mlClient", () => ({
   getMLApprovalProbability: vi.fn().mockResolvedValue(0.95)
 }));
 
-import { calculateFundingProbability } from "../core/probabilityEngine";
-import * as mlClient from "../core/mlClient";
-import { calculateDealLTV } from "../core/ltvEngine";
-import { generateRiskHeatmap } from "../core/portfolioRisk";
-import { routeDeal } from "../core/autoRouting";
-import { detectStalledDeals } from "../core/churnDetection";
-import { optimalFollowupTime } from "../core/followupTiming";
-import { forecast90Days } from "../core/capitalForecast";
+import { calculateFundingProbability } from "../core/probabilityEngine.js";
+import * as mlClient from "../core/mlClient.js";
+import { calculateDealLTV } from "../core/ltvEngine.js";
+import { generateRiskHeatmap } from "../core/portfolioRisk.js";
+import { routeDeal } from "../core/autoRouting.js";
+import { detectStalledDeals } from "../core/churnDetection.js";
+import { optimalFollowupTime } from "../core/followupTiming.js";
+import { forecast90Days } from "../core/capitalForecast.js";
 
 describe("capital intelligence layer", () => {
   beforeEach(() => {

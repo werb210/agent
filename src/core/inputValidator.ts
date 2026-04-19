@@ -1,4 +1,4 @@
-import { AppError } from "../errors/AppError";
+import { AppError } from "../errors/AppError.js";
 export function validateQualificationInput(payload: any) {
   if (!payload?.funding_amount || payload.funding_amount <= 0) {
     throw new AppError("bad_request", 400, "Invalid funding amount");

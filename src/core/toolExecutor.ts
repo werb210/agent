@@ -1,4 +1,4 @@
-import { apiFetch } from "../utils/apiClient";
+import { apiFetch } from "../utils/apiClient.js";
 
 export async function executeTool(
   operationOrCall: string | { name?: string; arguments?: any },

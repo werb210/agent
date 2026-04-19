@@ -1,3 +1,3 @@
-import { startMayaWorkers } from "../core/mayaQueue";
+import { startMayaWorkers } from "../core/mayaQueue.js";
 
 startMayaWorkers();

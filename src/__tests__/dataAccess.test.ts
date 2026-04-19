@@ -1,7 +1,7 @@
 import { vi } from "vitest";
-import { findApplication, getDocumentStatus, getLenderProductRanges } from "../services/dataAccess";
-import { interpretAction } from "../services/actionInterpreter";
-import { getApplicationsByStatus, getPipelineSummary } from "../services/staffDataAccess";
+import { findApplication, getDocumentStatus, getLenderProductRanges } from "../services/dataAccess.js";
+import { interpretAction } from "../services/actionInterpreter.js";
+import { getApplicationsByStatus, getPipelineSummary } from "../services/staffDataAccess.js";
 
 const callBFServer = vi.fn();
 

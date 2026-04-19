@@ -1,4 +1,4 @@
-import { runAgent } from "../src/agents/runAgent";
+import { runAgent } from "../src/agents/runAgent.js";
 
 describe("agent hard failures", () => {
   it("fails on invalid call payload", async () => {

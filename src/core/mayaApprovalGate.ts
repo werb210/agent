@@ -1,8 +1,8 @@
-import { pool } from "../integrations/bfServerClient";
-import { logMayaAction } from "../services/mayaActionLedger";
-import { detectPII } from "../compliance/piiDetection";
-import { flagSessionCompliance } from "../compliance/complianceFlag";
-import { AppError } from "../errors/AppError";
+import { pool } from "../integrations/bfServerClient.js";
+import { logMayaAction } from "../services/mayaActionLedger.js";
+import { detectPII } from "../compliance/piiDetection.js";
+import { flagSessionCompliance } from "../compliance/complianceFlag.js";
+import { AppError } from "../errors/AppError.js";
 
 const highRiskActions = [
   "launch_campaign",
