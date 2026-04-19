@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 const query = vi.fn().mockResolvedValue({
   rows: [],
   rowCount: 0,

@@ -4,15 +4,44 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20 <=22"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@rolldown/binding-linux-x64-gnu": "^1.0.0-rc.16",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^25.6.0",
+    "@types/pdfkit": "^0.17.6",
+    "@types/readline-sync": "^1.4.8",
+    "@types/validator": "^13.15.10",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^5.1.3",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "bullmq": "^5.74.1",
+    "exceljs": "^4.4.0",
+    "execa": "^9.6.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.3",
+    "luxon": "^3.7.2",
+    "openai": "^6.34.0",
+    "pdfkit": "^0.18.0",
+    "pino": "^10.3.1",
+    "prom-client": "^15.1.3",
+    "readline-sync": "^1.4.10",
+    "tesseract.js": "^7.0.0",
+    "twilio": "^5.13.1",
+    "validator": "^13.15.35",
+    "zod": "^4.3.6"
   }
 }
