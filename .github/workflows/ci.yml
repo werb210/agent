@@ -11,13 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
 
-      - run: npm ci
+      - name: Install
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
@@ -30,7 +34,5 @@ jobs:
 
       - name: Verify artifact
         run: |
-          if [ ! -f dist/index.js ]; then
-            echo "ENTRYPOINT_MISSING"
-            exit 1
-          fi
+          test -f dist/index.js
+          node -e "const fs=require('fs'); const s=fs.statSync('dist/index.js'); if(!s.size){process.exit(1)}"
