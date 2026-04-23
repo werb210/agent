@@ -1,4 +1,14 @@
-import { createLead, startCall, updateCallStatus } from "../tools/index.js";
+import {
+  createLead,
+  startCall,
+  updateCallStatus,
+  readApplication,
+  listApplications,
+  readContact,
+  listContacts,
+  listLenderProducts,
+  listDocumentsForApplication
+} from "../tools/index.js";
 import { TOOL_REGISTRY, ToolRegistryName } from "../tools/registry.js";
 import { log } from "../logger.js";
 import { validateToolCall } from "../core/validateTool.js";
@@ -38,7 +48,13 @@ export type ToolExecutionResponse =
 const tools: Record<ToolRegistryName, (context: ToolExecutionContext) => Promise<Record<string, unknown>>> = {
   [TOOL_REGISTRY.createLead]: async ({ input }) => createLead(input, getAgentAuthToken()) as Promise<Record<string, unknown>>,
   [TOOL_REGISTRY.startCall]: async ({ input }) => startCall(input, getAgentAuthToken()) as Promise<Record<string, unknown>>,
-  [TOOL_REGISTRY.updateCallStatus]: async ({ input }) => updateCallStatus(input, getAgentAuthToken()) as Promise<Record<string, unknown>>
+  [TOOL_REGISTRY.updateCallStatus]: async ({ input }) => updateCallStatus(input, getAgentAuthToken()) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.readApplication]: async ({ input }) => readApplication(String(input.id ?? "")) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.listApplications]: async ({ input }) => listApplications(typeof input.silo === "string" ? input.silo : undefined) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.readContact]: async ({ input }) => readContact(String(input.id ?? "")) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.listContacts]: async ({ input }) => listContacts(typeof input.silo === "string" ? input.silo : undefined) as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.listLenderProducts]: async () => listLenderProducts() as Promise<Record<string, unknown>>,
+  [TOOL_REGISTRY.listDocumentsForApplication]: async ({ input }) => listDocumentsForApplication(String(input.applicationId ?? "")) as Promise<Record<string, unknown>>
 };
 
 const toolNames = Object.keys(tools);
@@ -47,7 +63,13 @@ const allowedTools = new Set<string>([
   "scheduleAppointment",
   "updateCRMRecord",
   TOOL_REGISTRY.startCall,
-  TOOL_REGISTRY.updateCallStatus
+  TOOL_REGISTRY.updateCallStatus,
+  TOOL_REGISTRY.readApplication,
+  TOOL_REGISTRY.listApplications,
+  TOOL_REGISTRY.readContact,
+  TOOL_REGISTRY.listContacts,
+  TOOL_REGISTRY.listLenderProducts,
+  TOOL_REGISTRY.listDocumentsForApplication
 ]);
 
 if (toolNames.length === 0) {
@@ -109,7 +131,17 @@ async function execute(call: ToolExecutionCall): Promise<ToolExecutionResponse> 
       throw new Error("AGENT AUTH TOKEN MISSING");
     }
 
-    if (![TOOL_REGISTRY.createLead, TOOL_REGISTRY.startCall, TOOL_REGISTRY.updateCallStatus].includes(call.tool as ToolRegistryName)) {
+    if (![
+      TOOL_REGISTRY.createLead,
+      TOOL_REGISTRY.startCall,
+      TOOL_REGISTRY.updateCallStatus,
+      TOOL_REGISTRY.readApplication,
+      TOOL_REGISTRY.listApplications,
+      TOOL_REGISTRY.readContact,
+      TOOL_REGISTRY.listContacts,
+      TOOL_REGISTRY.listLenderProducts,
+      TOOL_REGISTRY.listDocumentsForApplication
+    ].includes(call.tool as ToolRegistryName)) {
       const toolCall = validateToolCall({
         name: call.tool,
         arguments: call.input
