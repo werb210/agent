@@ -17,7 +17,7 @@ function buildDeps(): RuntimeDependencies {
   };
 }
 
-async function fetchHealth(status: ReturnType<typeof validateEnv>) {
+async function fetchHealth(status: ReturnType<typeof validateEnv>, path = "/health") {
   const previousCiValidate = process.env.CI_VALIDATE;
   process.env.CI_VALIDATE = "false";
   const { app } = createApp({ envStatus: status, deps: buildDeps() });
@@ -36,7 +36,7 @@ async function fetchHealth(status: ReturnType<typeof validateEnv>) {
         {
           hostname: "127.0.0.1",
           port: address.port,
-          path: "/health",
+          path,
         },
         (res) => {
           let raw = "";
@@ -111,5 +111,18 @@ describe("startup env hardening", () => {
     const res = await fetchHealth(status);
     expect(res.code).toBe(200);
     expect(res.body.status).toBe("ok");
+  });
+
+  it("returns 503 from /health?deep=1 when OPENAI_API_KEY is missing", async () => {
+    const status = validateEnv({
+      NODE_ENV: "test",
+      PORT: "8080",
+      SERVER_URL: "https://example.com",
+      JWT_SECRET: "jwt-secret",
+    } as any);
+
+    const res = await fetchHealth(status, "/health?deep=1");
+    expect(res.code).toBe(503);
+    expect(res.body.reason).toBe("openai_not_configured");
   });
 });

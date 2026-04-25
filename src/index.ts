@@ -57,6 +57,12 @@ export function validateProductionEnv(env: NodeJS.ProcessEnv = process.env): voi
     console.warn("[WARN] JWT_SECRET must be set in production. Maya will start in degraded mode.");
   }
 
+  if (!env.SERVER_URL) {
+    console.warn(
+      "[WARN] SERVER_URL not set — Maya cannot persist escalations or issues. Set to https://server.boreal.financial.",
+    );
+  }
+
   // AGENT_SHARED_SECRET is required for authenticated agent→server calls.
   // Warn loudly rather than crashing so the agent starts in degraded mode and
   // the portal health badge surfaces the problem instead of a dead service.

@@ -99,21 +99,47 @@ describe("maya public routes", () => {
   it("POST /api/maya/message returns a reply payload", async () => {
     const response = await postJson(new URL("/api/maya/message", baseUrl), { message: "hello" });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({ reply: expect.any(String) }));
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        reply: null,
+        error: "openai_not_configured",
+      }),
+    );
   });
 
   it("POST /maya/escalate returns successful escalation payload", async () => {
     const response = await postJson(new URL("/maya/escalate", baseUrl), { reason: "help", sessionId: "session-1" });
 
     expect(response.status).toBe(200);
-    expect(response.body.ok === true || typeof response.body.sessionId === "string").toBe(true);
+    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true }));
   });
 
   it("POST /maya/issue returns ok", async () => {
     const response = await postJson(new URL("/maya/issue", baseUrl), { message: "route failed", sessionId: "session-1" });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({ ok: true }));
+    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true }));
+  });
+
+  it("POST /maya/escalate returns persisted=false when BF-Server is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        if (url.endsWith("/api/chat/escalate")) {
+          throw new Error("BF-Server unavailable");
+        }
+        if (url.endsWith("/api/issues")) {
+          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+        throw new Error(`Unexpected network call in test: ${url}`);
+      }),
+    );
+
+    const response = await postJson(new URL("/maya/escalate", baseUrl), { reason: "help", sessionId: "session-1" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, persisted: false });
   });
 });

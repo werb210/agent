@@ -96,9 +96,10 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
 
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
-    res.status(200).json({
-      reply: "I'm here — but my AI brain isn't configured yet. A Boreal advisor can follow up: say 'talk to human' or use the Talk to Human button.",
-      actions: [],
+    res.status(503).json({
+      reply: null,
+      error: "openai_not_configured",
+      message: "Set OPENAI_API_KEY on the agent service.",
     });
     return;
   }
@@ -126,9 +127,11 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => "");
     console.error("[maya] OpenAI error", upstream.status, errText);
-    res.status(200).json({
-      reply: "I'm having trouble thinking right now. Want me to connect you to a human?",
-      actions: [{ type: "suggest_escalate" }],
+    res.status(502).json({
+      reply: null,
+      error: "openai_upstream_failed",
+      upstreamStatus: upstream.status,
+      detail: errText.slice(0, 300),
     });
     return;
   }
@@ -149,21 +152,36 @@ mayaRouter.post("/api/maya/chat", safeHandler(async (req, res) => {
 
 mayaRouter.post("/maya/escalate", safeHandler(async (req, res) => {
   const { reason, sessionId, applicationId } = req.body ?? {};
-  const result = await postToBFServer("/api/chat/escalate", {
-    reason: reason ?? "user_requested_human",
-    sessionId, applicationId,
-  });
-  res.status(200).json(result ?? { ok: true, sessionId });
+  let persisted = false;
+  try {
+    await postToBFServer("/api/chat/escalate", {
+      reason: reason ?? "user_requested_human",
+      sessionId,
+      applicationId,
+    });
+    persisted = true;
+  } catch (error) {
+    console.warn("[maya] BF persist failed", error);
+  }
+  res.status(200).json({ ok: true, persisted });
 }));
 
 mayaRouter.post("/maya/issue", safeHandler(async (req, res) => {
   const { message, screenshotBase64, applicationId, sessionId } = req.body ?? {};
-  const result = await postToBFServer("/api/issues", {
-    message, screenshotBase64: screenshotBase64 ?? null,
-    applicationId: applicationId ?? null, sessionId: sessionId ?? null,
-    source: "client_maya",
-  });
-  res.status(200).json(result ?? { ok: true });
+  let persisted = false;
+  try {
+    await postToBFServer("/api/issues", {
+      message,
+      screenshotBase64: screenshotBase64 ?? null,
+      applicationId: applicationId ?? null,
+      sessionId: sessionId ?? null,
+      source: "client_maya",
+    });
+    persisted = true;
+  } catch (error) {
+    console.warn("[maya] BF persist failed", error);
+  }
+  res.status(200).json({ ok: true, persisted });
 }));
 
 // Read-only data access for Maya internal tools (not directly callable by the widget).
