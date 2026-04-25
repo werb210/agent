@@ -104,12 +104,18 @@ export function createApp(options: AppDeps = {}) {
     res.status(204).end();
   });
 
-  app.get("/health", (_req: Request, res: Response) => {
+  app.get("/health", async (req: Request, res: Response) => {
     if (process.env.CI_VALIDATE === "true") {
       return res.status(200).json({ status: "ok" });
     }
 
-    res.status(200).json({
+    const base = {
+      ok: envStatus.mode === "valid",
+      env: {
+        OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        SERVER_URL: !!process.env.SERVER_URL,
+      },
       status: envStatus.mode === "valid" ? "ok" : "degraded",
       data: {
         env: envStatus.mode,
@@ -117,7 +123,34 @@ export function createApp(options: AppDeps = {}) {
         missingRequired: envStatus.missingRequired,
         missingOptional: envStatus.missingOptional,
       },
-    });
+    };
+
+    if (req.query.deep !== "1") {
+      return res.status(200).json(base);
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(503).json({ ...base, ok: false, reason: "openai_not_configured" });
+    }
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/models", {
+        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      });
+
+      return res.status(response.ok ? 200 : 502).json({
+        ...base,
+        ok: response.ok,
+        openai_status: response.status,
+      });
+    } catch (error) {
+      return res.status(502).json({
+        ...base,
+        ok: false,
+        reason: "openai_unreachable",
+        error: error instanceof Error ? error.message : "unknown_error",
+      });
+    }
   });
 
   app.get("/ready", async (_req: Request, res: Response, next: NextFunction) => {
