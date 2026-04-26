@@ -154,10 +154,11 @@ mayaRouter.post("/maya/escalate", safeHandler(async (req, res) => {
   const { reason, sessionId, applicationId } = req.body ?? {};
   let persisted = false;
   try {
-    await postToBFServer("/api/chat/escalate", {
+    await postToBFServer("/api/maya/escalations", {
       reason: reason ?? "user_requested_human",
       sessionId,
       applicationId,
+      surface: (req.body && (req.body as any).surface) || "unknown",
     });
     persisted = true;
   } catch (error) {
@@ -170,12 +171,10 @@ mayaRouter.post("/maya/issue", safeHandler(async (req, res) => {
   const { message, screenshotBase64, applicationId, sessionId } = req.body ?? {};
   let persisted = false;
   try {
-    await postToBFServer("/api/issues", {
+    await postToBFServer("/api/client/issues", {
       message,
       screenshotBase64: screenshotBase64 ?? null,
       applicationId: applicationId ?? null,
-      sessionId: sessionId ?? null,
-      source: "client_maya",
     });
     persisted = true;
   } catch (error) {
