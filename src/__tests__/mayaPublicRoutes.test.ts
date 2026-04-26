@@ -67,14 +67,14 @@ describe("maya public routes", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
-        if (url.endsWith("/api/chat/escalate")) {
+        if (url.endsWith("/api/maya/escalations")) {
           return new Response(JSON.stringify({ ok: true, sessionId: "session_mock" }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
         }
 
-        if (url.endsWith("/api/issues")) {
+        if (url.endsWith("/api/client/issues")) {
           return new Response(JSON.stringify({ ok: true }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
@@ -127,10 +127,10 @@ describe("maya public routes", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        if (url.endsWith("/api/chat/escalate")) {
+        if (url.endsWith("/api/maya/escalations")) {
           throw new Error("BF-Server unavailable");
         }
-        if (url.endsWith("/api/issues")) {
+        if (url.endsWith("/api/client/issues")) {
           return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
         throw new Error(`Unexpected network call in test: ${url}`);
