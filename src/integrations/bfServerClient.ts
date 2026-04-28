@@ -4,6 +4,9 @@
  * No direct database access. No vitest imports. No SQL compatibility proxy.
  */
 
+// MAYA_BFSERVER_JWT_v53 — JWT-based service token for BF-Server.
+import jwt from "jsonwebtoken";
+
 const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
 
 function getBaseUrl(): string {
@@ -15,7 +18,19 @@ function getBaseUrl(): string {
 }
 
 function getAgentToken(): string {
-  return process.env.AGENT_API_TOKEN ?? process.env.JWT_SECRET ?? "";
+  // MAYA_BFSERVER_JWT_v53 — Honor a pre-minted explicit token first (test
+  // harness, manual override). Otherwise sign a real JWT using JWT_SECRET so
+  // BF-Server's auth middleware verifies and hydrates capabilities from role.
+  const explicit = process.env.AGENT_API_TOKEN;
+  if (explicit && explicit !== "test_token") return explicit;
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return "";
+  return jwt.sign(
+    { id: "agent-service", phone: "agent", role: "Staff" },
+    secret,
+    { expiresIn: "1h" },
+  );
 }
 
 /**
