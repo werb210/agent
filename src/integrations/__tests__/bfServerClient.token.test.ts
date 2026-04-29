@@ -1,8 +1,10 @@
-// MAYA_BFSERVER_JWT_v53 — verify the bfServerClient signs a real JWT.
+// MAYA_BFSERVER_INTEGRATION_v53 — verify the bfServerClient signs a real JWT
+// with role:Staff using JWT_SECRET, instead of leaking the raw secret as a
+// bearer token.
 import { beforeEach, describe, expect, it } from "vitest";
 import jwt from "jsonwebtoken";
 
-describe("MAYA_BFSERVER_JWT_v53 agent service token", () => {
+describe("MAYA_BFSERVER_INTEGRATION_v53 agent service token", () => {
   beforeEach(() => {
     delete process.env.AGENT_API_TOKEN;
     process.env.JWT_SECRET = "shared-secret-with-bf-server-min-10";
