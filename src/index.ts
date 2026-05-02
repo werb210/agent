@@ -12,6 +12,10 @@ async function validate(port: number): Promise<boolean> {
 }
 
 async function run() {
+  // AGENT_BLOCK_v81_BUILD_FINGERPRINT
+  const BUILD_TAG = process.env.BUILD_TAG || "v81-local";
+  const COMMIT_SHA = (process.env.COMMIT_SHA || "unknown").slice(0, 8);
+  console.log(`MAYA process start build=${BUILD_TAG} sha=${COMMIT_SHA} at=${new Date().toISOString()}`);
   if (process.env.NODE_ENV === "production" && !fs.existsSync("./dist/index.js")) {
     throw new Error("DIST_MISSING");
   }
