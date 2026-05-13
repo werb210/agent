@@ -87,6 +87,14 @@ export const mayaRouter = Router();
  * BF-Server's /api/maya/message proxies into this. Returns a simple
  * { reply } response consumed by the Maya widget on the Website/client/portal.
  */
+// AGENT_BLOCK_v5_CHAT_TOOL_DISPATCH_v1
+// The Maya chat handler now reads the X-Maya-Audience header,
+// exposes only the matching tool descriptors to OpenAI, and
+// executes any tool_calls the model emits via the dispatch
+// registry. application_id from the body is forwarded into
+// client-tool calls so the model can't read another applicant's
+// data. Maximum two tool-call rounds per turn to keep latency
+// bounded; the second round is the final reply.
 mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   const message: string = (req.body?.message ?? "").toString().trim();
   if (!message) {
@@ -104,43 +112,134 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return;
   }
 
-  // Minimal, reliable completion. Streaming can be layered in later.
+  const { parseAudience, MAYA_AUDIENCE_HEADER } = await import("../maya/audience.js");
+  const { descriptorsForAudience } = await import("../maya/toolRegistry.js");
+  const { dispatchTool } = await import("../maya/dispatch.js");
+
+  const audience = parseAudience(req.header(MAYA_AUDIENCE_HEADER));
+  const tools = descriptorsForAudience(audience);
+  const applicationId =
+    typeof req.body?.application_id === "string"
+      ? req.body.application_id
+      : typeof req.body?.applicationId === "string"
+        ? req.body.applicationId
+        : null;
+  const sessionId =
+    typeof req.body?.session_id === "string"
+      ? req.body.session_id
+      : typeof req.body?.sessionId === "string"
+        ? req.body.sessionId
+        : null;
+  const ctx = { audience, applicationId, sessionId };
+
+  const audienceLines: Record<string, string> = {
+    visitor:
+      "You are speaking with a website visitor. Use info.* tools to answer marketing questions, lead.capture only when the visitor volunteers contact info or asks to be contacted, apply.start_url to hand off to the application flow.",
+    client:
+      "You are speaking with an authenticated applicant. Use application.my_status, docs.checklist, and pgi.completion_link to answer questions about their application. Never ask them for an application_id — the host has supplied it.",
+    staff:
+      "You are speaking with Boreal staff. You may use pipeline.query for natural-language questions about applications, contacts, and stages.",
+  };
+
   const systemPrompt = [
     "You are Maya, the Boreal Financial assistant.",
-    "Help users understand financing options, start applications, and connect with Boreal staff.",
+    audienceLines[audience],
     "Keep answers under 120 words. If asked for data you do not have, say so and offer to hand off to a human.",
+    "When a tool returns ok=false, briefly acknowledge that you couldn't fetch the answer; do not pretend to know.",
   ].join(" ");
 
-  const upstream = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message },
-      ],
-      temperature: 0.3,
-    }),
-  });
+  const messages: any[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: message },
+  ];
 
-  if (!upstream.ok) {
-    const errText = await upstream.text().catch(() => "");
-    console.error("[maya] OpenAI error", upstream.status, errText);
+  const callOpenAI = async (body: any) => {
+    return fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+    });
+  };
+
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+  const firstBody: any = {
+    model,
+    messages,
+    temperature: 0.3,
+  };
+  if (tools.length > 0) {
+    firstBody.tools = tools;
+    firstBody.tool_choice = "auto";
+  }
+
+  const upstream1 = await callOpenAI(firstBody);
+  if (!upstream1.ok) {
+    const errText = await upstream1.text().catch(() => "");
+    console.error("[maya] OpenAI error (round 1)", upstream1.status, errText);
     res.status(502).json({
       reply: null,
       error: "openai_upstream_failed",
-      upstreamStatus: upstream.status,
+      upstreamStatus: upstream1.status,
       detail: errText.slice(0, 300),
     });
     return;
   }
+  const data1 = await upstream1.json();
+  const choice1 = data1?.choices?.[0]?.message;
+  const toolCalls: any[] = Array.isArray(choice1?.tool_calls) ? choice1.tool_calls : [];
 
-  const data = await upstream.json();
-  const reply = data?.choices?.[0]?.message?.content?.toString().trim() ||
+  if (toolCalls.length === 0) {
+    const reply =
+      choice1?.content?.toString().trim() ||
+      "Thanks — a Boreal advisor will reach out.";
+    res.status(200).json({ reply, actions: [], audience });
+    return;
+  }
+
+  // Run each tool the model asked for, append the results, then
+  // ask the model for a final reply.
+  messages.push(choice1);
+  const executedTools: string[] = [];
+  for (const tc of toolCalls) {
+    const toolName: string = tc?.function?.name ?? "";
+    const toolArgs: string = tc?.function?.arguments ?? "";
+    const resultJson = await dispatchTool(toolName, toolArgs, ctx);
+    executedTools.push(toolName);
+    messages.push({
+      role: "tool",
+      tool_call_id: tc.id,
+      content: resultJson,
+    });
+  }
+
+  const upstream2 = await callOpenAI({
+    model,
+    messages,
+    temperature: 0.3,
+  });
+  if (!upstream2.ok) {
+    const errText = await upstream2.text().catch(() => "");
+    console.error("[maya] OpenAI error (round 2)", upstream2.status, errText);
+    res.status(502).json({
+      reply: null,
+      error: "openai_upstream_failed",
+      upstreamStatus: upstream2.status,
+      detail: errText.slice(0, 300),
+    });
+    return;
+  }
+  const data2 = await upstream2.json();
+  const finalReply =
+    data2?.choices?.[0]?.message?.content?.toString().trim() ||
     "Thanks — a Boreal advisor will reach out.";
 
-  res.status(200).json({ reply, actions: [] });
+  res.status(200).json({
+    reply: finalReply,
+    actions: [],
+    audience,
+    tools_used: executedTools,
+  });
 }));
 
 /** Alias — some clients call /chat instead of /message. */
