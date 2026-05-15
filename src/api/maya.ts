@@ -282,16 +282,32 @@ mayaRouter.post("/maya/issue", safeHandler(async (req, res) => {
   res.status(200).json({ ok: true, persisted });
 }));
 
-// Read-only data access for Maya internal tools (not directly callable by the widget).
-mayaRouter.get("/maya/internal/applications/:id", safeHandler(async (req, res) => {
-  const data = await getFromBFServer(`/api/applications/${req.params.id}`);
-  res.status(200).json(data);
-}));
-mayaRouter.get("/maya/internal/contacts", safeHandler(async (_req, res) => {
-  const data = await getFromBFServer(`/api/crm/contacts`);
-  res.status(200).json(data);
-}));
-mayaRouter.get("/maya/internal/lender-products", safeHandler(async (_req, res) => {
-  const data = await getFromBFServer(`/api/client/lender-products`);
-  res.status(200).json(data);
-}));
+// AGENT_BLOCK_v327_REMOVE_INTERNAL_DATA_LEAK_ROUTES_v1
+// The three /maya/internal/* routes used to live below this comment:
+//   GET /maya/internal-applications/:id     -> proxied to BF-Server
+//                                              /api/applications/:id with
+//                                              a service JWT (role=Staff),
+//                                              returning the FULL application
+//                                              record (PII, banking, financials,
+//                                              credit summary) to the caller.
+//   GET /maya/internal-contacts             -> proxied to BF-Server /api/crm/contacts
+//                                              with the same service JWT, returning
+//                                              the entire CRM contact list.
+//   GET /maya/internal-lender-products      -> proxied to BF-Server /api/client/
+//                                              lender-products (less sensitive but
+//                                              same pattern).
+// All three had NO auth middleware on the agent itself. CORS_ALLOWED_ORIGINS
+// defaults empty in production (the warning at app.ts:53 explicitly logs
+// "all origins allowed in production"), so the routes were reachable by any
+// caller on the internet. The service JWT was minted internally with role=Staff,
+// so BF-Server happily returned the data.
+// Verified zero callers in BF-Server, BF-portal, BF-Website, BF-client, the
+// agent's own toolExecutor, or anywhere else in the agent code -- these were
+// orphaned scaffolding. Delete them outright; if a legitimate future caller
+// needs application/contact data through the agent, they can use the
+// /api/maya/message tool-dispatch path which already filters by
+// X-Maya-Audience and application_id.
+// Kept above this comment: /api/maya/message, /api/maya/chat (intentionally
+// public for the FloatingChat widget on the marketing site), /maya/escalate,
+// /maya/issue (called via BF-Server proxy -- gating those is a separate
+// concern requiring matching proxy headers from BF-Server).
