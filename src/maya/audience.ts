@@ -10,8 +10,21 @@ export type MayaAudience = "visitor" | "client" | "staff";
 export const MAYA_AUDIENCE_HEADER = "x-maya-audience";
 
 export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<string>>> = {
-  visitor: ["info.products", "info.qualifications", "lead.capture", "apply.start_url"],
-  client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback"],
+  visitor: [
+    "visitor.identify",
+    "info.products",
+    "info.qualifications",
+    "lead.capture",
+    "apply.start_url",
+    "escalate.to_human",
+  ],
+  client: [
+    "application.my_status",
+    "docs.checklist",
+    "pgi.completion_link",
+    "book.callback",
+    "escalate.to_human",
+  ],
   staff: [
     "pipeline.query",
     "contact.find",
