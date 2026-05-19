@@ -4,8 +4,8 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("../audience.js", () => ({
   isToolAllowed: (audience: string, tool: string) => {
     const allow: Record<string, string[]> = {
-      visitor: ["info.products", "info.qualifications", "lead.capture", "apply.start_url"],
-      client: ["application.my_status", "docs.checklist", "pgi.completion_link"],
+      visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
+      client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
       staff: ["pipeline.query"],
     };
     return (allow[audience] ?? []).includes(tool);
@@ -42,21 +42,31 @@ vi.mock("../tools/leadCapture.js", () => ({
   applyStartUrl: vi.fn(),
   APPLY_START_URL_TOOL_DESCRIPTOR: { type: "function", function: { name: "apply.start_url", description: "", parameters: {} } },
 }));
+vi.mock("../tools/visitorIdentify.js", () => ({
+  visitorIdentify: vi.fn(),
+  VISITOR_IDENTIFY_TOOL_DESCRIPTOR: { type: "function", function: { name: "visitor.identify", description: "", parameters: {} } },
+}));
+vi.mock("../tools/escalateToHuman.js", () => ({
+  escalateToHuman: vi.fn(),
+  ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR: { type: "function", function: { name: "escalate.to_human", description: "", parameters: {} } },
+}));
 
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all eight tools", () => {
+  it("registers all ten tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
       "apply.start_url",
       "docs.checklist",
+      "escalate.to_human",
       "info.products",
       "info.qualifications",
       "lead.capture",
       "pgi.completion_link",
       "pipeline.query",
+      "visitor.identify",
     ]);
   });
 
@@ -64,9 +74,11 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     const names = descriptorsForAudience("visitor").map((d) => d.function.name).sort();
     expect(names).toEqual([
       "apply.start_url",
+      "escalate.to_human",
       "info.products",
       "info.qualifications",
       "lead.capture",
+      "visitor.identify",
     ]);
   });
 
@@ -77,6 +89,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     expect(names).toEqual([
       "application.my_status",
       "docs.checklist",
+      "escalate.to_human",
       "pgi.completion_link",
     ]);
   });
