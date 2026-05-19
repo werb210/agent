@@ -58,7 +58,10 @@ describe("evaluateEscalation", () => {
   });
 
   it("routes transfer when escalation is needed and staff is available", async () => {
-    mockedGetAvailableStaff.mockResolvedValue(["staff123", "staff456"]);
+    mockedGetAvailableStaff.mockResolvedValue([
+      { userId: "staff123", twilioIdentity: null },
+      { userId: "staff456", twilioIdentity: "client-staff456" }
+    ]);
 
     const result = await evaluateEscalation(true);
 
