@@ -8,12 +8,12 @@ interface EscalationResult {
 }
 
 export async function evaluateEscalation(
-  escalatedFlag: boolean
+  escalatedFlag: boolean,
 ): Promise<EscalationResult> {
   if (!escalatedFlag) {
     return {
       shouldEscalate: false,
-      fallbackBooking: false
+      fallbackBooking: false,
     };
   }
 
@@ -22,7 +22,7 @@ export async function evaluateEscalation(
   if (settings.autonomy_level < 2) {
     return {
       shouldEscalate: true,
-      fallbackBooking: true
+      fallbackBooking: true,
     };
   }
 
@@ -31,13 +31,13 @@ export async function evaluateEscalation(
   if (available.length > 0) {
     return {
       shouldEscalate: true,
-      transferTo: available[0], // Later: routing logic
-      fallbackBooking: false
+      transferTo: available[0].userId,
+      fallbackBooking: false,
     };
   }
 
   return {
     shouldEscalate: true,
-    fallbackBooking: true
+    fallbackBooking: true,
   };
 }
