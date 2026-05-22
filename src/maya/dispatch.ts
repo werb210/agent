@@ -7,10 +7,13 @@
 import { isToolAllowed, type MayaAudience } from "./audience.js";
 import { lookupTool } from "./toolRegistry.js";
 
+// AGENT_BLOCK_v328_MAYA_FAILSAFE_v1
 export type DispatchContext = {
   audience: MayaAudience;
   applicationId?: string | null;
   sessionId?: string | null;
+  phone?: string | null;
+  email?: string | null;
 };
 
 function injectContext(
@@ -28,6 +31,18 @@ function injectContext(
   ]);
   if (APP_SCOPED_TOOLS.has(toolName) && ctx.applicationId) {
     return { ...modelArgs, application_id: ctx.applicationId };
+  }
+  // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1 — escalate.to_human gets every identity
+  // hint the host knows about so BF-Server (v636) can resolve the contact
+  // and route the handoff to the right Messages-tab thread.
+  if (toolName === "escalate.to_human") {
+    return {
+      ...modelArgs,
+      session_id: (modelArgs.session_id as string | undefined) ?? ctx.sessionId ?? undefined,
+      application_id: (modelArgs.application_id as string | undefined) ?? ctx.applicationId ?? undefined,
+      phone: (modelArgs.phone as string | undefined) ?? ctx.phone ?? undefined,
+      email: (modelArgs.email as string | undefined) ?? ctx.email ?? undefined,
+    };
   }
   return modelArgs;
 }

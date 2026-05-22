@@ -16,6 +16,7 @@ export type EscalateToHumanArgs = {
   silo?: string;
   session_id?: string;
   phone?: string;
+  email?: string;
   application_id?: string;
   contact_id?: string;
 };
@@ -37,6 +38,7 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
   // so BF-Server resolves the contact and surfaces the handoff in the
   // Messages-tab list against the right person.
   const phone = typeof args?.phone === "string" ? args.phone : null;
+  const email = typeof args?.email === "string" ? args.email : null;
   const applicationId = typeof args?.application_id === "string" ? args.application_id : null;
   const contactId = typeof args?.contact_id === "string" ? args.contact_id : null;
 
@@ -55,6 +57,7 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
           summary,
           recipients,
           phone,
+          email,
           applicationId,
           contactId,
         },
@@ -110,6 +113,10 @@ export const ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR = {
         phone: {
           type: "string",
           description: "Visitor phone in E.164 if known (from visitor.identify). Server uses last-10-digits to match an existing contact so the handoff routes correctly in the Messages tab.",
+        },
+        email: {
+          type: "string",
+          description: "Visitor email if known.",
         },
         application_id: {
           type: "string",
