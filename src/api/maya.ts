@@ -82,6 +82,33 @@ export async function sendMessage(userInput: string, authToken?: string): Promis
 // ---------- Maya router ----------
 export const mayaRouter = Router();
 
+// AGENT_BLOCK_v328_MAYA_FAILSAFE_v1
+// When OpenAI is unreachable or returns non-2xx, instead of 502'ing back
+// to the widget (which then shows a generic "trouble" bubble), fire a
+// talk_to_human escalation to BF-Server's canonical endpoint.
+async function mayaHumanFailover(args: {
+  message: string;
+  sessionId: string | null;
+  applicationId: string | null;
+  phone: string | null;
+  email: string | null;
+  surface: string;
+}): Promise<string> {
+  try {
+    await postToBFServer("/api/maya/escalate", {
+      kind: "talk_to_human",
+      message: `[Maya unavailable] ${args.message}`.slice(0, 1000),
+      contact: { phone: args.phone, email: args.email },
+      sessionId: args.sessionId,
+      application_id: args.applicationId,
+      surface: args.surface,
+    });
+  } catch (err) {
+    console.warn("[maya] failover persist failed", err);
+  }
+  return "I'm having trouble reaching my brain right now — I've notified a human and someone will reach out by SMS shortly.";
+}
+
 /**
  * POST /api/maya/message
  * BF-Server's /api/maya/message proxies into this. Returns a simple
@@ -130,7 +157,14 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       : typeof req.body?.sessionId === "string"
         ? req.body.sessionId
         : null;
-  const ctx = { audience, applicationId, sessionId };
+  // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1
+  const phone =
+    typeof req.body?.phone === "string" ? req.body.phone :
+    typeof req.body?.contact?.phone === "string" ? req.body.contact.phone : null;
+  const email =
+    typeof req.body?.email === "string" ? req.body.email :
+    typeof req.body?.contact?.email === "string" ? req.body.contact.email : null;
+  const ctx = { audience, applicationId, sessionId, phone, email };
 
   const audienceLines: Record<string, string> = {
   visitor:
@@ -185,12 +219,15 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   if (!upstream1.ok) {
     const errText = await upstream1.text().catch(() => "");
     console.error("[maya] OpenAI error (round 1)", upstream1.status, errText);
-    res.status(502).json({
-      reply: null,
-      error: "openai_upstream_failed",
-      upstreamStatus: upstream1.status,
-      detail: errText.slice(0, 300),
+    const reply = await mayaHumanFailover({
+      message,
+      sessionId,
+      applicationId,
+      phone,
+      email,
+      surface: audience,
     });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1" });
     return;
   }
   const data1 = await upstream1.json();
@@ -229,12 +266,15 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   if (!upstream2.ok) {
     const errText = await upstream2.text().catch(() => "");
     console.error("[maya] OpenAI error (round 2)", upstream2.status, errText);
-    res.status(502).json({
-      reply: null,
-      error: "openai_upstream_failed",
-      upstreamStatus: upstream2.status,
-      detail: errText.slice(0, 300),
+    const reply = await mayaHumanFailover({
+      message,
+      sessionId,
+      applicationId,
+      phone,
+      email,
+      surface: audience,
     });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2", tools_used: executedTools });
     return;
   }
   const data2 = await upstream2.json();
@@ -257,37 +297,69 @@ mayaRouter.post("/api/maya/chat", safeHandler(async (req, res) => {
   (mayaRouter as any).handle(req, res, () => {});
 }));
 
+// AGENT_BLOCK_v328_MAYA_FAILSAFE_v1
 mayaRouter.post("/maya/escalate", safeHandler(async (req, res) => {
-  const { reason, sessionId, applicationId } = req.body ?? {};
+  const b = req.body ?? {};
+  const summary: string =
+    (typeof b.summary === "string" && b.summary.trim()) ||
+    (typeof b.message === "string" && b.message.trim()) ||
+    (typeof b.reason === "string" ? `Visitor requested human (${b.reason})` : "Visitor requested a human.");
+  const contact = {
+    phone: typeof b.contact?.phone === "string" ? b.contact.phone : (typeof b.phone === "string" ? b.phone : null),
+    email: typeof b.contact?.email === "string" ? b.contact.email : (typeof b.email === "string" ? b.email : null),
+  };
   let persisted = false;
+  let conversation_id: string | null = null;
   try {
-    await postToBFServer("/api/maya/escalations", {
-      reason: reason ?? "user_requested_human",
-      sessionId,
-      applicationId,
-      surface: (req.body && (req.body as any).surface) || "unknown",
-    });
-    persisted = true;
+    const r = (await postToBFServer("/api/maya/escalate", {
+      kind: "talk_to_human",
+      message: summary,
+      contact,
+      sessionId: b.sessionId,
+      application_id: b.applicationId ?? b.application_id ?? null,
+      surface: b.surface || "unknown",
+    })) as { ok?: boolean; conversation_id?: string } | null;
+    persisted = Boolean(r?.ok);
+    conversation_id = r?.conversation_id ?? null;
   } catch (error) {
     console.warn("[maya] BF persist failed", error);
   }
-  res.status(200).json({ ok: true, persisted });
+  res.status(200).json({ ok: true, persisted, conversation_id });
 }));
 
 mayaRouter.post("/maya/issue", safeHandler(async (req, res) => {
-  const { message, screenshotBase64, applicationId, sessionId } = req.body ?? {};
+  const b = req.body ?? {};
+  const description: string =
+    (typeof b.message === "string" && b.message.trim()) ||
+    (typeof b.description === "string" && b.description.trim()) || "";
+  if (!description) {
+    res.status(400).json({ error: "missing_description" });
+    return;
+  }
+  const contact = {
+    phone: typeof b.contact?.phone === "string" ? b.contact.phone : (typeof b.phone === "string" ? b.phone : null),
+    email: typeof b.contact?.email === "string" ? b.contact.email : (typeof b.email === "string" ? b.email : null),
+  };
   let persisted = false;
+  let issue_id: string | null = null;
   try {
-    await postToBFServer("/api/client/issues", {
-      message,
-      screenshotBase64: screenshotBase64 ?? null,
-      applicationId: applicationId ?? null,
-    });
-    persisted = true;
+    const r = (await postToBFServer("/api/maya/escalate", {
+      kind: "report_issue",
+      description,
+      page_url: typeof b.pageUrl === "string" ? b.pageUrl : (typeof b.page_url === "string" ? b.page_url : null),
+      contact,
+      sessionId: b.sessionId,
+      application_id: b.applicationId ?? b.application_id ?? null,
+      screenshot_data_url: typeof b.screenshotBase64 === "string"
+        ? (b.screenshotBase64.startsWith("data:") ? b.screenshotBase64 : `data:image/png;base64,${b.screenshotBase64}`)
+        : null,
+    })) as { ok?: boolean; issue_id?: string } | null;
+    persisted = Boolean(r?.ok);
+    issue_id = r?.issue_id ?? null;
   } catch (error) {
     console.warn("[maya] BF persist failed", error);
   }
-  res.status(200).json({ ok: true, persisted });
+  res.status(200).json({ ok: true, persisted, issue_id });
 }));
 
 // AGENT_BLOCK_v327_REMOVE_INTERNAL_DATA_LEAK_ROUTES_v1
