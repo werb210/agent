@@ -62,20 +62,23 @@ describe("maya public routes", () => {
   });
 
   beforeEach(() => {
+    // AGENT_BLOCK_v329_MAYA_FAILSAFE_TESTS_v1 — v328 routes both /maya/escalate
+    // and /maya/issue through the single canonical BF-Server endpoint
+    // /api/maya/escalate (kind-discriminated).
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
-        if (url.endsWith("/api/maya/escalations")) {
-          return new Response(JSON.stringify({ ok: true, sessionId: "session_mock" }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        if (url.endsWith("/api/client/issues")) {
-          return new Response(JSON.stringify({ ok: true }), {
+        if (url.endsWith("/api/maya/escalate")) {
+          let kind: string | null = null;
+          try {
+            kind = init?.body ? (JSON.parse(String(init.body)).kind ?? null) : null;
+          } catch {
+            kind = null;
+          }
+          const responsePayload = kind === "report_issue" ? { ok: true, issue_id: "issue_mock" } : { ok: true, conversation_id: "conv_mock" };
+          return new Response(JSON.stringify(responsePayload), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });
@@ -112,26 +115,27 @@ describe("maya public routes", () => {
     const response = await postJson(new URL("/maya/escalate", baseUrl), { reason: "help", sessionId: "session-1" });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true }));
+    // v329 — response now also carries conversation_id from canonical BF endpoint
+    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true, conversation_id: "conv_mock" }));
   });
 
   it("POST /maya/issue returns ok", async () => {
     const response = await postJson(new URL("/maya/issue", baseUrl), { message: "route failed", sessionId: "session-1" });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true }));
+    // v329 — response now also carries issue_id from canonical BF endpoint
+    expect(response.body).toEqual(expect.objectContaining({ ok: true, persisted: true, issue_id: "issue_mock" }));
   });
 
   it("POST /maya/escalate returns persisted=false when BF-Server is unreachable", async () => {
+    // v329 — BF-Server target is now /api/maya/escalate; assert the failure-mode
+    // shape includes conversation_id: null in addition to {ok:true, persisted:false}.
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        if (url.endsWith("/api/maya/escalations")) {
+        if (url.endsWith("/api/maya/escalate")) {
           throw new Error("BF-Server unavailable");
-        }
-        if (url.endsWith("/api/client/issues")) {
-          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
         throw new Error(`Unexpected network call in test: ${url}`);
       }),
@@ -140,6 +144,6 @@ describe("maya public routes", () => {
     const response = await postJson(new URL("/maya/escalate", baseUrl), { reason: "help", sessionId: "session-1" });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ ok: true, persisted: false });
+    expect(response.body).toEqual({ ok: true, persisted: false, conversation_id: null });
   });
 });

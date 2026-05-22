@@ -70,10 +70,13 @@ describe("Maya BF-Server persistence paths", () => {
     });
   });
 
-  it("POST /maya/escalate calls BF-Server at /api/maya/escalations (NOT /api/chat/escalate)", async () => {
+  // AGENT_BLOCK_v329_MAYA_FAILSAFE_TESTS_v1 — v328 rewired this from the
+  // legacy /api/maya/escalations to the canonical kind-discriminated
+  // /api/maya/escalate (which fires staff SMS via v222).
+  it("POST /maya/escalate calls BF-Server at /api/maya/escalate with kind=talk_to_human", async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ status: "ok", data: { id: "abc", deduped: false } }), {
-        status: 201,
+      new Response(JSON.stringify({ ok: true, conversation_id: "conv-1" }), {
+        status: 200,
         headers: { "content-type": "application/json" },
       }),
     );
@@ -86,17 +89,27 @@ describe("Maya BF-Server persistence paths", () => {
 
     expect(response.status).toBe(200);
     expect(response.body?.persisted).toBe(true);
+    expect(response.body?.conversation_id).toBe("conv-1");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const calledUrl = String(fetchMock.mock.calls[0][0]);
-    expect(calledUrl).toContain("/api/maya/escalations");
+    expect(calledUrl).toContain("/api/maya/escalate");
+    expect(calledUrl).not.toContain("/api/maya/escalations");
     expect(calledUrl).not.toContain("/api/chat/escalate");
+
+    const sentBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body ?? "{}"));
+    expect(sentBody.kind).toBe("talk_to_human");
+    expect(typeof sentBody.message).toBe("string");
+    expect(sentBody.message.length).toBeGreaterThan(0);
   });
 
-  it("POST /maya/issue calls BF-Server at /api/client/issues (NOT /api/issues)", async () => {
+  // AGENT_BLOCK_v329_MAYA_FAILSAFE_TESTS_v1 — v328 rewired this from the
+  // legacy /api/client/issues to the canonical /api/maya/escalate with
+  // kind=report_issue.
+  it("POST /maya/issue calls BF-Server at /api/maya/escalate with kind=report_issue", async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ status: "ok", data: { id: "iss-1", received: true } }), {
-        status: 201,
+      new Response(JSON.stringify({ ok: true, issue_id: "iss-1" }), {
+        status: 200,
         headers: { "content-type": "application/json" },
       }),
     );
@@ -108,11 +121,16 @@ describe("Maya BF-Server persistence paths", () => {
 
     expect(response.status).toBe(200);
     expect(response.body?.persisted).toBe(true);
+    expect(response.body?.issue_id).toBe("iss-1");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const calledUrl = String(fetchMock.mock.calls[0][0]);
-    expect(calledUrl).toContain("/api/client/issues");
-    expect(calledUrl).not.toMatch(/\/api\/issues(?!\/)/);
+    expect(calledUrl).toContain("/api/maya/escalate");
+    expect(calledUrl).not.toContain("/api/client/issues");
+
+    const sentBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body ?? "{}"));
+    expect(sentBody.kind).toBe("report_issue");
+    expect(sentBody.description).toBe("test issue");
   });
 
   it("returns 200 with persisted=false when BF-Server 404s, doesn't crash the user-facing call", async () => {
