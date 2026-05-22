@@ -9,11 +9,15 @@
 import { callBFServer } from "../../integrations/bfServerClient.js";
 import { getAvailableStaff } from "../../services/staffAvailability.js";
 
+// AGENT_BLOCK_v328_ESCALATE_PHONE_PASSTHROUGH_v1
 export type EscalateToHumanArgs = {
   summary?: string;
   surface?: string;
   silo?: string;
   session_id?: string;
+  phone?: string;
+  application_id?: string;
+  contact_id?: string;
 };
 
 export type EscalateToHumanResult = {
@@ -29,6 +33,12 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
   const surface = typeof args?.surface === "string" ? args.surface.slice(0, 50) : "website";
   const silo = typeof args?.silo === "string" ? args.silo.slice(0, 10) : "BF";
   const sessionId = typeof args?.session_id === "string" ? args.session_id : null;
+  // AGENT_BLOCK_v328_ESCALATE_PHONE_PASSTHROUGH_v1 — pass identifying hints
+  // so BF-Server resolves the contact and surfaces the handoff in the
+  // Messages-tab list against the right person.
+  const phone = typeof args?.phone === "string" ? args.phone : null;
+  const applicationId = typeof args?.application_id === "string" ? args.application_id : null;
+  const contactId = typeof args?.contact_id === "string" ? args.contact_id : null;
 
   const available = await getAvailableStaff();
   const recipients = available.length > 0 ? "available" : "fallback";
@@ -44,6 +54,9 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
           silo,
           summary,
           recipients,
+          phone,
+          applicationId,
+          contactId,
         },
       },
     );
@@ -92,6 +105,19 @@ export const ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR = {
           type: "string",
           enum: ["BF", "BI", "SLF"],
           description: "Which silo this handoff belongs to. Default BF.",
+        },
+        // AGENT_BLOCK_v328_ESCALATE_PHONE_PASSTHROUGH_v1
+        phone: {
+          type: "string",
+          description: "Visitor phone in E.164 if known (from visitor.identify). Server uses last-10-digits to match an existing contact so the handoff routes correctly in the Messages tab.",
+        },
+        application_id: {
+          type: "string",
+          description: "Application UUID if the visitor is in a client session.",
+        },
+        contact_id: {
+          type: "string",
+          description: "CRM contact UUID if already known.",
         },
       },
       required: ["summary"],
