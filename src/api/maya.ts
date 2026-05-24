@@ -131,11 +131,29 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
 
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
-    res.status(503).json({
-      reply: null,
-      error: "openai_not_configured",
-      message: "Set OPENAI_API_KEY on the agent service.",
-    });
+    // AGENT_BLOCK_v3_MAYA_GRACEFUL_FALLBACK_v1 — Maya must answer
+    // *something* even when OpenAI isn't reachable. Without this we
+    // returned 503 and the website widget showed an error, which made
+    // the whole chatbot look broken to visitors. Send a polite canned
+    // reply and a soft nudge to Talk-to-Human.
+    const lower = message.toLowerCase().trim();
+    let reply: string;
+    if (/^(hi|hey|hello|yo|sup|good\s*(morning|afternoon|evening))[\s!.?]*$/.test(lower)) {
+      reply = "Hi! I'm Maya, the Boreal Financial assistant. I can answer general questions about our lending products, or hand you off to a human advisor — tap Talk to a Human below.";
+    } else if (/thank|thanks|ty\b/.test(lower)) {
+      reply = "You're welcome! Tap Talk to a Human if you'd like to speak with an advisor.";
+    } else if (/loan|finance|capital|equipment|funding|term|line of credit|loc/.test(lower)) {
+      reply = "Boreal Financial offers term loans, lines of credit, equipment financing, commercial real estate, and acquisition financing across Canada. For details specific to your business, tap Talk to a Human and an advisor will be in touch shortly.";
+    } else if (/insurance|pgi|personal\s*guarantee/.test(lower)) {
+      reply = "Boreal Insurance offers Personal Guarantee Insurance (PGI) — coverage that protects business owners who've signed a personal guarantee on a loan, lease, or supplier contract. Tap Talk to a Human and an advisor will walk you through it.";
+    } else if (/hour|open|when|time/.test(lower)) {
+      reply = "We're online during business hours (Pacific). Outside business hours, tap Talk to a Human and we'll text you back as soon as we're in.";
+    } else if (/who.*you|what.*you|about/.test(lower)) {
+      reply = "I'm Maya, the Boreal Financial assistant. I can answer general questions about our lending and insurance products, or hand you off to a human advisor.";
+    } else {
+      reply = "Good question — that one's best handled by a person. Tap Talk to a Human below and a Boreal advisor will text you back shortly.";
+    }
+    res.status(200).json({ reply, actions: [], audience: "visitor", fallback: "no_openai_key" });
     return;
   }
 
