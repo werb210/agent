@@ -100,15 +100,19 @@ describe("maya public routes", () => {
   });
 
   it("POST /api/maya/message returns a reply payload", async () => {
+    // AGENT_BLOCK_v3_MAYA_GRACEFUL_FALLBACK_v1 — when OPENAI_API_KEY is
+    // unset (the default in this test suite), the agent returns 200 with
+    // a canned reply + fallback marker instead of 503.
     const response = await postJson(new URL("/api/maya/message", baseUrl), { message: "hello" });
 
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     expect(response.body).toEqual(
       expect.objectContaining({
-        reply: null,
-        error: "openai_not_configured",
+        reply: expect.any(String),
+        fallback: "no_openai_key",
       }),
     );
+    expect((response.body as { reply: string }).reply.length).toBeGreaterThan(0);
   });
 
   it("POST /maya/escalate returns successful escalation payload", async () => {

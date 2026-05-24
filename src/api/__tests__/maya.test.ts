@@ -67,18 +67,23 @@ describe("maya API message route", () => {
     });
   });
 
-  it("returns 503 when OPENAI_API_KEY is unset", async () => {
+  it("returns 200 with canned reply when OPENAI_API_KEY is unset", async () => {
+    // AGENT_BLOCK_v3_MAYA_GRACEFUL_FALLBACK_v1 — the agent now answers
+    // basic queries even when OpenAI is unreachable. Visitors get a
+    // canned response keyed off the message content, with a fallback
+    // marker so callers can tell this came from the no-key path.
     delete process.env.OPENAI_API_KEY;
 
     const response = await postJson(new URL("/api/maya/message", baseUrl), { message: "hello" });
 
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     expect(response.body).toEqual(
       expect.objectContaining({
-        reply: null,
-        error: "openai_not_configured",
+        reply: expect.any(String),
+        fallback: "no_openai_key",
       }),
     );
+    expect((response.body as { reply: string }).reply.length).toBeGreaterThan(0);
   });
 
   it("returns 200 with reply when OpenAI returns a valid completion", async () => {
