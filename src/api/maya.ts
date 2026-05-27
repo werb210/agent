@@ -214,11 +214,18 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   ];
 
   const callOpenAI = async (body: any) => {
-    return fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify(body),
-    });
+    try {
+      return await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      // AGENT_BLOCK_v22_LLM_ERROR_LOGGING_v1
+      const e = err as Error;
+      console.error(JSON.stringify({ err: e?.message ?? "unknown", stack: e?.stack, msg: "maya_llm_call_failed" }));
+      throw err;
+    }
   };
 
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -233,7 +240,14 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     firstBody.tool_choice = "auto";
   }
 
-  const upstream1 = await callOpenAI(firstBody);
+  let upstream1: globalThis.Response;
+  try {
+    upstream1 = await callOpenAI(firstBody);
+  } catch {
+    const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1_exception" });
+    return;
+  }
   if (!upstream1.ok) {
     const errText = await upstream1.text().catch(() => "");
     console.error("[maya] OpenAI error (round 1)", upstream1.status, errText);
@@ -276,11 +290,18 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     });
   }
 
-  const upstream2 = await callOpenAI({
-    model,
-    messages,
-    temperature: 0.3,
-  });
+  let upstream2: globalThis.Response;
+  try {
+    upstream2 = await callOpenAI({
+      model,
+      messages,
+      temperature: 0.3,
+    });
+  } catch {
+    const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2_exception", tools_used: executedTools });
+    return;
+  }
   if (!upstream2.ok) {
     const errText = await upstream2.text().catch(() => "");
     console.error("[maya] OpenAI error (round 2)", upstream2.status, errText);
