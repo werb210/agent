@@ -28,12 +28,33 @@ export function auditRequiredEnv(env: NodeJS.ProcessEnv = process.env): string[]
   return missing;
 }
 
-const ALLOWED_ORIGINS = new Set(
-  (process.env.CORS_ALLOWED_ORIGINS ?? "")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-);
+// AGENT_BLOCK_v317_CORS_FAIL_CLOSED_v1
+// Known Boreal surfaces the Maya widget loads on. Used as the fail-closed
+// default in production when CORS_ALLOWED_ORIGINS is unset, so a missing
+// env var no longer means "reflect any origin on the internet". An
+// explicit CORS_ALLOWED_ORIGINS always takes precedence. Resolution is
+// done per-createApp (below) rather than at module load so it's testable
+// and respects the env in force when the app is built.
+const DEFAULT_PROD_ORIGINS = [
+  "https://boreal.financial",
+  "https://www.boreal.financial",
+  "https://staff.boreal.financial",
+  "https://client.boreal.financial",
+] as const;
+
+function resolveAllowedOrigins(env: NodeJS.ProcessEnv = process.env): { allowed: Set<string>; allowAny: boolean; usingDefaults: boolean } {
+  const configured = new Set(
+    (env.CORS_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
+  const isProd = env.NODE_ENV === "production";
+  if (configured.size > 0) return { allowed: configured, allowAny: false, usingDefaults: false };
+  if (isProd) return { allowed: new Set<string>(DEFAULT_PROD_ORIGINS), allowAny: false, usingDefaults: true };
+  // Non-production with nothing configured: allow any origin (dev convenience).
+  return { allowed: new Set<string>(), allowAny: true, usingDefaults: false };
+}
 
 function checkTwilio(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER);
@@ -73,8 +94,12 @@ export function createApp(options: AppDeps = {}) {
   const envStatus = options.envStatus ?? validateEnv();
   const dependencies = options.deps ?? createDependencies();
   const app = express();
-  if (process.env.NODE_ENV === "production" && ALLOWED_ORIGINS.size === 0) {
-    console.warn("[WARN] CORS_ALLOWED_ORIGINS not set — all origins allowed in production");
+  // AGENT_BLOCK_v317_CORS_FAIL_CLOSED_v1
+  const { allowed: allowedOrigins, allowAny: allowAnyOrigin, usingDefaults } = resolveAllowedOrigins();
+  if (usingDefaults) {
+    console.warn(
+      `[WARN] CORS_ALLOWED_ORIGINS not set — failing closed to default Boreal origins: ${DEFAULT_PROD_ORIGINS.join(", ")}`,
+    );
   }
 
   app.use(express.json());
@@ -89,8 +114,7 @@ export function createApp(options: AppDeps = {}) {
     res.setHeader("x-request-id", requestId);
 
     const requestOrigin = req.header("origin");
-    const allowAnyOrigin = ALLOWED_ORIGINS.size === 0;
-    const originAllowed = !requestOrigin || allowAnyOrigin || ALLOWED_ORIGINS.has(requestOrigin);
+    const originAllowed = !requestOrigin || allowAnyOrigin || allowedOrigins.has(requestOrigin);
 
     if (!originAllowed) {
       res.status(403).json({
@@ -101,7 +125,8 @@ export function createApp(options: AppDeps = {}) {
     }
 
     if (requestOrigin) {
-      res.setHeader("Access-Control-Allow-Origin", allowAnyOrigin ? requestOrigin : requestOrigin);
+      // Origin is allowed at this point; echo it back.
+      res.setHeader("Access-Control-Allow-Origin", requestOrigin);
       res.setHeader("Vary", "Origin");
     }
 
@@ -127,18 +152,38 @@ export function createApp(options: AppDeps = {}) {
     res.status(204).end();
   });
 
-  app.get("/health", async (_req: Request, res: Response) => {
+  app.get("/health", async (req: Request, res: Response) => {
     if (process.env.CI_VALIDATE === "true") {
       return res.status(200).json({ status: "ok" });
     }
 
-    // AGENT_BLOCK_v21_HEALTHCHECK_REAL_v1
-    const checks: Record<string, boolean> = {};
-    checks.env = REQUIRED_ENV.every((key) => Boolean(process.env[key]?.trim()));
+    // AGENT_BLOCK_v317_HEALTH_LIVENESS_READINESS_v1
+    // Two distinct probes, resolved off the VALIDATED env (envStatus),
+    // not raw process.env, so test-injected env is honored:
+    //   - shallow  GET /health        → LIVENESS. Cheap, no network call.
+    //     Stays 200 even when degraded (e.g. OPENAI_API_KEY missing) so the
+    //     orchestrator does not recycle a container that is actually
+    //     serving traffic. Reports {status:"ok"|"degraded"}.
+    //   - deep     GET /health?deep=1 → READINESS. Verifies OpenAI is
+    //     configured and reachable; 503 {reason} otherwise, so traffic is
+    //     held back until the dependency is live.
+    const deep = req.query.deep === "1" || req.query.deep === "true";
+    const openaiMissing = envStatus.missingRequired.includes("OPENAI_API_KEY");
+
+    if (!deep) {
+      const status = envStatus.missingRequired.length === 0 ? "ok" : "degraded";
+      return res.status(200).json({ status, envMode: envStatus.mode });
+    }
+
+    if (openaiMissing) {
+      return res.status(503).json({ status: "unhealthy", reason: "openai_not_configured" });
+    }
+
+    let openaiOk = false;
     try {
       const lastOk = healthCache.get("openai");
       if (lastOk && Date.now() - lastOk < 60_000) {
-        checks.openai = true;
+        openaiOk = true;
       } else {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
@@ -152,18 +197,20 @@ export function createApp(options: AppDeps = {}) {
             messages: [{ role: "user", content: "ok" }],
           }),
         });
-        checks.openai = response.ok;
-        if (checks.openai) {
+        openaiOk = response.ok;
+        if (openaiOk) {
           healthCache.set("openai", Date.now());
         }
       }
     } catch (error) {
       void error;
-      checks.openai = false;
+      openaiOk = false;
     }
 
-    const healthy = Object.values(checks).every(Boolean);
-    return res.status(healthy ? 200 : 503).json({ ok: healthy, checks, envMode: envStatus.mode });
+    if (!openaiOk) {
+      return res.status(503).json({ status: "unhealthy", reason: "openai_unreachable" });
+    }
+    return res.status(200).json({ status: "ok", envMode: envStatus.mode });
   });
 
   app.get("/ready", async (_req: Request, res: Response, next: NextFunction) => {
