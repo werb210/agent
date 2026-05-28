@@ -12,7 +12,7 @@ function buildDeps(): RuntimeDependencies {
 }
 
 describe("AGENT_BLOCK_v21_HEALTHCHECK_REAL_v1", () => {
-  it("returns 503 when required env vars are missing", async () => {
+  it("shallow /health stays 200 (liveness) but deep /health?deep=1 returns 503 when required env is missing", async () => {
     const prev = { ...process.env };
     delete process.env.OPENAI_API_KEY;
     delete process.env.SERVER_URL;
@@ -26,16 +26,21 @@ describe("AGENT_BLOCK_v21_HEALTHCHECK_REAL_v1", () => {
       const listening = app.listen(0, () => resolve(listening));
     });
 
-    try {
+    async function getCode(path: string): Promise<number> {
       const address = server.address();
       if (!address || typeof address === "string") throw new Error("bad address");
-      const response = await new Promise<{ code: number }>((resolve, reject) => {
-        const req = http.get({ hostname: "127.0.0.1", port: address.port, path: "/health" }, (res) => {
-          resolve({ code: res.statusCode ?? 0 });
+      return new Promise<number>((resolve, reject) => {
+        const req = http.get({ hostname: "127.0.0.1", port: address.port, path }, (res) => {
+          res.on("data", () => {});
+          res.on("end", () => resolve(res.statusCode ?? 0));
         });
         req.on("error", reject);
       });
-      expect(response.code).toBe(503);
+    }
+
+    try {
+      expect(await getCode("/health")).toBe(200);
+      expect(await getCode("/health?deep=1")).toBe(503);
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       process.env = prev;
