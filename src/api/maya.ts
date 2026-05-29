@@ -1,5 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { getSessionHistory, appendSessionTurn } from "../maya/sessionHistory.js";
 import { endpoints } from "../contracts/endpoints.js";
 import { apiCall } from "../lib/api.js";
 
@@ -220,8 +221,10 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     "When a tool returns ok=false, briefly acknowledge that you couldn't fetch the answer; do not pretend to know.",
   ].join(" ");
 
+  const priorHistory = sessionId ? getSessionHistory(sessionId) : [];
   const messages: any[] = [
     { role: "system", content: systemPrompt },
+    ...priorHistory,
     { role: "user", content: message },
   ];
 
@@ -282,6 +285,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     const reply =
       choice1?.content?.toString().trim() ||
       "Thanks — a Boreal advisor will reach out.";
+    if (sessionId) appendSessionTurn(sessionId, message, reply);
     res.status(200).json({ reply, actions: [], audience });
     return;
   }
@@ -334,6 +338,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     data2?.choices?.[0]?.message?.content?.toString().trim() ||
     "Thanks — a Boreal advisor will reach out.";
 
+  if (sessionId) appendSessionTurn(sessionId, message, finalReply);
   res.status(200).json({
     reply: finalReply,
     actions: [],
