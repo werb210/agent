@@ -162,7 +162,19 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   const { dispatchTool } = await import("../maya/dispatch.js");
 
   const audience = parseAudience(req.header(MAYA_AUDIENCE_HEADER));
-  const tools = descriptorsForAudience(audience);
+  const rawTools = descriptorsForAudience(audience);
+  // v82: OpenAI requires tool function names to match ^[a-zA-Z0-9_-]+$.
+  // Maya's names use dots (e.g. "lead.capture"), which 400 the request. Send
+  // sanitized names to the API; keep a reverse map so dispatchTool still gets
+  // the original (dotted) name. Reversible even for names with underscores,
+  // because the map is keyed on the exact sanitized string.
+  const toolNameMap = new Map<string, string>();
+  const tools = rawTools.map((t: any) => {
+    const orig: string = t?.function?.name ?? "";
+    const safe = orig.replace(/[^a-zA-Z0-9_-]/g, "_");
+    if (safe !== orig) toolNameMap.set(safe, orig);
+    return safe === orig ? t : { ...t, function: { ...t.function, name: safe } };
+  });
   const applicationId =
     typeof req.body?.application_id === "string"
       ? req.body.application_id
@@ -279,7 +291,8 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   messages.push(choice1);
   const executedTools: string[] = [];
   for (const tc of toolCalls) {
-    const toolName: string = tc?.function?.name ?? "";
+    const rawToolName: string = tc?.function?.name ?? "";
+    const toolName: string = toolNameMap.get(rawToolName) ?? rawToolName;
     const toolArgs: string = tc?.function?.arguments ?? "";
     const resultJson = await dispatchTool(toolName, toolArgs, ctx);
     executedTools.push(toolName);
