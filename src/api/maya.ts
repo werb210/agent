@@ -197,19 +197,17 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     typeof req.body?.contact?.email === "string" ? req.body.contact.email : null;
   const ctx = { audience, applicationId, sessionId, phone, email };
 
+  const sharedPersona =
+    "If you do not yet know who you are speaking with in this session (no name and no email/phone, and no application on file), greet them briefly and ask ONCE for their name plus either an email or phone, then call visitor.identify with what they give you. " +
+    "If you already know them (identity captured earlier in this session, or the host supplied an application_id), do NOT greet again or re-ask - just continue helping. " +
+    "Use info.products and info.qualifications for product/eligibility questions; pricing depends on the application, so do not quote rates. " +
+    "Use application.my_status, docs.checklist, and pgi.completion_link when an application is in context. " +
+    "Use apply.start_url to send them into the application flow. " +
+    "Use escalate.to_human when they ask for a human or when you cannot answer. " +
+    "Do not invent products, terms, or amounts.";
   const audienceLines: Record<string, string> = {
-  visitor:
-    "You are speaking with a website visitor. " +
-    "ON YOUR FIRST TURN: greet them briefly and ask for their name plus either an email or phone number, then call visitor.identify with the values they give you. " +
-    "DO NOT answer any product, eligibility, pricing, or timeline question until visitor.identify has returned ok=true in this session. " +
-    "After identification: use info.products and info.qualifications for product/eligibility questions. Pricing depends on the application — do not quote rates. " +
-    "Use apply.start_url to send them to the application flow. " +
-    "Use escalate.to_human when they ask for a human or when you can't answer. " +
-    "Do not invent products, terms, or amounts that aren't in info.products.",
-  client:
-    "You are speaking with an authenticated applicant. Use application.my_status, docs.checklist, and pgi.completion_link to answer questions about their application. " +
-    "Never ask them for an application_id — the host has supplied it. " +
-    "Use escalate.to_human when they ask for a human or when you can't answer.",
+  visitor: sharedPersona,
+  client: sharedPersona,
   staff:
     "You are speaking with Boreal staff. You may use pipeline.query for natural-language questions about applications, contacts, and stages.",
 };
