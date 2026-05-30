@@ -1,6 +1,8 @@
-# AGENT_DEPLOY_v86_SELFCONTAINED — ship a prebuilt, self-contained bundle
-# (dist + production node_modules) so the container never depends on a remote
-# Oryx build. Requires App Service setting SCM_DO_BUILD_DURING_DEPLOYMENT=false.
+# AGENT_DEPLOY_v86b_SELFCONTAINED_STAGING — ship a prebuilt, self-contained
+# bundle (dist + production node_modules) to the maya-service-staging slot so
+# the container never depends on a remote Oryx build. Swap to go live.
+# Requires App setting SCM_DO_BUILD_DURING_DEPLOYMENT=false and GitHub secret
+# AZURE_WEBAPP_PUBLISH_PROFILE_STAGING.
 name: Deploy
 
 on:
@@ -37,9 +39,10 @@ jobs:
           test -f dist/index.js
           test -d node_modules
 
-      - name: Deploy to Azure
+      - name: Deploy to Azure (staging slot)
         uses: azure/webapps-deploy@v3
         with:
           app-name: maya-service
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          slot-name: staging
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
           package: release
