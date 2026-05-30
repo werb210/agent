@@ -32,12 +32,16 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
       "JWT_SECRET",
     ] as const;
 
+    // AGENT_BLOCK_v86_ENV_DEGRADE_NOT_CRASH_v1 — previously threw on any
+    // missing prod var, crash-looping the whole service (health endpoint dead
+    // too). Warn so Maya boots in degraded mode and the portal health badge
+    // surfaces the gap, matching validateProductionEnv + OPTIONAL_ENV_VARS.
     for (const key of required) {
       if (!env[key]) {
-        throw new Error(
-          `Missing required production env var: ${key}. ` +
-            `Set this in your deployment environment config (Azure App Service → Configuration, ` +
-            `or as a GitHub Actions secret). Do not commit real values to .env.production.`,
+        console.warn(
+          `[WARN] Missing production env var: ${key}. ` +
+            `Maya will start in degraded mode. ` +
+            `Set it in Azure App Service → Configuration.`,
         );
       }
     }
