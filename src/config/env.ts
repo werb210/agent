@@ -14,7 +14,7 @@ function fromEnv(key: string, fallback: string): string {
 export const ENV = {
   PORT: process.env.PORT || "8080",
   BASE_URL: process.env.BASE_URL || "http://localhost:8080",
-  SERVER_URL: process.env.SERVER_URL || "http://localhost:8080",
+  SERVER_URL: process.env.SERVER_URL || "https://server.boreal.financial",
   WS_URL:
     process.env.WS_URL || process.env.BASE_URL || "http://localhost:8080",
   AGENT_API_TOKEN: fromEnv("AGENT_API_TOKEN", "test_token"),
