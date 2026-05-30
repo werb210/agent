@@ -10,5 +10,5 @@ if (!process.env.SERVER_URL) {
 
 export const ENV = {
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  SERVER_URL: process.env.SERVER_URL ?? "http://127.0.0.1:4000",
+  SERVER_URL: process.env.SERVER_URL ?? "https://server.boreal.financial",
 };
