@@ -16,6 +16,9 @@ import { escalateToHuman, ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR } from "./tools/esca
 import { contactFind, CONTACT_FIND_TOOL_DESCRIPTOR } from "./tools/contactFind.js";
 import { applicationSummary, APPLICATION_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationSummary.js";
 import { commDraftEmail, COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR } from "./tools/commDraftEmail.js";
+import { mayaAudit, MAYA_AUDIT_TOOL_DESCRIPTOR } from "./tools/mayaAudit.js";
+import { uiNavigate, UI_NAVIGATE_TOOL_DESCRIPTOR } from "./tools/uiNavigate.js";
+import { applicationOpenNewest, APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR } from "./tools/applicationOpenNewest.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -45,6 +48,9 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "contact.find":            { descriptor: CONTACT_FIND_TOOL_DESCRIPTOR,          run: (a) => contactFind(a) },
   "application.summary":     { descriptor: APPLICATION_SUMMARY_TOOL_DESCRIPTOR,   run: (a) => applicationSummary(a) },
   "comm.draft_email":        { descriptor: COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR,      run: (a) => commDraftEmail(a) },
+  "maya.audit":              { descriptor: MAYA_AUDIT_TOOL_DESCRIPTOR,            run: (a) => mayaAudit(a) },
+  "application.open_newest": { descriptor: APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR, run: (a) => applicationOpenNewest(a) },
+  "ui.navigate":             { descriptor: UI_NAVIGATE_TOOL_DESCRIPTOR,           run: (a) => uiNavigate(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
