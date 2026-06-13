@@ -209,15 +209,26 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   visitor: sharedPersona,
   client: sharedPersona,
   staff:
-    "You are speaking with Boreal staff. You may use pipeline.query for natural-language questions about applications, contacts, and stages.",
+    "You are speaking with Boreal staff. Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
+    "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
+    "When you take a navigation action, keep the spoken reply short (one line confirming what you opened).",
 };
 
+  const screenContext =
+    req.body?.screen_context && typeof req.body.screen_context === "object" && !Array.isArray(req.body.screen_context)
+      ? (req.body.screen_context as Record<string, unknown>)
+      : null;
+  const screenContextLine =
+    audience === "staff" && screenContext
+      ? `The staff member is currently viewing this screen (JSON): ${JSON.stringify(screenContext)}. When they say "this", "current", "it", "the contact", or "the client", resolve against this screen context — e.g. pass the id shown here to ui.navigate or another tool.`
+      : "";
   const systemPrompt = [
     "You are Maya, the Boreal Financial assistant.",
     audienceLines[audience],
+    screenContextLine,
     "Keep answers under 120 words. If asked for data you do not have, say so and offer to hand off to a human.",
     "When a tool returns ok=false, briefly acknowledge that you couldn't fetch the answer; do not pretend to know.",
-  ].join(" ");
+  ].filter(Boolean).join(" ");
 
   const priorHistory = sessionId ? getSessionHistory(sessionId) : [];
   const messages: any[] = [
@@ -292,12 +303,21 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   // ask the model for a final reply.
   messages.push(choice1);
   const executedTools: string[] = [];
+  const collectedActions: any[] = [];
   for (const tc of toolCalls) {
     const rawToolName: string = tc?.function?.name ?? "";
     const toolName: string = toolNameMap.get(rawToolName) ?? rawToolName;
     const toolArgs: string = tc?.function?.arguments ?? "";
     const resultJson = await dispatchTool(toolName, toolArgs, ctx);
     executedTools.push(toolName);
+    try {
+      const parsed = JSON.parse(resultJson);
+      if (parsed && typeof parsed === "object" && parsed.action && typeof parsed.action === "object") {
+        collectedActions.push(parsed.action);
+      }
+    } catch {
+      // non-JSON tool result — no action to collect
+    }
     messages.push({
       role: "tool",
       tool_call_id: tc.id,
@@ -339,7 +359,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   if (sessionId) appendSessionTurn(sessionId, message, finalReply);
   res.status(200).json({
     reply: finalReply,
-    actions: [],
+    actions: collectedActions,
     audience,
     tools_used: executedTools,
   });

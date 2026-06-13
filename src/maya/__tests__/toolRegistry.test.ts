@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "maya.audit", "application.open_newest", "ui.navigate"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -64,13 +64,27 @@ vi.mock("../tools/commDraftEmail.js", () => ({
   COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR: { type: "function", function: { name: "comm.draft_email", description: "", parameters: {} } },
 }));
 
+vi.mock("../tools/mayaAudit.js", () => ({
+  mayaAudit: vi.fn(),
+  MAYA_AUDIT_TOOL_DESCRIPTOR: { type: "function", function: { name: "maya.audit", description: "", parameters: {} } },
+}));
+vi.mock("../tools/uiNavigate.js", () => ({
+  uiNavigate: vi.fn(),
+  UI_NAVIGATE_TOOL_DESCRIPTOR: { type: "function", function: { name: "ui.navigate", description: "", parameters: {} } },
+}));
+vi.mock("../tools/applicationOpenNewest.js", () => ({
+  applicationOpenNewest: vi.fn(),
+  APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.open_newest", description: "", parameters: {} } },
+}));
+
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all thirteen tools", () => {
+  it("registers all sixteen tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
+      "application.open_newest",
       "application.summary",
       "apply.start_url",
       "comm.draft_email",
@@ -80,8 +94,10 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "info.products",
       "info.qualifications",
       "lead.capture",
+      "maya.audit",
       "pgi.completion_link",
       "pipeline.query",
+      "ui.navigate",
       "visitor.identify",
     ]);
   });
@@ -113,10 +129,13 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
   it("descriptorsForAudience('staff') exposes only staff tools", () => {
     const names = descriptorsForAudience("staff").map((d) => d.function.name).sort();
     expect(names).toEqual([
+      "application.open_newest",
       "application.summary",
       "comm.draft_email",
       "contact.find",
+      "maya.audit",
       "pipeline.query",
+      "ui.navigate",
     ]);
   });
 
