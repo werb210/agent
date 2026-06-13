@@ -35,7 +35,7 @@ function injectContext(
   // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1 — escalate.to_human gets every identity
   // hint the host knows about so BF-Server (v636) can resolve the contact
   // and route the handoff to the right Messages-tab thread.
-  if (toolName === "escalate.to_human") {
+  if (toolName === "escalate.to_human" || toolName === "book.callback") {
     return {
       ...modelArgs,
       session_id: (modelArgs.session_id as string | undefined) ?? ctx.sessionId ?? undefined,
