@@ -231,8 +231,42 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   ].filter(Boolean).join(" ");
 
   const priorHistory = sessionId ? getSessionHistory(sessionId) : [];
+
+  // MAYA_TRAINING_RETRIEVAL — pull trained knowledge + tuned persona from
+  // BF-Server and prepend as a system message. Best-effort: a failure here
+  // must never block the reply, so every call is guarded and degrades to "".
+  let mayaAugment = "";
+  try {
+    const [ksRes, ppRes] = await Promise.all([
+      bfServer("/api/maya/knowledge-search", { method: "POST", body: JSON.stringify({ query: message }) }).catch(() => null),
+      bfServer("/api/maya/maya-persona", { method: "POST", body: JSON.stringify({}) }).catch(() => null),
+    ]);
+    let knowledge = "";
+    let persona = "";
+    let tone = "";
+    if (ksRes && ksRes.ok) {
+      const j = await ksRes.json().catch(() => null);
+      if (j && typeof j.context === "string") knowledge = j.context;
+    }
+    if (ppRes && ppRes.ok) {
+      const j = await ppRes.json().catch(() => null);
+      if (j) {
+        persona = typeof j.persona === "string" ? j.persona : "";
+        tone = typeof j.tone === "string" ? j.tone : "";
+      }
+    }
+    const parts: string[] = [];
+    if (persona) parts.push(persona);
+    if (tone) parts.push(`Tone: ${tone}.`);
+    if (knowledge) parts.push(`Relevant Boreal knowledge (use it to answer accurately; do not contradict it):\n${knowledge}`);
+    mayaAugment = parts.join("\n\n");
+  } catch {
+    // best-effort augmentation; ignore failures
+  }
+
   const messages: any[] = [
     { role: "system", content: systemPrompt },
+    ...(mayaAugment ? [{ role: "system", content: mayaAugment }] : []),
     ...priorHistory,
     { role: "user", content: message },
   ];
