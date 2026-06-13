@@ -88,7 +88,10 @@ describe("maya API message route", () => {
 
   it("returns 200 with reply when OpenAI returns a valid completion", async () => {
     process.env.OPENAI_API_KEY = "test-key";
-    vi.spyOn(global, "fetch").mockResolvedValue(
+    // Return a FRESH Response per call: the handler now makes several
+    // fetches per turn (knowledge retrieval + persona + OpenAI), and a
+    // Response body can only be read once.
+    vi.spyOn(global, "fetch").mockImplementation(async () =>
       new Response(
         JSON.stringify({
           choices: [{ message: { content: "Hello from Maya" } }],
