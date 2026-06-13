@@ -19,6 +19,9 @@ import { commDraftEmail, COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR } from "./tools/commDr
 import { mayaAudit, MAYA_AUDIT_TOOL_DESCRIPTOR } from "./tools/mayaAudit.js";
 import { uiNavigate, UI_NAVIGATE_TOOL_DESCRIPTOR } from "./tools/uiNavigate.js";
 import { applicationOpenNewest, APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR } from "./tools/applicationOpenNewest.js";
+import { commSendSms, COMM_SEND_SMS_TOOL_DESCRIPTOR } from "./tools/commSendSms.js";
+import { callInitiate, CALL_INITIATE_TOOL_DESCRIPTOR } from "./tools/callInitiate.js";
+import { bookCallback, BOOK_CALLBACK_TOOL_DESCRIPTOR } from "./tools/bookCallback.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -51,6 +54,9 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "maya.audit":              { descriptor: MAYA_AUDIT_TOOL_DESCRIPTOR,            run: (a) => mayaAudit(a) },
   "application.open_newest": { descriptor: APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR, run: (a) => applicationOpenNewest(a) },
   "ui.navigate":             { descriptor: UI_NAVIGATE_TOOL_DESCRIPTOR,           run: (a) => uiNavigate(a) },
+  "comm.send_sms":           { descriptor: COMM_SEND_SMS_TOOL_DESCRIPTOR,         run: (a) => commSendSms(a) },
+  "call.initiate":           { descriptor: CALL_INITIATE_TOOL_DESCRIPTOR,         run: (a) => callInitiate(a) },
+  "book.callback":           { descriptor: BOOK_CALLBACK_TOOL_DESCRIPTOR,         run: (a) => bookCallback(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {

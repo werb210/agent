@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "maya.audit", "application.open_newest", "ui.navigate"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -76,18 +76,33 @@ vi.mock("../tools/applicationOpenNewest.js", () => ({
   applicationOpenNewest: vi.fn(),
   APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.open_newest", description: "", parameters: {} } },
 }));
+vi.mock("../tools/commSendSms.js", () => ({
+  commSendSms: vi.fn(),
+  COMM_SEND_SMS_TOOL_DESCRIPTOR: { type: "function", function: { name: "comm.send_sms", description: "", parameters: {} } },
+}));
+vi.mock("../tools/callInitiate.js", () => ({
+  callInitiate: vi.fn(),
+  CALL_INITIATE_TOOL_DESCRIPTOR: { type: "function", function: { name: "call.initiate", description: "", parameters: {} } },
+}));
+vi.mock("../tools/bookCallback.js", () => ({
+  bookCallback: vi.fn(),
+  BOOK_CALLBACK_TOOL_DESCRIPTOR: { type: "function", function: { name: "book.callback", description: "", parameters: {} } },
+}));
 
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all sixteen tools", () => {
+  it("registers all nineteen tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
       "application.open_newest",
       "application.summary",
       "apply.start_url",
+      "book.callback",
+      "call.initiate",
       "comm.draft_email",
+      "comm.send_sms",
       "contact.find",
       "docs.checklist",
       "escalate.to_human",
@@ -116,10 +131,9 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
 
   it("descriptorsForAudience('client') exposes only client tools", () => {
     const names = descriptorsForAudience("client").map((d) => d.function.name).sort();
-    // book.callback is in TOOLS_BY_AUDIENCE.client but not yet
-    // implemented; the registry only exposes what's implemented.
     expect(names).toEqual([
       "application.my_status",
+      "book.callback",
       "docs.checklist",
       "escalate.to_human",
       "pgi.completion_link",
@@ -131,7 +145,9 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     expect(names).toEqual([
       "application.open_newest",
       "application.summary",
+      "call.initiate",
       "comm.draft_email",
+      "comm.send_sms",
       "contact.find",
       "maya.audit",
       "pipeline.query",
