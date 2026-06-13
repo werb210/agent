@@ -13,6 +13,9 @@ import { infoProducts, INFO_PRODUCTS_TOOL_DESCRIPTOR, infoQualifications, INFO_Q
 import { leadCapture, LEAD_CAPTURE_TOOL_DESCRIPTOR, applyStartUrl, APPLY_START_URL_TOOL_DESCRIPTOR } from "./tools/leadCapture.js";
 import { visitorIdentify, VISITOR_IDENTIFY_TOOL_DESCRIPTOR } from "./tools/visitorIdentify.js";
 import { escalateToHuman, ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR } from "./tools/escalateToHuman.js";
+import { contactFind, CONTACT_FIND_TOOL_DESCRIPTOR } from "./tools/contactFind.js";
+import { applicationSummary, APPLICATION_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationSummary.js";
+import { commDraftEmail, COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR } from "./tools/commDraftEmail.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -39,6 +42,9 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "apply.start_url":        { descriptor: APPLY_START_URL_TOOL_DESCRIPTOR,        run: (a) => applyStartUrl(a) },
   "visitor.identify":        { descriptor: VISITOR_IDENTIFY_TOOL_DESCRIPTOR,       run: (a) => visitorIdentify(a) },
   "escalate.to_human":       { descriptor: ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR,      run: (a) => escalateToHuman(a) },
+  "contact.find":            { descriptor: CONTACT_FIND_TOOL_DESCRIPTOR,          run: (a) => contactFind(a) },
+  "application.summary":     { descriptor: APPLICATION_SUMMARY_TOOL_DESCRIPTOR,   run: (a) => applicationSummary(a) },
+  "comm.draft_email":        { descriptor: COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR,      run: (a) => commDraftEmail(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
