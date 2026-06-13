@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
-      staff: ["pipeline.query"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -51,14 +51,30 @@ vi.mock("../tools/escalateToHuman.js", () => ({
   ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR: { type: "function", function: { name: "escalate.to_human", description: "", parameters: {} } },
 }));
 
+vi.mock("../tools/contactFind.js", () => ({
+  contactFind: vi.fn(),
+  CONTACT_FIND_TOOL_DESCRIPTOR: { type: "function", function: { name: "contact.find", description: "", parameters: {} } },
+}));
+vi.mock("../tools/applicationSummary.js", () => ({
+  applicationSummary: vi.fn(),
+  APPLICATION_SUMMARY_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.summary", description: "", parameters: {} } },
+}));
+vi.mock("../tools/commDraftEmail.js", () => ({
+  commDraftEmail: vi.fn(),
+  COMM_DRAFT_EMAIL_TOOL_DESCRIPTOR: { type: "function", function: { name: "comm.draft_email", description: "", parameters: {} } },
+}));
+
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all ten tools", () => {
+  it("registers all thirteen tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
+      "application.summary",
       "apply.start_url",
+      "comm.draft_email",
+      "contact.find",
       "docs.checklist",
       "escalate.to_human",
       "info.products",
@@ -94,9 +110,14 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     ]);
   });
 
-  it("descriptorsForAudience('staff') exposes pipeline.query at minimum", () => {
-    const names = descriptorsForAudience("staff").map((d) => d.function.name);
-    expect(names).toContain("pipeline.query");
+  it("descriptorsForAudience('staff') exposes only staff tools", () => {
+    const names = descriptorsForAudience("staff").map((d) => d.function.name).sort();
+    expect(names).toEqual([
+      "application.summary",
+      "comm.draft_email",
+      "contact.find",
+      "pipeline.query",
+    ]);
   });
 
   it("lookupTool returns null for unknown names", () => {
