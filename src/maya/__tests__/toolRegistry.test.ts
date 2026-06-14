@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human", "apply.field_help", "docs.explain", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.timeline_estimate", "application.resume_link"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -111,6 +111,20 @@ vi.mock("../tools/staffReadTools.js", () => ({
   APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.risk_flags", description: "", parameters: {} } },
 }));
 
+
+vi.mock("../tools/staffReadTools2.js", () => ({
+  bankingSummary: vi.fn(),
+  BANKING_SUMMARY_TOOL_DESCRIPTOR: { type: "function", function: { name: "banking.summary", description: "", parameters: {} } },
+  creditSummary: vi.fn(),
+  CREDIT_SUMMARY_TOOL_DESCRIPTOR: { type: "function", function: { name: "credit.summary", description: "", parameters: {} } },
+  notesRead: vi.fn(),
+  NOTES_READ_TOOL_DESCRIPTOR: { type: "function", function: { name: "notes.read", description: "", parameters: {} } },
+  docsRequestDraft: vi.fn(),
+  DOCS_REQUEST_DRAFT_TOOL_DESCRIPTOR: { type: "function", function: { name: "docs.request_draft", description: "", parameters: {} } },
+  dailyBriefing: vi.fn(),
+  DAILY_BRIEFING_TOOL_DESCRIPTOR: { type: "function", function: { name: "daily.briefing", description: "", parameters: {} } },
+}));
+
 vi.mock("../tools/clientGuidanceTools.js", () => ({
   applyFieldHelp: vi.fn(),
   APPLY_FIELD_HELP_TOOL_DESCRIPTOR: { type: "function", function: { name: "apply.field_help", description: "", parameters: {} } },
@@ -133,7 +147,7 @@ vi.mock("../tools/clientGuidanceTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all thirty-four tools", () => {
+  it("registers all thirty-nine tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
@@ -146,6 +160,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "application.underwriting_summary",
       "apply.field_help",
       "apply.start_url",
+      "banking.summary",
       "book.callback",
       "call.initiate",
       "call.triage",
@@ -153,9 +168,12 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "comm.send_sms",
       "contact.find",
       "contact.timeline",
+      "credit.summary",
+      "daily.briefing",
       "docs.checklist",
       "docs.explain",
       "docs.rejections",
+      "docs.request_draft",
       "escalate.to_human",
       "info.products",
       "info.qualifications",
@@ -163,6 +181,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "lender.match_explain",
       "lender.products",
       "maya.audit",
+      "notes.read",
       "offer.explain",
       "pgi.completion_link",
       "pgi.readiness",
@@ -211,15 +230,20 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "application.risk_flags",
       "application.summary",
       "application.underwriting_summary",
+      "banking.summary",
       "call.initiate",
       "call.triage",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
       "contact.timeline",
+      "credit.summary",
+      "daily.briefing",
+      "docs.request_draft",
       "lender.match_explain",
       "lender.products",
       "maya.audit",
+      "notes.read",
       "pgi.readiness",
       "pipeline.query",
       "ui.navigate",
