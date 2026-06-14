@@ -5,7 +5,7 @@ vi.mock("../audience.js", () => ({
   isToolAllowed: (audience: string, tool: string) => {
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
-      client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
+      client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human", "apply.field_help", "docs.explain", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.timeline_estimate", "application.resume_link"],
       staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness"],
     };
     return (allow[audience] ?? []).includes(tool);
@@ -101,16 +101,39 @@ vi.mock("../tools/pgiReadiness.js", () => ({
   PGI_READINESS_TOOL_DESCRIPTOR: { type: "function", function: { name: "pgi.readiness", description: "", parameters: {} } },
 }));
 
+vi.mock("../tools/clientGuidanceTools.js", () => ({
+  applyFieldHelp: vi.fn(),
+  APPLY_FIELD_HELP_TOOL_DESCRIPTOR: { type: "function", function: { name: "apply.field_help", description: "", parameters: {} } },
+  docsExplain: vi.fn(),
+  DOCS_EXPLAIN_TOOL_DESCRIPTOR: { type: "function", function: { name: "docs.explain", description: "", parameters: {} } },
+  docsRejections: vi.fn(),
+  DOCS_REJECTIONS_TOOL_DESCRIPTOR: { type: "function", function: { name: "docs.rejections", description: "", parameters: {} } },
+  offerExplain: vi.fn(),
+  OFFER_EXPLAIN_TOOL_DESCRIPTOR: { type: "function", function: { name: "offer.explain", description: "", parameters: {} } },
+  applicationNextStep: vi.fn(),
+  APPLICATION_NEXT_STEP_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.next_step", description: "", parameters: {} } },
+  signatureStatus: vi.fn(),
+  SIGNATURE_STATUS_TOOL_DESCRIPTOR: { type: "function", function: { name: "signature.status", description: "", parameters: {} } },
+  applicationTimelineEstimate: vi.fn(),
+  APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.timeline_estimate", description: "", parameters: {} } },
+  applicationResumeLink: vi.fn(),
+  APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.resume_link", description: "", parameters: {} } },
+}));
+
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all twenty-two tools", () => {
+  it("registers all thirty tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
+      "application.next_step",
       "application.open_newest",
+      "application.resume_link",
       "application.summary",
+      "application.timeline_estimate",
       "application.underwriting_summary",
+      "apply.field_help",
       "apply.start_url",
       "book.callback",
       "call.initiate",
@@ -118,15 +141,19 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "comm.send_sms",
       "contact.find",
       "docs.checklist",
+      "docs.explain",
+      "docs.rejections",
       "escalate.to_human",
       "info.products",
       "info.qualifications",
       "lead.capture",
       "lender.match_explain",
       "maya.audit",
+      "offer.explain",
       "pgi.completion_link",
       "pgi.readiness",
       "pipeline.query",
+      "signature.status",
       "ui.navigate",
       "visitor.identify",
     ]);
@@ -148,10 +175,18 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     const names = descriptorsForAudience("client").map((d) => d.function.name).sort();
     expect(names).toEqual([
       "application.my_status",
+      "application.next_step",
+      "application.resume_link",
+      "application.timeline_estimate",
+      "apply.field_help",
       "book.callback",
       "docs.checklist",
+      "docs.explain",
+      "docs.rejections",
       "escalate.to_human",
+      "offer.explain",
       "pgi.completion_link",
+      "signature.status",
     ]);
   });
 

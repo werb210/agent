@@ -25,6 +25,16 @@ import { bookCallback, BOOK_CALLBACK_TOOL_DESCRIPTOR } from "./tools/bookCallbac
 import { applicationUnderwritingSummary, APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationUnderwritingSummary.js";
 import { lenderMatchExplain, LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR } from "./tools/lenderMatchExplain.js";
 import { pgiReadiness, PGI_READINESS_TOOL_DESCRIPTOR } from "./tools/pgiReadiness.js";
+import {
+  applyFieldHelp, APPLY_FIELD_HELP_TOOL_DESCRIPTOR,
+  docsExplain, DOCS_EXPLAIN_TOOL_DESCRIPTOR,
+  docsRejections, DOCS_REJECTIONS_TOOL_DESCRIPTOR,
+  offerExplain, OFFER_EXPLAIN_TOOL_DESCRIPTOR,
+  applicationNextStep, APPLICATION_NEXT_STEP_TOOL_DESCRIPTOR,
+  signatureStatus, SIGNATURE_STATUS_TOOL_DESCRIPTOR,
+  applicationTimelineEstimate, APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR,
+  applicationResumeLink, APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR,
+} from "./tools/clientGuidanceTools.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -63,6 +73,14 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "application.underwriting_summary": { descriptor: APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR, run: (a) => applicationUnderwritingSummary(a) },
   "lender.match_explain": { descriptor: LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR, run: (a) => lenderMatchExplain(a) },
   "pgi.readiness": { descriptor: PGI_READINESS_TOOL_DESCRIPTOR, run: (a) => pgiReadiness(a) },
+  "apply.field_help": { descriptor: APPLY_FIELD_HELP_TOOL_DESCRIPTOR, run: (a) => applyFieldHelp(a) },
+  "docs.explain": { descriptor: DOCS_EXPLAIN_TOOL_DESCRIPTOR, run: (a) => docsExplain(a) },
+  "docs.rejections": { descriptor: DOCS_REJECTIONS_TOOL_DESCRIPTOR, run: (a) => docsRejections(a) },
+  "offer.explain": { descriptor: OFFER_EXPLAIN_TOOL_DESCRIPTOR, run: (a) => offerExplain(a) },
+  "application.next_step": { descriptor: APPLICATION_NEXT_STEP_TOOL_DESCRIPTOR, run: (a) => applicationNextStep(a) },
+  "signature.status": { descriptor: SIGNATURE_STATUS_TOOL_DESCRIPTOR, run: (a) => signatureStatus(a) },
+  "application.timeline_estimate": { descriptor: APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR, run: (a) => applicationTimelineEstimate(a) },
+  "application.resume_link": { descriptor: APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR, run: (a) => applicationResumeLink(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
