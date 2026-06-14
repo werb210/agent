@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -96,11 +96,15 @@ vi.mock("../tools/lenderMatchExplain.js", () => ({
   lenderMatchExplain: vi.fn(),
   LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR: { type: "function", function: { name: "lender.match_explain", description: "", parameters: {} } },
 }));
+vi.mock("../tools/pgiReadiness.js", () => ({
+  pgiReadiness: vi.fn(),
+  PGI_READINESS_TOOL_DESCRIPTOR: { type: "function", function: { name: "pgi.readiness", description: "", parameters: {} } },
+}));
 
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all twenty-one tools", () => {
+  it("registers all twenty-two tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
@@ -121,6 +125,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "lender.match_explain",
       "maya.audit",
       "pgi.completion_link",
+      "pgi.readiness",
       "pipeline.query",
       "ui.navigate",
       "visitor.identify",
@@ -162,6 +167,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "contact.find",
       "lender.match_explain",
       "maya.audit",
+      "pgi.readiness",
       "pipeline.query",
       "ui.navigate",
     ]);
