@@ -22,6 +22,7 @@ import { applicationOpenNewest, APPLICATION_OPEN_NEWEST_TOOL_DESCRIPTOR } from "
 import { commSendSms, COMM_SEND_SMS_TOOL_DESCRIPTOR } from "./tools/commSendSms.js";
 import { callInitiate, CALL_INITIATE_TOOL_DESCRIPTOR } from "./tools/callInitiate.js";
 import { bookCallback, BOOK_CALLBACK_TOOL_DESCRIPTOR } from "./tools/bookCallback.js";
+import { applicationUnderwritingSummary, APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationUnderwritingSummary.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -57,6 +58,7 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "comm.send_sms":           { descriptor: COMM_SEND_SMS_TOOL_DESCRIPTOR,         run: (a) => commSendSms(a) },
   "call.initiate":           { descriptor: CALL_INITIATE_TOOL_DESCRIPTOR,         run: (a) => callInitiate(a) },
   "book.callback":           { descriptor: BOOK_CALLBACK_TOOL_DESCRIPTOR,         run: (a) => bookCallback(a) },
+  "application.underwriting_summary": { descriptor: APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR, run: (a) => applicationUnderwritingSummary(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {

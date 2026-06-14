@@ -92,12 +92,13 @@ vi.mock("../tools/bookCallback.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all nineteen tools", () => {
+  it("registers all twenty tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
       "application.open_newest",
       "application.summary",
+      "application.underwriting_summary",
       "apply.start_url",
       "book.callback",
       "call.initiate",
