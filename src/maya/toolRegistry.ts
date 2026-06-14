@@ -26,6 +26,15 @@ import { applicationUnderwritingSummary, APPLICATION_UNDERWRITING_SUMMARY_TOOL_D
 import { lenderMatchExplain, LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR } from "./tools/lenderMatchExplain.js";
 import { pgiReadiness, PGI_READINESS_TOOL_DESCRIPTOR } from "./tools/pgiReadiness.js";
 import {
+  capitalReadinessCheck, CAPITAL_READINESS_CHECK_TOOL_DESCRIPTOR,
+  prequalEstimate, PREQUAL_ESTIMATE_TOOL_DESCRIPTOR,
+  industryGuidance, INDUSTRY_GUIDANCE_TOOL_DESCRIPTOR,
+  applyDocPreview, APPLY_DOC_PREVIEW_TOOL_DESCRIPTOR,
+  infoLenders, INFO_LENDERS_TOOL_DESCRIPTOR,
+  waitlistJoin, WAITLIST_JOIN_TOOL_DESCRIPTOR,
+  applicationFindMine, APPLICATION_FIND_MINE_TOOL_DESCRIPTOR,
+} from "./tools/contextAndVisitorTools.js";
+import {
   applyFieldHelp, APPLY_FIELD_HELP_TOOL_DESCRIPTOR,
   docsExplain, DOCS_EXPLAIN_TOOL_DESCRIPTOR,
   docsRejections, DOCS_REJECTIONS_TOOL_DESCRIPTOR,
@@ -103,6 +112,13 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "notes.read": { descriptor: NOTES_READ_TOOL_DESCRIPTOR, run: (a) => notesRead(a) },
   "docs.request_draft": { descriptor: DOCS_REQUEST_DRAFT_TOOL_DESCRIPTOR, run: (a) => docsRequestDraft(a) },
   "daily.briefing": { descriptor: DAILY_BRIEFING_TOOL_DESCRIPTOR, run: (a) => dailyBriefing(a) },
+  "capital.readiness_check": { descriptor: CAPITAL_READINESS_CHECK_TOOL_DESCRIPTOR, run: (a) => capitalReadinessCheck(a) },
+  "prequal.estimate": { descriptor: PREQUAL_ESTIMATE_TOOL_DESCRIPTOR, run: (a) => prequalEstimate(a) },
+  "industry.guidance": { descriptor: INDUSTRY_GUIDANCE_TOOL_DESCRIPTOR, run: (a) => industryGuidance(a) },
+  "apply.doc_preview": { descriptor: APPLY_DOC_PREVIEW_TOOL_DESCRIPTOR, run: (a) => applyDocPreview(a) },
+  "info.lenders": { descriptor: INFO_LENDERS_TOOL_DESCRIPTOR, run: () => infoLenders() },
+  "waitlist.join": { descriptor: WAITLIST_JOIN_TOOL_DESCRIPTOR, run: (a) => waitlistJoin(a) },
+  "application.find_mine": { descriptor: APPLICATION_FIND_MINE_TOOL_DESCRIPTOR, run: (a) => applicationFindMine(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {

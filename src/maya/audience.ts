@@ -17,6 +17,14 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "lead.capture",
     "apply.start_url",
     "escalate.to_human",
+    "capital.readiness_check",
+    "prequal.estimate",
+    "industry.guidance",
+    "apply.doc_preview",
+    "info.lenders",
+    "waitlist.join",
+    "application.find_mine",
+    "book.callback",
   ],
   client: [
     "application.my_status",
@@ -32,6 +40,7 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "signature.status",
     "application.timeline_estimate",
     "application.resume_link",
+    "application.find_mine",
   ],
   staff: [
     "pipeline.query",
