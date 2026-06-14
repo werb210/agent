@@ -17,14 +17,23 @@ function getBaseUrl(): string {
   return url ?? "http://localhost:8080";
 }
 
-function getAgentToken(): string {
+function getAgentToken(path?: string): string {
+  const secret = process.env.JWT_SECRET;
+  // MAYA_STAFF_SERVICE_JWT_FIX_v1 — BF-Server's staff Maya endpoints
+  // (src/routes/mayaStaff.ts -> verifyMayaService) require a SERVICE token
+  // shaped { kind: "service", source: "agent" | "maya-service" }. A role/user
+  // token is rejected with 401 service_jwt_required, which made EVERY staff
+  // tool (pipeline.query, contact.find, application.summary, etc.) fail and
+  // Maya answer "I need more context". Mint a service token for those paths.
+  if (path && path.includes("/api/maya/staff/") && secret) {
+    return jwt.sign({ kind: "service", source: "agent" }, secret, { expiresIn: "1h" });
+  }
   // MAYA_BFSERVER_JWT_v53 — Honor a pre-minted explicit token first (test
   // harness, manual override). Otherwise sign a real JWT using JWT_SECRET so
   // BF-Server's auth middleware verifies and hydrates capabilities from role.
   const explicit = process.env.AGENT_API_TOKEN;
   if (explicit && explicit !== "test_token") return explicit;
 
-  const secret = process.env.JWT_SECRET;
   if (!secret) return "";
   return jwt.sign(
     { id: "agent-service", phone: "agent", role: "Staff" },
@@ -51,7 +60,7 @@ export async function callBFServer<T>(
 
   const baseUrl = getBaseUrl();
   const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
-  const token = getAgentToken();
+  const token = getAgentToken(path);
 
   const hasExplicitOptions =
     typeof options === "object" &&
