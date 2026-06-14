@@ -50,6 +50,11 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "contact.timeline",
     "call.triage",
     "application.risk_flags",
+    "banking.summary",
+    "credit.summary",
+    "notes.read",
+    "docs.request_draft",
+    "daily.briefing",
   ],
 };
 

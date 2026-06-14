@@ -41,6 +41,13 @@ import {
   callTriage, CALL_TRIAGE_TOOL_DESCRIPTOR,
   applicationRiskFlags, APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR,
 } from "./tools/staffReadTools.js";
+import {
+  bankingSummary, BANKING_SUMMARY_TOOL_DESCRIPTOR,
+  creditSummary, CREDIT_SUMMARY_TOOL_DESCRIPTOR,
+  notesRead, NOTES_READ_TOOL_DESCRIPTOR,
+  docsRequestDraft, DOCS_REQUEST_DRAFT_TOOL_DESCRIPTOR,
+  dailyBriefing, DAILY_BRIEFING_TOOL_DESCRIPTOR,
+} from "./tools/staffReadTools2.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -91,6 +98,11 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "contact.timeline": { descriptor: CONTACT_TIMELINE_TOOL_DESCRIPTOR, run: (a) => contactTimeline(a) },
   "call.triage": { descriptor: CALL_TRIAGE_TOOL_DESCRIPTOR, run: (a) => callTriage(a) },
   "application.risk_flags": { descriptor: APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR, run: (a) => applicationRiskFlags(a) },
+  "banking.summary": { descriptor: BANKING_SUMMARY_TOOL_DESCRIPTOR, run: (a) => bankingSummary(a) },
+  "credit.summary": { descriptor: CREDIT_SUMMARY_TOOL_DESCRIPTOR, run: (a) => creditSummary(a) },
+  "notes.read": { descriptor: NOTES_READ_TOOL_DESCRIPTOR, run: (a) => notesRead(a) },
+  "docs.request_draft": { descriptor: DOCS_REQUEST_DRAFT_TOOL_DESCRIPTOR, run: (a) => docsRequestDraft(a) },
+  "daily.briefing": { descriptor: DAILY_BRIEFING_TOOL_DESCRIPTOR, run: (a) => dailyBriefing(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
