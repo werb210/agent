@@ -206,24 +206,58 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     "Use escalate.to_human when they ask for a human or when you cannot answer. " +
     "Do not invent products, terms, or amounts.";
   const audienceLines: Record<string, string> = {
-  visitor: sharedPersona,
-  client: sharedPersona,
-  staff:
-    "You are speaking with Boreal staff. Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
-    "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
-    "When you take a navigation action, keep the spoken reply short (one line confirming what you opened).",
-};
+    visitor:
+      sharedPersona +
+      " You are on Boreal's public marketing website talking to a prospective customer. Be warm, encouraging, and sales-minded: help them see which financing fits and move them toward starting an application. Reassure them they can begin the application now and add their documents later — a missing document should never stop them from starting.",
+    client:
+      sharedPersona +
+      " You are inside the secure application app talking to someone who has already started (or is starting) an application. Be supportive and practical: help them finish steps, understand documents and offers, and know their status. Reassure them they can start now and upload documents later — missing documents do not block beginning or continuing the application.",
+    staff:
+      "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
+      "Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
+      "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
+      "When you take a navigation action, keep the spoken reply short (one line confirming what you opened).",
+  };
 
   const screenContext =
     req.body?.screen_context && typeof req.body.screen_context === "object" && !Array.isArray(req.body.screen_context)
       ? (req.body.screen_context as Record<string, unknown>)
       : null;
-  const screenContextLine =
-    audience === "staff" && screenContext
+
+  // MAYA_FOUNDATION_SURFACE_SILO_v1 — Maya must always know WHO it is talking
+  // to (audience), on WHICH surface (website / client app / staff portal), and
+  // for staff WHICH silo (BF/BI/SLF). Surface defaults from audience; the
+  // frontends may override via screen_context.surface / .silo. Silo defaults to
+  // BF for staff until the portal passes its SiloContext explicitly.
+  const SURFACE_BY_AUDIENCE: Record<string, string> = {
+    visitor: "the public Boreal website",
+    client: "the secure client application app",
+    staff: "the internal staff portal",
+  };
+  const ctxSurface =
+    (screenContext && typeof screenContext.surface === "string" && screenContext.surface.trim()) ||
+    (typeof req.body?.surface === "string" && req.body.surface.trim()) ||
+    SURFACE_BY_AUDIENCE[audience] ||
+    "an unknown surface";
+  const ctxSilo =
+    (screenContext && typeof screenContext.silo === "string" && screenContext.silo.trim()) ||
+    (typeof req.body?.silo === "string" && req.body.silo.trim()) ||
+    (audience === "staff" ? "BF" : "");
+  const whoWhereLine =
+    audience === "staff"
+      ? `You are speaking with a Boreal staff member on ${ctxSurface}${ctxSilo ? ` in the ${ctxSilo} silo` : ""}. Keep your answers scoped to that silo's data and never expose one silo's records in another.`
+      : audience === "client"
+        ? `You are speaking with a signed-in Boreal client on ${ctxSurface}.`
+        : `You are speaking with a prospective customer (a visitor) on ${ctxSurface}.`;
+
+  const screenContextLine = screenContext
+    ? audience === "staff"
       ? `The staff member is currently viewing this screen (JSON): ${JSON.stringify(screenContext)}. When they say "this", "current", "it", "the contact", or "the client", resolve against this screen context — e.g. pass the id shown here to ui.navigate or another tool.`
-      : "";
+      : `The user is currently on this screen (JSON): ${JSON.stringify(screenContext)}. When they say "this", "my application", "here", or "current", resolve against it.`
+    : "";
   const systemPrompt = [
     "You are Maya, the Boreal Financial assistant.",
+    whoWhereLine,
     audienceLines[audience],
     screenContextLine,
     "Keep answers under 120 words. If asked for data you do not have, say so and offer to hand off to a human.",
@@ -239,7 +273,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   try {
     const [ksRes, ppRes] = await Promise.all([
       bfServer("/api/maya/knowledge-search", { method: "POST", body: JSON.stringify({ query: message }) }).catch(() => null),
-      bfServer("/api/maya/maya-persona", { method: "POST", body: JSON.stringify({}) }).catch(() => null),
+      bfServer("/api/maya/maya-persona", { method: "POST", body: JSON.stringify({ audience }) }).catch(() => null),
     ]);
     let knowledge = "";
     let persona = "";
