@@ -4,8 +4,8 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("../audience.js", () => ({
   isToolAllowed: (audience: string, tool: string) => {
     const allow: Record<string, string[]> = {
-      visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
-      client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human", "apply.field_help", "docs.explain", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.timeline_estimate", "application.resume_link"],
+      visitor: ["application.find_mine", "apply.doc_preview", "apply.start_url", "book.callback", "capital.readiness_check", "escalate.to_human", "industry.guidance", "info.lenders", "info.products", "info.qualifications", "lead.capture", "prequal.estimate", "visitor.identify", "waitlist.join"],
+      client: ["application.find_mine", "application.my_status", "application.next_step", "application.resume_link", "application.timeline_estimate", "apply.field_help", "book.callback", "docs.checklist", "docs.explain", "docs.rejections", "escalate.to_human", "offer.explain", "pgi.completion_link", "signature.status"],
       staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing"],
     };
     return (allow[audience] ?? []).includes(tool);
@@ -144,12 +144,30 @@ vi.mock("../tools/clientGuidanceTools.js", () => ({
   APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.resume_link", description: "", parameters: {} } },
 }));
 
+vi.mock("../tools/contextAndVisitorTools.js", () => ({
+  capitalReadinessCheck: vi.fn(),
+  CAPITAL_READINESS_CHECK_TOOL_DESCRIPTOR: { type: "function", function: { name: "capital.readiness_check", description: "", parameters: {} } },
+  prequalEstimate: vi.fn(),
+  PREQUAL_ESTIMATE_TOOL_DESCRIPTOR: { type: "function", function: { name: "prequal.estimate", description: "", parameters: {} } },
+  industryGuidance: vi.fn(),
+  INDUSTRY_GUIDANCE_TOOL_DESCRIPTOR: { type: "function", function: { name: "industry.guidance", description: "", parameters: {} } },
+  applyDocPreview: vi.fn(),
+  APPLY_DOC_PREVIEW_TOOL_DESCRIPTOR: { type: "function", function: { name: "apply.doc_preview", description: "", parameters: {} } },
+  infoLenders: vi.fn(),
+  INFO_LENDERS_TOOL_DESCRIPTOR: { type: "function", function: { name: "info.lenders", description: "", parameters: {} } },
+  waitlistJoin: vi.fn(),
+  WAITLIST_JOIN_TOOL_DESCRIPTOR: { type: "function", function: { name: "waitlist.join", description: "", parameters: {} } },
+  applicationFindMine: vi.fn(),
+  APPLICATION_FIND_MINE_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.find_mine", description: "", parameters: {} } },
+}));
+
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all thirty-nine tools", () => {
+  it("registers all forty-six tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
+      "application.find_mine",
       "application.my_status",
       "application.next_step",
       "application.open_newest",
@@ -158,12 +176,14 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "application.summary",
       "application.timeline_estimate",
       "application.underwriting_summary",
+      "apply.doc_preview",
       "apply.field_help",
       "apply.start_url",
       "banking.summary",
       "book.callback",
       "call.initiate",
       "call.triage",
+      "capital.readiness_check",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
@@ -175,6 +195,8 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "docs.rejections",
       "docs.request_draft",
       "escalate.to_human",
+      "industry.guidance",
+      "info.lenders",
       "info.products",
       "info.qualifications",
       "lead.capture",
@@ -186,27 +208,38 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "pgi.completion_link",
       "pgi.readiness",
       "pipeline.query",
+      "prequal.estimate",
       "signature.status",
       "ui.navigate",
       "visitor.identify",
+      "waitlist.join",
     ]);
   });
 
   it("descriptorsForAudience('visitor') exposes only visitor tools", () => {
     const names = descriptorsForAudience("visitor").map((d) => d.function.name).sort();
     expect(names).toEqual([
+      "application.find_mine",
+      "apply.doc_preview",
       "apply.start_url",
+      "book.callback",
+      "capital.readiness_check",
       "escalate.to_human",
+      "industry.guidance",
+      "info.lenders",
       "info.products",
       "info.qualifications",
       "lead.capture",
+      "prequal.estimate",
       "visitor.identify",
+      "waitlist.join",
     ]);
   });
 
   it("descriptorsForAudience('client') exposes only client tools", () => {
     const names = descriptorsForAudience("client").map((d) => d.function.name).sort();
     expect(names).toEqual([
+      "application.find_mine",
       "application.my_status",
       "application.next_step",
       "application.resume_link",

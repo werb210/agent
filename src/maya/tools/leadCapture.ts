@@ -106,7 +106,7 @@ export const APPLY_START_URL_TOOL_DESCRIPTOR = {
   function: {
     name: "apply.start_url",
     description:
-      "Return the URL where a visitor can start a Boreal Financial loan application. Use when the visitor says 'I want to apply', 'how do I get started', 'where do I sign up'.",
+      "Return the URL where a visitor can start a Boreal Financial loan application. Use when the visitor says 'I want to apply', 'how do I get started', 'where do I sign up'. IMPORTANT: always CALL this tool to get the real URL, then use the returned `url` value verbatim in your reply. Never write the literal text 'apply.start_url' as a link or URL — that is the tool name, not a URL.",
     parameters: {
       type: "object",
       properties: {},
