@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -88,11 +88,19 @@ vi.mock("../tools/bookCallback.js", () => ({
   bookCallback: vi.fn(),
   BOOK_CALLBACK_TOOL_DESCRIPTOR: { type: "function", function: { name: "book.callback", description: "", parameters: {} } },
 }));
+vi.mock("../tools/applicationUnderwritingSummary.js", () => ({
+  applicationUnderwritingSummary: vi.fn(),
+  APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.underwriting_summary", description: "", parameters: {} } },
+}));
+vi.mock("../tools/lenderMatchExplain.js", () => ({
+  lenderMatchExplain: vi.fn(),
+  LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR: { type: "function", function: { name: "lender.match_explain", description: "", parameters: {} } },
+}));
 
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all twenty tools", () => {
+  it("registers all twenty-one tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
@@ -110,6 +118,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "info.products",
       "info.qualifications",
       "lead.capture",
+      "lender.match_explain",
       "maya.audit",
       "pgi.completion_link",
       "pipeline.query",
@@ -146,10 +155,12 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     expect(names).toEqual([
       "application.open_newest",
       "application.summary",
+      "application.underwriting_summary",
       "call.initiate",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
+      "lender.match_explain",
       "maya.audit",
       "pipeline.query",
       "ui.navigate",
