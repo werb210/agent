@@ -46,6 +46,10 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "application.underwriting_summary",
     "lender.match_explain",
     "pgi.readiness",
+    "lender.products",
+    "contact.timeline",
+    "call.triage",
+    "application.risk_flags",
   ],
 };
 

@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["visitor.identify", "info.products", "info.qualifications", "lead.capture", "apply.start_url", "escalate.to_human"],
       client: ["application.my_status", "docs.checklist", "pgi.completion_link", "book.callback", "escalate.to_human", "apply.field_help", "docs.explain", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.timeline_estimate", "application.resume_link"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -100,6 +100,16 @@ vi.mock("../tools/pgiReadiness.js", () => ({
   pgiReadiness: vi.fn(),
   PGI_READINESS_TOOL_DESCRIPTOR: { type: "function", function: { name: "pgi.readiness", description: "", parameters: {} } },
 }));
+vi.mock("../tools/staffReadTools.js", () => ({
+  lenderProducts: vi.fn(),
+  LENDER_PRODUCTS_TOOL_DESCRIPTOR: { type: "function", function: { name: "lender.products", description: "", parameters: {} } },
+  contactTimeline: vi.fn(),
+  CONTACT_TIMELINE_TOOL_DESCRIPTOR: { type: "function", function: { name: "contact.timeline", description: "", parameters: {} } },
+  callTriage: vi.fn(),
+  CALL_TRIAGE_TOOL_DESCRIPTOR: { type: "function", function: { name: "call.triage", description: "", parameters: {} } },
+  applicationRiskFlags: vi.fn(),
+  APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.risk_flags", description: "", parameters: {} } },
+}));
 
 vi.mock("../tools/clientGuidanceTools.js", () => ({
   applyFieldHelp: vi.fn(),
@@ -123,13 +133,14 @@ vi.mock("../tools/clientGuidanceTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all thirty tools", () => {
+  it("registers all thirty-four tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.my_status",
       "application.next_step",
       "application.open_newest",
       "application.resume_link",
+      "application.risk_flags",
       "application.summary",
       "application.timeline_estimate",
       "application.underwriting_summary",
@@ -137,9 +148,11 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "apply.start_url",
       "book.callback",
       "call.initiate",
+      "call.triage",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
+      "contact.timeline",
       "docs.checklist",
       "docs.explain",
       "docs.rejections",
@@ -148,6 +161,7 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "info.qualifications",
       "lead.capture",
       "lender.match_explain",
+      "lender.products",
       "maya.audit",
       "offer.explain",
       "pgi.completion_link",
@@ -194,13 +208,17 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
     const names = descriptorsForAudience("staff").map((d) => d.function.name).sort();
     expect(names).toEqual([
       "application.open_newest",
+      "application.risk_flags",
       "application.summary",
       "application.underwriting_summary",
       "call.initiate",
+      "call.triage",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
+      "contact.timeline",
       "lender.match_explain",
+      "lender.products",
       "maya.audit",
       "pgi.readiness",
       "pipeline.query",
