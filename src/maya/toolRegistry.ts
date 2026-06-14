@@ -23,6 +23,7 @@ import { commSendSms, COMM_SEND_SMS_TOOL_DESCRIPTOR } from "./tools/commSendSms.
 import { callInitiate, CALL_INITIATE_TOOL_DESCRIPTOR } from "./tools/callInitiate.js";
 import { bookCallback, BOOK_CALLBACK_TOOL_DESCRIPTOR } from "./tools/bookCallback.js";
 import { applicationUnderwritingSummary, APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationUnderwritingSummary.js";
+import { lenderMatchExplain, LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR } from "./tools/lenderMatchExplain.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -59,6 +60,7 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "call.initiate":           { descriptor: CALL_INITIATE_TOOL_DESCRIPTOR,         run: (a) => callInitiate(a) },
   "book.callback":           { descriptor: BOOK_CALLBACK_TOOL_DESCRIPTOR,         run: (a) => bookCallback(a) },
   "application.underwriting_summary": { descriptor: APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR, run: (a) => applicationUnderwritingSummary(a) },
+  "lender.match_explain": { descriptor: LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR, run: (a) => lenderMatchExplain(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
