@@ -35,6 +35,12 @@ import {
   applicationTimelineEstimate, APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR,
   applicationResumeLink, APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR,
 } from "./tools/clientGuidanceTools.js";
+import {
+  lenderProducts, LENDER_PRODUCTS_TOOL_DESCRIPTOR,
+  contactTimeline, CONTACT_TIMELINE_TOOL_DESCRIPTOR,
+  callTriage, CALL_TRIAGE_TOOL_DESCRIPTOR,
+  applicationRiskFlags, APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR,
+} from "./tools/staffReadTools.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -81,6 +87,10 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "signature.status": { descriptor: SIGNATURE_STATUS_TOOL_DESCRIPTOR, run: (a) => signatureStatus(a) },
   "application.timeline_estimate": { descriptor: APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR, run: (a) => applicationTimelineEstimate(a) },
   "application.resume_link": { descriptor: APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR, run: (a) => applicationResumeLink(a) },
+  "lender.products": { descriptor: LENDER_PRODUCTS_TOOL_DESCRIPTOR, run: (a) => lenderProducts(a) },
+  "contact.timeline": { descriptor: CONTACT_TIMELINE_TOOL_DESCRIPTOR, run: (a) => contactTimeline(a) },
+  "call.triage": { descriptor: CALL_TRIAGE_TOOL_DESCRIPTOR, run: (a) => callTriage(a) },
+  "application.risk_flags": { descriptor: APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR, run: (a) => applicationRiskFlags(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
