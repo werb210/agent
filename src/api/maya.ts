@@ -37,6 +37,8 @@ async function getFromBFServer(path: string) {
   return res.json().catch(() => null);
 }
 
+const CLIENT_APP_URL = process.env.CLIENT_URL || "https://client.boreal.financial";
+
 function safeHandler(handler: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {
     handler(req, res).catch(next);
@@ -198,20 +200,20 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   const ctx = { audience, applicationId, sessionId, phone, email };
 
   const sharedPersona =
-    "If you do not yet know who you are speaking with in this session (no name and no email/phone, and no application on file), greet them briefly and ask ONCE for their name plus either an email or phone, then call visitor.identify with what they give you. " +
-    "If you already know them (identity captured earlier in this session, or the host supplied an application_id), do NOT greet again or re-ask - just continue helping. " +
-    "Use info.products and info.qualifications for product/eligibility questions; pricing depends on the application, so do not quote rates. " +
-    "Use application.my_status, docs.checklist, and pgi.completion_link when an application is in context. " +
-    "Use apply.start_url to send them into the application flow. " +
-    "Use escalate.to_human when they ask for a human or when you cannot answer. " +
-    "Do not invent products, terms, or amounts.";
+    "You are Maya, Boreal Financial's assistant — knowledgeable, warm, and genuinely helpful. You are the expert guide to Boreal's financing: you know the products, the lenders, and how it all works. " +
+    "For ANY product, eligibility, or pricing question, use lender.products together with info.products and info.qualifications, and answer accurately from real data. " +
+    "When asked about interest rates, give a RANGE across matching products (e.g. 'our term loans generally run between X% and Y%') and explain the actual rate depends on factors like credit, time in business, revenue, and the specific lender — never quote a single guaranteed rate. " +
+    "Use apply.start_url to send someone into the application flow. Use escalate.to_human when they ask for a person or you genuinely cannot help. " +
+    "Do not invent products, terms, amounts, or rates. Keep it natural and conversational — never mention tools, audiences, verification tiers, or any internal system.";
   const audienceLines: Record<string, string> = {
     visitor:
       sharedPersona +
-      " You are on Boreal's public marketing website talking to a prospective customer. Be warm, encouraging, and sales-minded: help them see which financing fits and move them toward starting an application. Reassure them they can begin the application now and add their documents later — a missing document should never stop them from starting.",
+      " You are speaking with someone on Boreal's public website, and you do NOT have a verified identity for them. Answer all general questions — products, rates as ranges, qualifications, how things work — fully and warmly, and encourage them to start an application; reassure them they can begin now and add documents later. " +
+      "ACCOUNT PRIVACY (critical): for anything tied to a specific person's account — their application status, documents, what's missing, next steps, offers, amounts, or even whether a phone number matches an existing client — you must NOT look it up or reveal anything, because they are not verified. Instead, warmly direct them to verify: say you can pull that up securely once they confirm it's them, and give them this link to open the secure client app and verify with a quick code: " + CLIENT_APP_URL + " . Never confirm or deny whether their details match a client on file. " +
+      "If they give a name, you may greet them by first name and keep helping with general questions, but still gate every account-specific detail behind verification.",
     client:
       sharedPersona +
-      " You are inside the secure application app talking to someone who has already started (or is starting) an application. Be supportive and practical: help them finish steps, understand documents and offers, and know their status. Reassure them they can start now and upload documents later — missing documents do not block beginning or continuing the application.",
+      " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, documents, what's missing, next steps, and offers. Use application.my_status, application.find_mine, docs.checklist, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical; reassure them they can start now and upload documents later — missing documents never block beginning or continuing an application.",
     staff:
       "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
       "Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
@@ -255,10 +257,41 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       ? `The staff member is currently viewing this screen (JSON): ${JSON.stringify(screenContext)}. When they say "this", "current", "it", "the contact", or "the client", resolve against this screen context — e.g. pass the id shown here to ui.navigate or another tool.`
       : `The user is currently on this screen (JSON): ${JSON.stringify(screenContext)}. When they say "this", "my application", "here", or "current", resolve against it.`
     : "";
+  // MAYA_IDENTITY_RECOGNITION_v1 — for a verified client surface, resolve who
+  // we are speaking with from the host-supplied phone and inject it so Maya
+  // greets by name and references their applications without re-asking. Strictly
+  // gated to the "client" (OTP-verified) audience: never run for website visitors,
+  // so a typed phone on the public site can never surface account data.
+  let identityLine = "";
+  if (audience === "client" && ctx.phone) {
+    try {
+      const res = await bfServer("/api/maya/staff/applications-by-phone", {
+        method: "POST",
+        body: JSON.stringify({ phone: ctx.phone, session_id: sessionId }),
+      });
+      if (res.ok) {
+        const j: any = await res.json().catch(() => null);
+        const name: string | null =
+          (j && (j.contactName || j.name || j.contact?.name)) ?? null;
+        const apps: any[] = Array.isArray(j?.applications) ? j.applications : [];
+        if (name || apps.length) {
+          const who = name ? `You are speaking with ${name}.` : "You are speaking with a returning client.";
+          const count = apps.length
+            ? ` They have ${apps.length} application(s) on file. Greet them by first name and reference their progress; do not re-ask who they are.`
+            : " Greet them warmly by name if known.";
+          identityLine = who + count;
+        }
+      }
+    } catch {
+      // best-effort recognition; never block the reply
+    }
+  }
+
   const systemPrompt = [
     "You are Maya, the Boreal Financial assistant.",
     whoWhereLine,
     audienceLines[audience],
+    identityLine,
     screenContextLine,
     "Keep answers under 120 words. If asked for data you do not have, say so and offer to hand off to a human.",
     "When a tool returns ok=false, briefly acknowledge that you couldn't fetch the answer; do not pretend to know.",
