@@ -31,7 +31,7 @@ export const LENDER_PRODUCTS_TOOL_DESCRIPTOR = {
   function: {
     name: "lender.products",
     description:
-      "Search Boreal's active lender products by category (TERM, LOC, EQUIPMENT, etc.), country, and/or deal amount — returns which lenders offer what, with amount ranges. Read-only. Use when staff ask 'which lenders do equipment financing', 'who lends LOC under $250k in Canada', 'what products fit a $500k term loan'. (Distinct from lender.match_explain, which is per-application.)",
+      "Look up Boreal's active lender products by category (TERM, LOC, EQUIPMENT, etc.), country, and/or deal amount. Returns which lenders offer what, with amount ranges AND interest-rate ranges (interestMin/interestMax). Read-only and safe for any audience — contains no client-specific data. Use it to answer ANY product or pricing question, e.g. 'what's the interest rate on a term loan', 'do you do equipment financing', 'what LOC options are there in Canada'. When asked about rates, summarize as a RANGE across matching products (e.g. 'our term loans generally run between X% and Y%') and add that the actual rate depends on factors like credit, time in business, revenue, and the specific lender — never quote a single guaranteed rate.",
     parameters: { type: "object", properties: { category: { type: "string", description: "Product category short code, e.g. TERM, LOC, EQUIPMENT." }, country: { type: "string", description: "Country filter, e.g. CA or US." }, amount: { type: "number", description: "Deal amount to match against product min/max." }, session_id: { type: "string", description: "Optional session id for correlation." } }, required: [] },
   },
 };
