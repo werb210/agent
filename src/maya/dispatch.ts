@@ -35,6 +35,11 @@ function injectContext(
   // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1 — escalate.to_human gets every identity
   // hint the host knows about so BF-Server (v636) can resolve the contact
   // and route the handoff to the right Messages-tab thread.
+  // lender.products: server strips lender identity unless audience === "staff",
+  // so the model never receives lender name/address/phone/contracts for visitor/client.
+  if (toolName === "lender.products") {
+    return { ...modelArgs, audience: ctx.audience };
+  }
   if (toolName === "escalate.to_human" || toolName === "book.callback") {
     return {
       ...modelArgs,

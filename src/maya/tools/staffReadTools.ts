@@ -22,9 +22,9 @@ async function call(path: string, body: Record<string, unknown>): Promise<Result
   }
 }
 
-export type LenderProductsArgs = { category?: string; country?: string; amount?: number; session_id?: string };
+export type LenderProductsArgs = { category?: string; country?: string; amount?: number; session_id?: string; audience?: string };
 export async function lenderProducts(args: LenderProductsArgs): Promise<Result> {
-  return call("/api/maya/staff/lender-products", { category: s(args?.category), country: s(args?.country), amount: n(args?.amount), session_id: s(args?.session_id) });
+  return call("/api/maya/staff/lender-products", { category: s(args?.category), country: s(args?.country), amount: n(args?.amount), session_id: s(args?.session_id), audience: s(args?.audience) });
 }
 export const LENDER_PRODUCTS_TOOL_DESCRIPTOR = {
   type: "function" as const,
