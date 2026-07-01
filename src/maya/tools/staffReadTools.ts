@@ -81,3 +81,66 @@ export const APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR = {
     parameters: { type: "object", properties: { application_id: { type: "string", description: "The application to scan." }, session_id: { type: "string", description: "Optional session id for correlation." } }, required: ["application_id"] },
   },
 };
+
+// AGENT_MAYA_CRM_TOOLS_v1 - CRM read+act tools (wrap BF-Server /staff/crm-*).
+export type CrmNotesArgs = { contact_id: string; session_id?: string };
+export async function crmNotes(args: CrmNotesArgs): Promise<Result> {
+  const contactId = s(args?.contact_id);
+  if (!contactId) return { ok: false, error: "contact_id_required" };
+  return call("/api/maya/staff/crm-notes", { contact_id: contactId, session_id: s(args?.session_id) });
+}
+export const CRM_NOTES_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "crm.notes",
+    description: "Read the notes logged on a CRM contact (most recent first). Use when staff ask 'what notes are on this contact', 'what's been logged'. Provide the contact_id on the current screen.",
+    parameters: { type: "object", properties: { contact_id: { type: "string", description: "The contact whose notes to read." }, session_id: { type: "string", description: "Optional session id." } }, required: ["contact_id"] },
+  },
+};
+
+export type CrmAddNoteArgs = { contact_id: string; body: string; silo?: string; session_id?: string };
+export async function crmAddNote(args: CrmAddNoteArgs): Promise<Result> {
+  const contactId = s(args?.contact_id);
+  const body = s(args?.body);
+  if (!contactId || !body) return { ok: false, error: "contact_id_and_body_required" };
+  return call("/api/maya/staff/crm-add-note", { contact_id: contactId, body, silo: s(args?.silo), session_id: s(args?.session_id) });
+}
+export const CRM_ADD_NOTE_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "crm.add_note",
+    description: "Add a note to a CRM contact. Use when staff say 'log a note', 'note that ...', 'add to this contact'. Provide the contact_id on the current screen and the note body.",
+    parameters: { type: "object", properties: { contact_id: { type: "string", description: "The contact to add the note to." }, body: { type: "string", description: "The note text." }, silo: { type: "string", description: "Active silo (BF/BI/SLF)." }, session_id: { type: "string" } }, required: ["contact_id", "body"] },
+  },
+};
+
+export type CrmTasksArgs = { contact_id: string; session_id?: string };
+export async function crmTasks(args: CrmTasksArgs): Promise<Result> {
+  const contactId = s(args?.contact_id);
+  if (!contactId) return { ok: false, error: "contact_id_required" };
+  return call("/api/maya/staff/crm-tasks", { contact_id: contactId, session_id: s(args?.session_id) });
+}
+export const CRM_TASKS_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "crm.tasks",
+    description: "Read the tasks on a CRM contact (by due date). Use when staff ask 'what tasks are open for this contact', 'what's due'. Provide the contact_id on the current screen.",
+    parameters: { type: "object", properties: { contact_id: { type: "string", description: "The contact whose tasks to read." }, session_id: { type: "string" } }, required: ["contact_id"] },
+  },
+};
+
+export type CrmCreateTaskArgs = { contact_id: string; title: string; due_at?: string; priority?: string; notes?: string; silo?: string; session_id?: string };
+export async function crmCreateTask(args: CrmCreateTaskArgs): Promise<Result> {
+  const contactId = s(args?.contact_id);
+  const title = s(args?.title);
+  if (!contactId || !title) return { ok: false, error: "contact_id_and_title_required" };
+  return call("/api/maya/staff/crm-create-task", { contact_id: contactId, title, due_at: s(args?.due_at), priority: s(args?.priority), notes: s(args?.notes), silo: s(args?.silo), session_id: s(args?.session_id) });
+}
+export const CRM_CREATE_TASK_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "crm.create_task",
+    description: "Create a task on a CRM contact. Use when staff say 'create a task', 'remind me to ...', 'follow up with this contact'. Provide the contact_id on the current screen and a title; optionally due_at (ISO date) and priority (high/medium/low/none).",
+    parameters: { type: "object", properties: { contact_id: { type: "string", description: "The contact to create the task for." }, title: { type: "string", description: "Task title." }, due_at: { type: "string", description: "Optional ISO due date." }, priority: { type: "string", description: "high | medium | low | none." }, notes: { type: "string", description: "Optional task notes." }, silo: { type: "string" }, session_id: { type: "string" } }, required: ["contact_id", "title"] },
+  },
+};

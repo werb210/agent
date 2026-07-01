@@ -65,6 +65,10 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "notes.read",
     "docs.request_draft",
     "daily.briefing",
+    "crm.notes",
+    "crm.add_note",
+    "crm.tasks",
+    "crm.create_task",
   ],
 };
 
