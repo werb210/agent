@@ -275,12 +275,31 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
         const name: string | null =
           (j && (j.contactName || j.name || j.contact?.name)) ?? null;
         const apps: any[] = Array.isArray(j?.applications) ? j.applications : [];
+        // AGENT_MAYA_CLIENT_FULL_PROFILE_v1 - inject the verified client's full known
+        // profile so Maya answers anything on file (name, business name, age from dob,
+        // time in business, revenue, per-application product/amount/stage) without
+        // re-asking or deferring to a human.
         if (name || apps.length) {
-          const who = name ? `You are speaking with ${name}.` : "You are speaking with a returning client.";
-          const count = apps.length
-            ? ` They have ${apps.length} application(s) on file. Greet them by first name and reference their progress; do not re-ask who they are.`
-            : " Greet them warmly by name if known.";
-          identityLine = who + count;
+          const profile = {
+            name,
+            firstName: (j && j.contact?.firstName) ?? null,
+            businessName: (j && j.contact?.companyName) ?? null,
+            dateOfBirth: (j && j.contact?.dob) ?? null,
+            email: (j && j.contact?.email) ?? null,
+            applications: apps.map((a: any) => ({
+              name: a?.name ?? null,
+              product: a?.productType ?? null,
+              amount: a?.requestedAmount ?? null,
+              stage: a?.stage ?? null,
+              industry: a?.industry ?? null,
+              yearsInBusiness: a?.yearsInBusiness ?? null,
+              annualRevenue: a?.annualRevenue ?? null,
+            })),
+          };
+          identityLine =
+            "VERIFIED CLIENT PROFILE (this is the signed-in person; answer freely and specifically from these facts and NEVER say you do not have access to their name or business): " +
+            JSON.stringify(profile) +
+            ". Compute their age from dateOfBirth and business age from yearsInBusiness when asked. Greet them by first name and reference their application progress; do not re-ask who they are.";
         }
       }
     } catch {
