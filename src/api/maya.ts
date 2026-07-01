@@ -156,7 +156,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     } else {
       reply = "Good question — that one's best handled by a person. Tap Talk to a Human below and a Boreal advisor will text you back shortly.";
     }
-    res.status(200).json({ reply, actions: [], audience: "visitor", fallback: "no_openai_key" });
+    res.status(200).json({ reply, actions: [], audience: "visitor", fallback: "no_openai_key", toolsOffered: 0, executedTools: [] });
     return;
   }
 
@@ -390,7 +390,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     upstream1 = await callOpenAI(firstBody);
   } catch {
     const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1_exception" });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1_exception", toolsOffered: tools.length, executedTools: [] });
     return;
   }
   if (!upstream1.ok) {
@@ -404,7 +404,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       email,
       surface: audience,
     });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1" });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round1", toolsOffered: tools.length, executedTools: [] });
     return;
   }
   const data1 = await upstream1.json();
@@ -416,7 +416,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       choice1?.content?.toString().trim() ||
       "Thanks — a Boreal advisor will reach out.";
     if (sessionId) appendSessionTurn(sessionId, message, reply);
-    res.status(200).json({ reply, actions: [], audience });
+    res.status(200).json({ reply, actions: [], audience, toolsOffered: tools.length, executedTools: [] });
     return;
   }
 
@@ -455,7 +455,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     });
   } catch {
     const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2_exception", tools_used: executedTools });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2_exception", tools_used: executedTools, toolsOffered: tools.length, executedTools });
     return;
   }
   if (!upstream2.ok) {
@@ -469,7 +469,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       email,
       surface: audience,
     });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2", tools_used: executedTools });
+    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2", tools_used: executedTools, toolsOffered: tools.length, executedTools });
     return;
   }
   const data2 = await upstream2.json();
@@ -483,6 +483,8 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     actions: collectedActions,
     audience,
     tools_used: executedTools,
+    toolsOffered: tools.length,
+    executedTools,
   });
 }));
 
