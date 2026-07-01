@@ -6,7 +6,7 @@ vi.mock("../audience.js", () => ({
     const allow: Record<string, string[]> = {
       visitor: ["application.find_mine", "apply.doc_preview", "apply.start_url", "book.callback", "capital.readiness_check", "escalate.to_human", "industry.guidance", "info.lenders", "info.products", "info.qualifications", "lead.capture", "prequal.estimate", "visitor.identify", "waitlist.join"],
       client: ["application.find_mine", "application.my_status", "application.next_step", "application.resume_link", "application.timeline_estimate", "apply.field_help", "book.callback", "docs.checklist", "docs.explain", "docs.rejections", "escalate.to_human", "offer.explain", "pgi.completion_link", "signature.status"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing"],
+      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing", "crm.notes", "crm.add_note", "crm.tasks", "crm.create_task"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -109,6 +109,14 @@ vi.mock("../tools/staffReadTools.js", () => ({
   CALL_TRIAGE_TOOL_DESCRIPTOR: { type: "function", function: { name: "call.triage", description: "", parameters: {} } },
   applicationRiskFlags: vi.fn(),
   APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR: { type: "function", function: { name: "application.risk_flags", description: "", parameters: {} } },
+  crmNotes: vi.fn(),
+  CRM_NOTES_TOOL_DESCRIPTOR: { type: "function", function: { name: "crm.notes", description: "", parameters: {} } },
+  crmAddNote: vi.fn(),
+  CRM_ADD_NOTE_TOOL_DESCRIPTOR: { type: "function", function: { name: "crm.add_note", description: "", parameters: {} } },
+  crmTasks: vi.fn(),
+  CRM_TASKS_TOOL_DESCRIPTOR: { type: "function", function: { name: "crm.tasks", description: "", parameters: {} } },
+  crmCreateTask: vi.fn(),
+  CRM_CREATE_TASK_TOOL_DESCRIPTOR: { type: "function", function: { name: "crm.create_task", description: "", parameters: {} } },
 }));
 
 
@@ -163,8 +171,8 @@ vi.mock("../tools/contextAndVisitorTools.js", () => ({
 
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
-describe("AGENT_BLOCK_v5 — toolRegistry", () => {
-  it("registers all forty-six tools", () => {
+describe("AGENT_BLOCK_v5 - toolRegistry", () => {
+  it("registers all fifty tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.find_mine",
@@ -189,6 +197,10 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "contact.find",
       "contact.timeline",
       "credit.summary",
+      "crm.add_note",
+      "crm.create_task",
+      "crm.notes",
+      "crm.tasks",
       "daily.briefing",
       "docs.checklist",
       "docs.explain",
@@ -271,6 +283,10 @@ describe("AGENT_BLOCK_v5 — toolRegistry", () => {
       "contact.find",
       "contact.timeline",
       "credit.summary",
+      "crm.add_note",
+      "crm.create_task",
+      "crm.notes",
+      "crm.tasks",
       "daily.briefing",
       "docs.request_draft",
       "lender.match_explain",
