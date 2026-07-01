@@ -307,6 +307,22 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     }
   }
 
+  // AGENT_MAYA_STAFF_IDENTITY_v1 - the portal forwards the signed-in staff member's identity
+  // (name/email/role). Inject it so Maya knows exactly who it is assisting, answers "who am I"
+  // directly instead of refusing, and remembers it has full staff-tool access.
+  if (audience === "staff" && req.body?.staff && typeof req.body.staff === "object") {
+    const st = req.body.staff as { name?: unknown; email?: unknown; role?: unknown };
+    const stName = typeof st.name === "string" ? st.name : null;
+    const stEmail = typeof st.email === "string" ? st.email : null;
+    const stRole = typeof st.role === "string" ? st.role : null;
+    if (stName || stEmail || stRole) {
+      identityLine =
+        "SIGNED-IN STAFF MEMBER (you are assisting this Boreal staff user and you know exactly who they are - answer 'who am I' directly with their name and role, and NEVER say you cannot access staff information): " +
+        JSON.stringify({ name: stName, email: stEmail, role: stRole }) +
+        ". You have full access to Boreal's staff data through your tools; use them freely to answer questions about applications, contacts, pipeline, and more.";
+    }
+  }
+
   const systemPrompt = [
     "You are Maya, the Boreal Financial assistant.",
     whoWhereLine,
