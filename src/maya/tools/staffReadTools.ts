@@ -144,3 +144,41 @@ export const CRM_CREATE_TASK_TOOL_DESCRIPTOR = {
     parameters: { type: "object", properties: { contact_id: { type: "string", description: "The contact to create the task for." }, title: { type: "string", description: "Task title." }, due_at: { type: "string", description: "Optional ISO due date." }, priority: { type: "string", description: "high | medium | low | none." }, notes: { type: "string", description: "Optional task notes." }, silo: { type: "string" }, session_id: { type: "string" } }, required: ["contact_id", "title"] },
   },
 };
+
+// AGENT_MAYA_MKT_TOOLS_v1 - marketing read + gated send (wrap BF-Server /staff/marketing-*).
+export type MarketingOverviewArgs = { silo?: string; session_id?: string };
+export async function marketingOverview(args: MarketingOverviewArgs): Promise<Result> {
+  return call("/api/maya/staff/marketing-overview", { silo: s(args?.silo), session_id: s(args?.session_id) });
+}
+export const MARKETING_OVERVIEW_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "marketing.overview",
+    description: "Read marketing audience sizes and recent campaign sends: email + SMS opt-in totals, the available segments (contact tags) with recipient counts, and the last few send jobs. Use this before proposing a campaign so you know how many people a segment reaches. Pass the active silo if known.",
+    parameters: { type: "object", properties: { silo: { type: "string", description: "Active silo (BF/BI/SLF)." }, session_id: { type: "string" } }, required: [] },
+  },
+};
+export type MarketingSendArgs = { channel: string; tag?: string; subject?: string; html?: string; body?: string; test?: string; confirm?: boolean; silo?: string; session_id?: string };
+export async function marketingSendCampaign(args: MarketingSendArgs): Promise<Result> {
+  const channel = s(args?.channel);
+  if (!channel) return { ok: false, error: "channel_required" };
+  return call("/api/maya/staff/marketing-send", { channel, tag: s(args?.tag), subject: s(args?.subject), html: s(args?.html), body: s(args?.body), test: s(args?.test), confirm: args?.confirm === true, silo: s(args?.silo), session_id: s(args?.session_id) });
+}
+export const MARKETING_SEND_CAMPAIGN_TOOL_DESCRIPTOR = {
+  type: "function" as const,
+  function: {
+    name: "marketing.send_campaign",
+    description: "Send a marketing email or SMS campaign to a contact segment. SAFETY - this is a two-step confirmed action, never send in one shot: STEP 1 call first WITHOUT confirm (confirm=false) to get a PREVIEW with the exact recipient count, then tell the staff member the count and ask them to confirm. STEP 2 only after they explicitly approve, call again with confirm=true to actually send. To send yourself a single test first, pass 'test' with an email address (email) or phone number (sms); test sends are not gated. channel is 'email' (requires subject + html) or 'sms' (requires body). tag picks a segment from marketing.overview; omit tag to reach the whole opted-in audience.",
+    parameters: { type: "object", properties: {
+      channel: { type: "string", description: "'email' or 'sms'." },
+      tag: { type: "string", description: "Segment tag from marketing.overview; omit for the whole opted-in audience." },
+      subject: { type: "string", description: "Email subject (email only)." },
+      html: { type: "string", description: "Email HTML body (email only)." },
+      body: { type: "string", description: "SMS message text (sms only)." },
+      test: { type: "string", description: "Optional single test recipient (email/phone); not gated." },
+      confirm: { type: "boolean", description: "Omit/false = preview recipient count only, sends nothing; true = actually send (only after staff approval)." },
+      silo: { type: "string", description: "Active silo (BF/BI/SLF)." },
+      session_id: { type: "string" },
+    }, required: ["channel"] },
+  },
+};

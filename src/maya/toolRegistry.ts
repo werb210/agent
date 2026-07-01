@@ -53,6 +53,8 @@ import {
   crmAddNote, CRM_ADD_NOTE_TOOL_DESCRIPTOR,
   crmTasks, CRM_TASKS_TOOL_DESCRIPTOR,
   crmCreateTask, CRM_CREATE_TASK_TOOL_DESCRIPTOR,
+  marketingOverview, MARKETING_OVERVIEW_TOOL_DESCRIPTOR,
+  marketingSendCampaign, MARKETING_SEND_CAMPAIGN_TOOL_DESCRIPTOR,
 } from "./tools/staffReadTools.js";
 import {
   bankingSummary, BANKING_SUMMARY_TOOL_DESCRIPTOR,
@@ -112,6 +114,8 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "crm.add_note": { descriptor: CRM_ADD_NOTE_TOOL_DESCRIPTOR, run: (a) => crmAddNote(a) },
   "crm.tasks": { descriptor: CRM_TASKS_TOOL_DESCRIPTOR, run: (a) => crmTasks(a) },
   "crm.create_task": { descriptor: CRM_CREATE_TASK_TOOL_DESCRIPTOR, run: (a) => crmCreateTask(a) },
+  "marketing.overview": { descriptor: MARKETING_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => marketingOverview(a) },
+  "marketing.send_campaign": { descriptor: MARKETING_SEND_CAMPAIGN_TOOL_DESCRIPTOR, run: (a) => marketingSendCampaign(a) },
   "contact.timeline": { descriptor: CONTACT_TIMELINE_TOOL_DESCRIPTOR, run: (a) => contactTimeline(a) },
   "call.triage": { descriptor: CALL_TRIAGE_TOOL_DESCRIPTOR, run: (a) => callTriage(a) },
   "application.risk_flags": { descriptor: APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR, run: (a) => applicationRiskFlags(a) },
