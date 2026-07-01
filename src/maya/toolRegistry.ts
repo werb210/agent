@@ -49,6 +49,10 @@ import {
   contactTimeline, CONTACT_TIMELINE_TOOL_DESCRIPTOR,
   callTriage, CALL_TRIAGE_TOOL_DESCRIPTOR,
   applicationRiskFlags, APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR,
+  crmNotes, CRM_NOTES_TOOL_DESCRIPTOR,
+  crmAddNote, CRM_ADD_NOTE_TOOL_DESCRIPTOR,
+  crmTasks, CRM_TASKS_TOOL_DESCRIPTOR,
+  crmCreateTask, CRM_CREATE_TASK_TOOL_DESCRIPTOR,
 } from "./tools/staffReadTools.js";
 import {
   bankingSummary, BANKING_SUMMARY_TOOL_DESCRIPTOR,
@@ -104,6 +108,10 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "application.timeline_estimate": { descriptor: APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR, run: (a) => applicationTimelineEstimate(a) },
   "application.resume_link": { descriptor: APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR, run: (a) => applicationResumeLink(a) },
   "lender.products": { descriptor: LENDER_PRODUCTS_TOOL_DESCRIPTOR, run: (a) => lenderProducts(a) },
+  "crm.notes": { descriptor: CRM_NOTES_TOOL_DESCRIPTOR, run: (a) => crmNotes(a) },
+  "crm.add_note": { descriptor: CRM_ADD_NOTE_TOOL_DESCRIPTOR, run: (a) => crmAddNote(a) },
+  "crm.tasks": { descriptor: CRM_TASKS_TOOL_DESCRIPTOR, run: (a) => crmTasks(a) },
+  "crm.create_task": { descriptor: CRM_CREATE_TASK_TOOL_DESCRIPTOR, run: (a) => crmCreateTask(a) },
   "contact.timeline": { descriptor: CONTACT_TIMELINE_TOOL_DESCRIPTOR, run: (a) => contactTimeline(a) },
   "call.triage": { descriptor: CALL_TRIAGE_TOOL_DESCRIPTOR, run: (a) => callTriage(a) },
   "application.risk_flags": { descriptor: APPLICATION_RISK_FLAGS_TOOL_DESCRIPTOR, run: (a) => applicationRiskFlags(a) },
