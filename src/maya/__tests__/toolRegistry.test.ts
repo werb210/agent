@@ -4,9 +4,9 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("../audience.js", () => ({
   isToolAllowed: (audience: string, tool: string) => {
     const allow: Record<string, string[]> = {
-      visitor: ["application.find_mine", "apply.doc_preview", "apply.start_url", "book.callback", "capital.readiness_check", "escalate.to_human", "industry.guidance", "info.lenders", "info.products", "info.qualifications", "lead.capture", "prequal.estimate", "visitor.identify", "waitlist.join"],
-      client: ["application.find_mine", "application.my_status", "application.next_step", "application.resume_link", "application.timeline_estimate", "apply.field_help", "book.callback", "docs.checklist", "docs.explain", "docs.rejections", "escalate.to_human", "offer.explain", "pgi.completion_link", "signature.status"],
-      staff: ["pipeline.query", "contact.find", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing", "crm.notes", "crm.add_note", "crm.tasks", "crm.create_task", "marketing.overview", "marketing.send_campaign"],
+      visitor: ["application.find_mine", "apply.doc_preview", "catalog.summary", "apply.start_url", "book.callback", "capital.readiness_check", "escalate.to_human", "industry.guidance", "info.lenders", "info.products", "info.qualifications", "lead.capture", "prequal.estimate", "visitor.identify", "waitlist.join"],
+      client: ["application.find_mine", "application.my_status", "catalog.summary", "application.next_step", "application.resume_link", "application.timeline_estimate", "apply.field_help", "book.callback", "docs.checklist", "docs.explain", "docs.rejections", "escalate.to_human", "offer.explain", "pgi.completion_link", "signature.status"],
+      staff: ["pipeline.query", "contact.find", "catalog.summary", "application.summary", "comm.draft_email", "comm.send_sms", "call.initiate", "maya.audit", "application.open_newest", "ui.navigate", "application.underwriting_summary", "lender.match_explain", "pgi.readiness", "lender.products", "contact.timeline", "call.triage", "application.risk_flags", "banking.summary", "credit.summary", "notes.read", "docs.request_draft", "daily.briefing", "crm.notes", "crm.add_note", "crm.tasks", "crm.create_task", "marketing.overview", "marketing.send_campaign"],
     };
     return (allow[audience] ?? []).includes(tool);
   },
@@ -100,6 +100,10 @@ vi.mock("../tools/pgiReadiness.js", () => ({
   pgiReadiness: vi.fn(),
   PGI_READINESS_TOOL_DESCRIPTOR: { type: "function", function: { name: "pgi.readiness", description: "", parameters: {} } },
 }));
+vi.mock("../tools/catalogTools.js", () => ({
+  catalogSummary: vi.fn(),
+  CATALOG_SUMMARY_TOOL_DESCRIPTOR: { type: "function", function: { name: "catalog.summary", description: "", parameters: {} } },
+}));
 vi.mock("../tools/staffReadTools.js", () => ({
   lenderProducts: vi.fn(),
   LENDER_PRODUCTS_TOOL_DESCRIPTOR: { type: "function", function: { name: "lender.products", description: "", parameters: {} } },
@@ -176,7 +180,7 @@ vi.mock("../tools/contextAndVisitorTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 - toolRegistry", () => {
-  it("registers all fifty-two tools", () => {
+  it("registers all fifty-three tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
       "application.find_mine",
@@ -196,6 +200,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "call.initiate",
       "call.triage",
       "capital.readiness_check",
+      "catalog.summary",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",
@@ -242,6 +247,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "apply.start_url",
       "book.callback",
       "capital.readiness_check",
+      "catalog.summary",
       "escalate.to_human",
       "industry.guidance",
       "info.lenders",
@@ -264,6 +270,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "application.timeline_estimate",
       "apply.field_help",
       "book.callback",
+      "catalog.summary",
       "docs.checklist",
       "docs.explain",
       "docs.rejections",
@@ -284,6 +291,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "banking.summary",
       "call.initiate",
       "call.triage",
+      "catalog.summary",
       "comm.draft_email",
       "comm.send_sms",
       "contact.find",

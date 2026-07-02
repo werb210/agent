@@ -24,6 +24,7 @@ import { callInitiate, CALL_INITIATE_TOOL_DESCRIPTOR } from "./tools/callInitiat
 import { bookCallback, BOOK_CALLBACK_TOOL_DESCRIPTOR } from "./tools/bookCallback.js";
 import { applicationUnderwritingSummary, APPLICATION_UNDERWRITING_SUMMARY_TOOL_DESCRIPTOR } from "./tools/applicationUnderwritingSummary.js";
 import { lenderMatchExplain, LENDER_MATCH_EXPLAIN_TOOL_DESCRIPTOR } from "./tools/lenderMatchExplain.js";
+import { catalogSummary, CATALOG_SUMMARY_TOOL_DESCRIPTOR } from "./tools/catalogTools.js";
 import { pgiReadiness, PGI_READINESS_TOOL_DESCRIPTOR } from "./tools/pgiReadiness.js";
 import {
   capitalReadinessCheck, CAPITAL_READINESS_CHECK_TOOL_DESCRIPTOR,
@@ -110,6 +111,7 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "application.timeline_estimate": { descriptor: APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR, run: (a) => applicationTimelineEstimate(a) },
   "application.resume_link": { descriptor: APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR, run: (a) => applicationResumeLink(a) },
   "lender.products": { descriptor: LENDER_PRODUCTS_TOOL_DESCRIPTOR, run: (a) => lenderProducts(a) },
+  "catalog.summary": { descriptor: CATALOG_SUMMARY_TOOL_DESCRIPTOR, run: (a) => catalogSummary(a) },
   "crm.notes": { descriptor: CRM_NOTES_TOOL_DESCRIPTOR, run: (a) => crmNotes(a) },
   "crm.add_note": { descriptor: CRM_ADD_NOTE_TOOL_DESCRIPTOR, run: (a) => crmAddNote(a) },
   "crm.tasks": { descriptor: CRM_TASKS_TOOL_DESCRIPTOR, run: (a) => crmTasks(a) },
