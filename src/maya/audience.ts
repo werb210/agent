@@ -22,6 +22,7 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "industry.guidance",
     "apply.doc_preview",
     "info.lenders",
+    "catalog.summary",
     "waitlist.join",
     "book.callback",
     "lender.products",
@@ -41,6 +42,7 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "application.timeline_estimate",
     "application.resume_link",
     "application.find_mine",
+    "catalog.summary",
     "lender.products",
   ],
   staff: [
@@ -60,6 +62,7 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "contact.timeline",
     "call.triage",
     "application.risk_flags",
+    "catalog.summary",
     "banking.summary",
     "credit.summary",
     "notes.read",
