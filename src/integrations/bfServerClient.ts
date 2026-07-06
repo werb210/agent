@@ -25,7 +25,17 @@ function getAgentToken(path?: string): string {
   // token is rejected with 401 service_jwt_required, which made EVERY staff
   // tool (pipeline.query, contact.find, application.summary, etc.) fail and
   // Maya answer "I need more context". Mint a service token for those paths.
-  if (path && path.includes("/api/maya/staff/") && secret) {
+  // MAYA_SERVICE_JWT_CATALOG_FIX_v1 - the catalog-summary endpoint
+  // (/api/maya/catalog-summary) is verifyMayaService-gated on BF-Server just
+  // like the /api/maya/staff/* endpoints, but it lives outside the /staff/
+  // path so the original substring check missed it. A role token was sent and
+  // rejected with 401 service_jwt_required, so every "how many lenders /
+  // products / term loans" question failed. Mint the service token for any
+  // verifyMayaService-gated Maya endpoint.
+  const needsServiceToken =
+    !!path &&
+    (path.includes("/api/maya/staff/") || path.includes("/api/maya/catalog-summary"));
+  if (needsServiceToken && secret) {
     return jwt.sign({ kind: "service", source: "agent" }, secret, { expiresIn: "1h" });
   }
   // MAYA_BFSERVER_JWT_v53 — Honor a pre-minted explicit token first (test
