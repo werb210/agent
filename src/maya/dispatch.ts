@@ -32,6 +32,28 @@ function injectContext(
   if (APP_SCOPED_TOOLS.has(toolName) && ctx.applicationId) {
     return { ...modelArgs, application_id: ctx.applicationId };
   }
+  // AGENT_MAYA_CLIENT_IDENTITY_v1 - phone-keyed client tools must receive the
+  // authenticated phone the host decoded from the client's bearer token.
+  // Without this, application.find_mine returned phone_required and Maya told a
+  // signed-in client "I can't access your details" even though it had the phone.
+  // find_mine bridges phone -> the client's application(s), so my_status/next_step
+  // etc. can then follow up with a resolved application_id.
+  const PHONE_SCOPED_CLIENT_TOOLS = new Set([
+    "application.find_mine",
+    "application.my_status",
+    "application.next_step",
+    "signature.status",
+    "application.timeline_estimate",
+    "application.resume_link",
+  ]);
+  if (PHONE_SCOPED_CLIENT_TOOLS.has(toolName)) {
+    return {
+      ...modelArgs,
+      phone: (modelArgs.phone as string | undefined) ?? ctx.phone ?? undefined,
+      application_id: (modelArgs.application_id as string | undefined) ?? ctx.applicationId ?? undefined,
+      session_id: (modelArgs.session_id as string | undefined) ?? ctx.sessionId ?? undefined,
+    };
+  }
   // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1 — escalate.to_human gets every identity
   // hint the host knows about so BF-Server (v636) can resolve the contact
   // and route the handoff to the right Messages-tab thread.
