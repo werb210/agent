@@ -2,6 +2,7 @@ import { runAI } from "../brain/openaiClient.js";
 import { SessionStage } from "../types/stages.js";
 import { MayaMode } from "../types/maya.js";
 import { MAYA_SYSTEM_PROMPT } from "../prompts/system.js";
+import { applyGuardrails } from "../maya/guardrails.js";
 
 type ConversationTurn = {
   role: "user" | "assistant";
@@ -24,7 +25,9 @@ export async function runMayaCore(
     }
     : undefined;
 
-  return (await runAI(systemPrompt, message, history, aiScope)) ?? "Insufficient data provided.";
+  // AGENT_GUARDRAILS_v1 - every reply passes the outcome filter before it leaves.
+  const reply = (await runAI(systemPrompt, message, history, aiScope)) ?? "Insufficient data provided.";
+  return applyGuardrails(reply);
 }
 
 async function buildSystemPrompt(mode: MayaMode, stage: SessionStage): Promise<string> {
