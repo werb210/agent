@@ -95,14 +95,48 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10_000): Promise<T> {
   ]);
 }
 
-function getAgentAuthToken(): string {
+// AGENT_SERVICE_TOKEN_v1
+// Was: a fresh jwt.sign on every tool call, discarding a token with 59 minutes
+// of life left. Cache it and re-mint only near expiry.
+let cachedToken: { value: string; expiresAtMs: number } | null = null;
+const TOKEN_TTL_MS = 60 * 60 * 1000;
+const RENEW_BEFORE_MS = 5 * 60 * 1000;
+
+/** Test seam. */
+export function __resetAgentAuthToken(): void {
+  cachedToken = null;
+}
+
+function getAgentAuthToken(now: () => number = Date.now): string {
   const secret = process.env.JWT_SECRET;
+
+  // config/env.ts falls back to the literal "test_secret" when JWT_SECRET is
+  // unset. Signing with it produces a token BF-Server rejects, so a missing
+  // Azure setting surfaces as unexplained 401s instead of a config error.
+  if (secret === "test_secret") {
+    throw new Error("JWT_SECRET is the test default; set it to match BF-Server");
+  }
+
   if (secret) {
-    return jwt.sign(
-      { id: "agent-service", phone: "agent", role: "Staff" },
+    const nowMs = now();
+    if (cachedToken && nowMs < cachedToken.expiresAtMs - RENEW_BEFORE_MS) {
+      return cachedToken.value;
+    }
+    const value = jwt.sign(
+      {
+        id: "agent-service",
+        phone: "agent",
+        role: "Staff",
+        // Maya held full Staff authority with nothing marking her apart from a
+        // human on the same role. Audit rows could not tell them apart.
+        principal: "service",
+        service: "maya-agent"
+      },
       secret,
       { expiresIn: "1h" }
     );
+    cachedToken = { value, expiresAtMs: nowMs + TOKEN_TTL_MS };
+    return value;
   }
 
   const token = process.env.AGENT_API_TOKEN;
