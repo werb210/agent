@@ -102,8 +102,26 @@ export async function dispatchTool(
     parsed = rawArgs;
   }
   const args = injectContext(toolName, parsed, ctx);
+  // AGENT_TOOL_TRACE_v412 - a client tool returning empty produced an identical
+  // "I am unable to retrieve that" every time, with nothing in any log. One line
+  // per call, before and after, naming the identity the tool actually received.
+  console.log("[maya.tool.call] " + JSON.stringify({
+    tool: toolName,
+    audience: ctx.audience,
+    hasPhone: Boolean((args as Record<string, unknown>).phone),
+    hasApplicationId: Boolean((args as Record<string, unknown>).application_id),
+    ctxHasPhone: Boolean(ctx.phone),
+    ctxHasApplicationId: Boolean(ctx.applicationId),
+    argKeys: Object.keys(args ?? {}),
+  }));
   try {
     const result = await entry.run(args);
+  console.log("[maya.tool.result] " + JSON.stringify({
+    tool: toolName,
+    ok: (result as { ok?: unknown })?.ok !== false,
+    error: (result as { error?: unknown })?.error ?? null,
+    keys: result && typeof result === "object" ? Object.keys(result as object) : [],
+  }));
     return JSON.stringify(result ?? { ok: true });
   } catch (e: any) {
     return JSON.stringify({
