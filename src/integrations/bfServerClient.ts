@@ -110,8 +110,18 @@ export async function callBFServer<T>(
 
 // ─── Typed helpers for canonical BF-Server endpoints ───────────────────────
 
+// AGENT_APPLICATION_SUMMARY_ROUTE_v436
+// GET /api/applications/:id is a staff route. The agent's service token is minted
+// for /api/maya/* only, so this call was rejected and my_status / docs.checklist
+// answered ok:false with a null error - indistinguishable, from the client's
+// seat, from "your application could not be found".
+// /api/maya/staff/application-summary is inside the prefix and returns the same
+// facts plus the applicant's phone and company.
 export async function fetchApplicationStatus(applicationId: string) {
-  return callBFServer<any>(`/api/applications/${applicationId}`);
+  return callBFServer<any>("/api/maya/staff/application-summary", {
+    method: "POST",
+    body: { application_id: applicationId },
+  });
 }
 
 export async function fetchPipeline() {
