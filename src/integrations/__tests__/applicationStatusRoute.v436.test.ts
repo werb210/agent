@@ -5,12 +5,12 @@ import path from "node:path";
 const src = readFileSync(
   path.join(process.cwd(), "src/integrations/bfServerClient.ts"), "utf8");
 
-describe("v436 client tools call a route the service token covers", () => {
-  it("no longer calls the staff applications route", () => {
+describe("v436 application status reads a route that returns data", () => {
+  it("no longer calls the stub applications route", () => {
     expect(src).not.toContain("`/api/applications/${applicationId}`");
   });
 
-  it("uses the maya-prefixed summary route", () => {
+  it("uses the summary route", () => {
     expect(src).toContain("/api/maya/staff/application-summary");
   });
 
@@ -19,12 +19,7 @@ describe("v436 client tools call a route the service token covers", () => {
     expect(src).toContain("body: { application_id: applicationId }");
   });
 
-  it("keeps the application-status call under /api/maya/", () => {
-    const helper = src.match(
-      /export async function fetchApplicationStatus[\s\S]*?\n}/,
-    )?.[0];
-
-    expect(helper).toBeDefined();
-    expect(helper).toContain('callBFServer<any>("/api/maya/');
+  it("records why, so nobody reverts it to the shorter path", () => {
+    expect(src).toContain("is a STUB");
   });
 });

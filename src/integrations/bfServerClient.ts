@@ -111,12 +111,11 @@ export async function callBFServer<T>(
 // ─── Typed helpers for canonical BF-Server endpoints ───────────────────────
 
 // AGENT_APPLICATION_SUMMARY_ROUTE_v436
-// GET /api/applications/:id is a staff route. The agent's service token is minted
-// for /api/maya/* only, so this call was rejected and my_status / docs.checklist
-// answered ok:false with a null error - indistinguishable, from the client's
-// seat, from "your application could not be found".
-// /api/maya/staff/application-summary is inside the prefix and returns the same
-// facts plus the applicant's phone and company.
+// GET /api/applications/:id is a STUB on BF-Server (applications.ts:101) - it
+// authenticates and returns { status: "ok", data: { id } } and nothing else.
+// my_status and docs.checklist mapped that empty shell, found no fields, and
+// answered ok:false with a null error, which a client read as "we cannot find
+// your application". Use the summary route, which returns real data.
 export async function fetchApplicationStatus(applicationId: string) {
   return callBFServer<any>("/api/maya/staff/application-summary", {
     method: "POST",
