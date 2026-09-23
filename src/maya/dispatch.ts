@@ -16,6 +16,37 @@ export type DispatchContext = {
   email?: string | null;
 };
 
+// AGENT_RESOLVED_APPLICATION_ID_v431
+// find_mine is the only tool that turns an authenticated phone into the client's
+// real application id. Nothing carried that forward, so my_status and
+// docs.checklist ran against whatever id the model made up and returned ok:false.
+// Remembered per session, cleared when the session is not seen for an hour.
+const resolvedAppIds = new Map<string, { id: string; at: number }>();
+const RESOLVED_TTL_MS = 60 * 60 * 1000;
+
+export function rememberResolvedApplicationId(sessionId: string, id: string): void {
+  if (!sessionId || !id) return;
+  resolvedAppIds.set(sessionId, { id, at: Date.now() });
+}
+
+export function getResolvedApplicationId(sessionId: string): string | null {
+  const hit = resolvedAppIds.get(sessionId);
+  if (!hit) return null;
+  if (Date.now() - hit.at > RESOLVED_TTL_MS) {
+    resolvedAppIds.delete(sessionId);
+    return null;
+  }
+  return hit.id;
+}
+
+/** Pull the client's application id out of a find_mine result. */
+export function applicationIdFromFindMine(result: unknown): string | null {
+  const apps = (result as { applications?: Array<{ id?: unknown }> } | null)?.applications;
+  if (!Array.isArray(apps) || apps.length === 0) return null;
+  const id = apps[0]?.id;
+  return typeof id === "string" && id ? id : null;
+}
+
 function injectContext(
   toolName: string,
   modelArgs: Record<string, unknown>,
@@ -29,8 +60,15 @@ function injectContext(
     "docs.checklist",
     "pgi.completion_link",
   ]);
-  if (APP_SCOPED_TOOLS.has(toolName) && ctx.applicationId) {
-    return { ...modelArgs, application_id: ctx.applicationId };
+  if (APP_SCOPED_TOOLS.has(toolName)) {
+    // v431 - prefer the host id, then the one find_mine resolved this session.
+    // If we have neither, STRIP the model's id rather than pass a guess: the tool
+    // can fall back to the phone, and a wrong id silently returns the wrong
+    // application (or ok:false, which is what production was doing).
+    const trusted = ctx.applicationId || getResolvedApplicationId(String(ctx.sessionId ?? ""));
+    if (trusted) return { ...modelArgs, application_id: trusted };
+    const { application_id: _discarded, ...withoutGuess } = modelArgs;
+    return withoutGuess;
   }
   // AGENT_MAYA_CLIENT_IDENTITY_v1 - phone-keyed client tools must receive the
   // authenticated phone the host decoded from the client's bearer token.
@@ -116,6 +154,11 @@ export async function dispatchTool(
   }));
   try {
     const result = await entry.run(args);
+    // v431 - remember what find_mine resolved so the follow-up tools can use it.
+    if (toolName === "application.find_mine") {
+      const resolved = applicationIdFromFindMine(result);
+      if (resolved) rememberResolvedApplicationId(String(ctx.sessionId ?? ""), resolved);
+    }
   console.log("[maya.tool.result] " + JSON.stringify({
     tool: toolName,
     ok: (result as { ok?: unknown })?.ok !== false,
