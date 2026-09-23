@@ -85,11 +85,18 @@ function injectContext(
     "application.resume_link",
   ]);
   if (PHONE_SCOPED_CLIENT_TOOLS.has(toolName)) {
+    // AGENT_PHONE_OVERRIDE_v448 - ?? only falls through on null/undefined, so a
+    // model-supplied "" beat the host's real phone and find_mine answered
+    // phone_required to a signed-in client. The host's value is authoritative:
+    // it came from the bearer token. Prefer it whenever we have one.
+    const blank = (v: unknown) => typeof v !== "string" || v.trim() === "";
+    const pick = (fromModel: unknown, fromHost: string | null | undefined) =>
+      (!blank(fromHost) ? fromHost : (!blank(fromModel) ? (fromModel as string) : undefined));
     return {
       ...modelArgs,
-      phone: (modelArgs.phone as string | undefined) ?? ctx.phone ?? undefined,
-      application_id: (modelArgs.application_id as string | undefined) ?? ctx.applicationId ?? undefined,
-      session_id: (modelArgs.session_id as string | undefined) ?? ctx.sessionId ?? undefined,
+      phone: pick(modelArgs.phone, ctx.phone),
+      application_id: pick(modelArgs.application_id, ctx.applicationId),
+      session_id: pick(modelArgs.session_id, ctx.sessionId),
     };
   }
   // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1 — escalate.to_human gets every identity
