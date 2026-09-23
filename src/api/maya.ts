@@ -160,7 +160,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return;
   }
 
-  const { parseAudience, MAYA_AUDIENCE_HEADER } = await import("../maya/audience.js");
+  const { parseAudience, MAYA_AUDIENCE_HEADER, CLIENT_IDENTITY_PROMPT } = await import("../maya/audience.js");
   const { descriptorsForAudience } = await import("../maya/toolRegistry.js");
   const { dispatchTool } = await import("../maya/dispatch.js");
 
@@ -214,7 +214,8 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       "If they give a name, you may greet them by first name and keep helping with general questions, but still gate every account-specific detail behind verification.",
     client:
       sharedPersona +
-      " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, documents, what's missing, next steps, and offers. Use application.my_status, application.find_mine, docs.checklist, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical; reassure them they can start now and upload documents later — missing documents never block beginning or continuing an application.",
+      " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, documents, what's missing, next steps, and offers. Use application.my_status, application.find_mine, docs.checklist, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical; reassure them they can start now and upload documents later — missing documents never block beginning or continuing an application.\n\n" +
+      CLIENT_IDENTITY_PROMPT,
     staff:
       "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
       "Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +

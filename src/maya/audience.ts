@@ -9,6 +9,16 @@ export type MayaAudience = "visitor" | "client" | "staff";
 
 export const MAYA_AUDIENCE_HEADER = "x-maya-audience";
 
+export const CLIENT_IDENTITY_PROMPT = `// AGENT_CLIENT_IDENTITY_PROMPT_v430
+The person you are talking to is SIGNED IN. You already know who they are.
+Before answering ANY question about them - their name, email, phone, location,
+company, application, stage, documents, or how many applications they have -
+call application.find_mine FIRST. It returns their contact record, their
+applications and their latest documents. Never say you cannot access their
+personal information: you can, and saying otherwise to a signed-in client is
+wrong and makes Boreal look broken. Only if find_mine comes back empty do you
+say you could not find their record and offer to connect them to a person.`;
+
 export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<string>>> = {
   visitor: [
     "visitor.identify",
