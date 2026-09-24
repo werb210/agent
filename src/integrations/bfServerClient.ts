@@ -38,10 +38,13 @@ function getAgentToken(path?: string): string {
   // MAYA_BFSERVER_JWT_v53 — Honor a pre-minted explicit token first (test
   // harness, manual override). Otherwise sign a real JWT using JWT_SECRET so
   // BF-Server's auth middleware verifies and hydrates capabilities from role.
+  // AGENT_BLOCK_v487_MINTED_TOKEN_FIRST - a pre-minted AGENT_API_TOKEN left in the
+  // App Service settings had gone stale, so every non-/api/maya/ call (the
+  // talk-to-a-human handoff, staff presence) was refused and escalate.to_human
+  // returned ok:false. The same handoff with a freshly minted token returns 200.
+  // Mint whenever JWT_SECRET is available; the explicit token is only a fallback.
   const explicit = process.env.AGENT_API_TOKEN;
-  if (explicit && explicit !== "test_token") return explicit;
-
-  if (!secret) return "";
+  if (!secret) return explicit && explicit !== "test_token" ? explicit : "";
   return jwt.sign(
     { id: "agent-service", phone: "agent", role: "Staff" },
     secret,
