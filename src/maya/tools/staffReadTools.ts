@@ -26,12 +26,13 @@ export type LenderProductsArgs = { category?: string; country?: string; amount?:
 export async function lenderProducts(args: LenderProductsArgs): Promise<Result> {
   return call("/api/maya/staff/lender-products", { category: s(args?.category), country: s(args?.country), amount: n(args?.amount), session_id: s(args?.session_id), audience: s(args?.audience) });
 }
+// AGENT_BLOCK_v474_MAYA_QUOTE_FROM_RANGES - BF-Server v473 returns full-catalogue ranges.
 export const LENDER_PRODUCTS_TOOL_DESCRIPTOR = {
   type: "function" as const,
   function: {
     name: "lender.products",
     description:
-      "Look up Boreal's active lender products by category (TERM, LOC, EQUIPMENT, etc.), country, and/or deal amount. Returns which lenders offer what, with amount ranges AND interest-rate ranges (interestMin/interestMax). Read-only and safe for any audience — contains no client-specific data. Use it to answer ANY product or pricing question, e.g. 'what's the interest rate on a term loan', 'do you do equipment financing', 'what LOC options are there in Canada'. When asked about rates, summarize as a RANGE across matching products (e.g. 'our term loans generally run between X% and Y%') and add that the actual rate depends on factors like credit, time in business, revenue, and the specific lender — never quote a single guaranteed rate.",
+      "Look up Boreal's active lender products by category (TERM, LOC, EQUIPMENT, etc.), country, and/or deal amount. Returns which lenders offer what, with amount ranges AND interest-rate ranges (interestMin/interestMax). Read-only and safe for any audience — contains no client-specific data. Use it to answer ANY product or pricing question, e.g. 'what's the interest rate on a term loan', 'do you do equipment financing', 'what LOC options are there in Canada'. The response has `ranges` (min/max amount and rate per category and rate kind, computed over EVERY matching product) and `products` (a sample of at most 50). ALWAYS quote funding limits, amounts and rates from `ranges`, never from `products`, and never mix APR, monthly and factor rates. When asked about rates, summarize as a RANGE from `ranges` (e.g. 'our term loans generally run between X% and Y%') and add that the actual rate depends on factors like credit, time in business, revenue, and the specific lender — never quote a single guaranteed rate.",
     parameters: { type: "object", properties: { category: { type: "string", description: "Product category short code, e.g. TERM, LOC, EQUIPMENT." }, country: { type: "string", description: "Country filter, e.g. CA or US." }, amount: { type: "number", description: "Deal amount to match against product min/max." }, session_id: { type: "string", description: "Optional session id for correlation." } }, required: [] },
   },
 };
