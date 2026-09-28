@@ -180,9 +180,10 @@ vi.mock("../tools/contextAndVisitorTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 - toolRegistry", () => {
-  it("registers all fifty-three tools", () => {
+  it("registers all fifty-nine tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
+      "ads.performance",
       "application.find_mine",
       "application.my_status",
       "application.next_step",
@@ -195,6 +196,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "apply.doc_preview",
       "apply.field_help",
       "apply.start_url",
+      "automations.overview",
       "banking.summary",
       "book.callback",
       "call.initiate",
@@ -203,7 +205,9 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "catalog.summary",
       "comm.draft_email",
       "comm.send_sms",
+      "comms.overview",
       "contact.find",
+      "contact.picture",
       "contact.timeline",
       "credit.summary",
       "crm.add_note",
@@ -232,7 +236,9 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "pgi.readiness",
       "pipeline.query",
       "prequal.estimate",
+      "referrers.overview",
       "signature.status",
+      "todo.status",
       "ui.navigate",
       "visitor.identify",
       "waitlist.join",

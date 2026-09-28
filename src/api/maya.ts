@@ -197,7 +197,9 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   const email =
     typeof req.body?.email === "string" ? req.body.email :
     typeof req.body?.contact?.email === "string" ? req.body.contact.email : null;
-  const ctx = { audience, applicationId, sessionId, phone, email };
+  // AGENT_MAYA_INSIGHTS_v657 - who is asking, for per-staff reads such as Team unread.
+  const staffEmail = audience === "staff" && typeof req.body?.staff?.email === "string" ? req.body.staff.email : null;
+  const ctx = { audience, applicationId, sessionId, phone, email, staffEmail };
 
   const sharedPersona =
     "You are Maya, Boreal Financial's assistant — knowledgeable, warm, and genuinely helpful. You are the expert guide to Boreal's financing: you know the products, the lenders, and how it all works. " +
@@ -222,7 +224,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
       "When you take a navigation action, keep the spoken reply short (one line confirming what you opened). " +
       // AGENT_BLOCK_v491_MAYA_TRIES_BEFORE_DECLINING
-      "Never say you can't answer before calling a tool: use marketing.overview for marketing, campaign, audience, opt-in or ads questions; daily.briefing for 'what's on today', a briefing, or what to focus on; application.underwriting_summary for what is blocking a deal. If pipeline.query says a question is not supported, offer the closest report it lists.",
+      "Never say you can't answer before calling a tool: use ads.performance for Google Ads, spend, wasted money or search terms; comms.overview for who is waiting on a reply, missed calls or voicemails; contact.picture for the full picture on a person or company; automations.overview for automations and sequences; referrers.overview for referral partners and commissions; todo.status for what a client still has to do; use marketing.overview for marketing email and SMS campaigns, audiences and opt-ins; daily.briefing for 'what's on today', a briefing, or what to focus on; application.underwriting_summary for what is blocking a deal. If pipeline.query says a question is not supported, offer the closest report it lists.",
   };
 
   const screenContext =

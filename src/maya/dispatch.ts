@@ -14,6 +14,8 @@ export type DispatchContext = {
   sessionId?: string | null;
   phone?: string | null;
   email?: string | null;
+  /** AGENT_MAYA_INSIGHTS_v657 - the signed-in staff member (portal), never the viewed contact. */
+  staffEmail?: string | null;
 };
 
 // AGENT_RESOLVED_APPLICATION_ID_v431
@@ -104,6 +106,10 @@ function injectContext(
   // and route the handoff to the right Messages-tab thread.
   // lender.products: server strips lender identity unless audience === "staff",
   // so the model never receives lender name/address/phone/contracts for visitor/client.
+  // AGENT_MAYA_INSIGHTS_v657 - Team unread is per staff member; the host knows who is asking.
+  if (toolName === "comms.overview") {
+    return { ...modelArgs, user_email: ctx.staffEmail ?? undefined };
+  }
   if (toolName === "lender.products") {
     return { ...modelArgs, audience: ctx.audience };
   }
