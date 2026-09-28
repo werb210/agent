@@ -64,6 +64,15 @@ import {
   docsRequestDraft, DOCS_REQUEST_DRAFT_TOOL_DESCRIPTOR,
   dailyBriefing, DAILY_BRIEFING_TOOL_DESCRIPTOR,
 } from "./tools/staffReadTools2.js";
+// AGENT_MAYA_INSIGHTS_v657
+import {
+  adsPerformance, ADS_PERFORMANCE_TOOL_DESCRIPTOR,
+  commsOverview, COMMS_OVERVIEW_TOOL_DESCRIPTOR,
+  contactPicture, CONTACT_PICTURE_TOOL_DESCRIPTOR,
+  automationsOverview, AUTOMATIONS_OVERVIEW_TOOL_DESCRIPTOR,
+  referrersOverview, REFERRERS_OVERVIEW_TOOL_DESCRIPTOR,
+  todoStatus, TODO_STATUS_TOOL_DESCRIPTOR,
+} from "./tools/staffInsightTools.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -133,6 +142,12 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "info.lenders": { descriptor: INFO_LENDERS_TOOL_DESCRIPTOR, run: () => infoLenders() },
   "waitlist.join": { descriptor: WAITLIST_JOIN_TOOL_DESCRIPTOR, run: (a) => waitlistJoin(a) },
   "application.find_mine": { descriptor: APPLICATION_FIND_MINE_TOOL_DESCRIPTOR, run: (a) => applicationFindMine(a) },
+  "ads.performance": { descriptor: ADS_PERFORMANCE_TOOL_DESCRIPTOR, run: (a) => adsPerformance(a) },
+  "comms.overview": { descriptor: COMMS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => commsOverview(a) },
+  "contact.picture": { descriptor: CONTACT_PICTURE_TOOL_DESCRIPTOR, run: (a) => contactPicture(a) },
+  "automations.overview": { descriptor: AUTOMATIONS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => automationsOverview(a) },
+  "referrers.overview": { descriptor: REFERRERS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => referrersOverview(a) },
+  "todo.status": { descriptor: TODO_STATUS_TOOL_DESCRIPTOR, run: (a) => todoStatus(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
