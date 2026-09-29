@@ -91,6 +91,11 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "automations.overview",
     "referrers.overview",
     "todo.status",
+    // AGENT_MAYA_ADS_v684
+    "ads.keywords",
+    "ads.negatives",
+    "ads.negatives.add",
+    "ads.negatives.remove",
   ],
 };
 

@@ -73,6 +73,13 @@ import {
   referrersOverview, REFERRERS_OVERVIEW_TOOL_DESCRIPTOR,
   todoStatus, TODO_STATUS_TOOL_DESCRIPTOR,
 } from "./tools/staffInsightTools.js";
+// AGENT_MAYA_ADS_v684
+import {
+  adsKeywords, ADS_KEYWORDS_TOOL_DESCRIPTOR,
+  adsNegatives, ADS_NEGATIVES_TOOL_DESCRIPTOR,
+  adsNegativesAdd, ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR,
+  adsNegativesRemove, ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR,
+} from "./tools/staffAdsTools.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -148,6 +155,10 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "automations.overview": { descriptor: AUTOMATIONS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => automationsOverview(a) },
   "referrers.overview": { descriptor: REFERRERS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => referrersOverview(a) },
   "todo.status": { descriptor: TODO_STATUS_TOOL_DESCRIPTOR, run: (a) => todoStatus(a) },
+  "ads.keywords": { descriptor: ADS_KEYWORDS_TOOL_DESCRIPTOR, run: (a) => adsKeywords(a) },
+  "ads.negatives": { descriptor: ADS_NEGATIVES_TOOL_DESCRIPTOR, run: (a) => adsNegatives(a) },
+  "ads.negatives.add": { descriptor: ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, run: (a) => adsNegativesAdd(a) },
+  "ads.negatives.remove": { descriptor: ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR, run: (a) => adsNegativesRemove(a) },
 };
 
 export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
