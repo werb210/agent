@@ -180,9 +180,13 @@ vi.mock("../tools/contextAndVisitorTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 - toolRegistry", () => {
-  it("registers all fifty-nine tools", () => {
+  it("registers all sixty-three tools", () => {
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
+      "ads.keywords",
+      "ads.negatives",
+      "ads.negatives.add",
+      "ads.negatives.remove",
       "ads.performance",
       "application.find_mine",
       "application.my_status",
