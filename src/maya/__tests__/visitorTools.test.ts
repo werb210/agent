@@ -42,9 +42,8 @@ describe("AGENT_BLOCK_v4 — info.products", () => {
     expect(r.summary).toContain('No product matches "made_up"');
   });
 
-  it("includes pgi in the catalog (marketing surface)", async () => {
-    const r = await infoProducts({ product_key: "pgi" });
-    expect(r.product?.name).toContain("Personal Guarantee");
+  it("does not describe PGI - Maya serves Boreal Financial only (AGENT_MAYA_BF_ONLY_v702)", async () => {
+    expect(PRODUCTS.some((p) => p.key === "pgi")).toBe(false);
   });
 
   it("descriptor advertises name and no required args", () => {
