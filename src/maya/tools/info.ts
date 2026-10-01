@@ -40,7 +40,7 @@ export const INFO_PRODUCTS_TOOL_DESCRIPTOR = {
   function: {
     name: "info.products",
     description:
-      "List or describe Boreal Financial's financing products. Call with no arguments to get the full list; call with product_key (e.g. 'term_loan', 'line_of_credit', 'equipment_financing', 'commercial_real_estate', 'csbfp', 'mca', 'factoring', 'abl', 'pgi') to get detail on one.",
+      "List or describe Boreal Financial's financing products. Call with no arguments to get the full list; call with product_key (e.g. 'term_loan', 'line_of_credit', 'equipment_financing', 'commercial_real_estate', 'csbfp', 'mca', 'factoring', 'abl') to get detail on one.",
     parameters: {
       type: "object",
       properties: {

@@ -148,11 +148,11 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     } else if (/loan|finance|capital|equipment|funding|term|line of credit|loc/.test(lower)) {
       reply = "Boreal Financial offers term loans, lines of credit, equipment financing, commercial real estate, and acquisition financing across Canada. For details specific to your business, tap Talk to a Human and an advisor will be in touch shortly.";
     } else if (/insurance|pgi|personal\s*guarantee/.test(lower)) {
-      reply = "Boreal Insurance offers Personal Guarantee Insurance (PGI) — coverage that protects business owners who've signed a personal guarantee on a loan, lease, or supplier contract. Tap Talk to a Human and an advisor will walk you through it.";
+      reply = "Insurance is handled by our sister company, Boreal Risk Management, at boreal.insure. I can help with Boreal Financial's lending products, or tap Talk to a Human to reach an advisor.";
     } else if (/hour|open|when|time/.test(lower)) {
       reply = "We're online during business hours (Pacific). Outside business hours, tap Talk to a Human and we'll text you back as soon as we're in.";
     } else if (/who.*you|what.*you|about/.test(lower)) {
-      reply = "I'm Maya, the Boreal Financial assistant. I can answer general questions about our lending and insurance products, or hand you off to a human advisor.";
+      reply = "I'm Maya, the Boreal Financial assistant. I can answer general questions about our lending products, or hand you off to a human advisor.";
     } else {
       reply = "Good question — that one's best handled by a person. Tap Talk to a Human below and a Boreal advisor will text you back shortly.";
     }

@@ -77,14 +77,6 @@ export const PRODUCTS: ReadonlyArray<ProductEntry> = [
     typical_term: "Revolving",
     who_its_for: "Larger businesses with substantial collateral but uneven profitability.",
   },
-  {
-    key: "pgi",
-    name: "Personal Guarantee Insurance (PGI)",
-    one_liner: "Insurance that covers a personal guarantee on a business loan, so a default doesn't expose your personal assets.",
-    typical_range_cad: "Up to 80% of guaranteed loan amount",
-    typical_term: "Matches underlying loan term",
-    who_its_for: "Business owners providing personal guarantees on loans, leases, supplier credit, or surety bonds.",
-  },
 ];
 
 export type QualificationEntry = {
