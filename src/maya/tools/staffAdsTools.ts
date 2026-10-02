@@ -54,3 +54,45 @@ export async function adsNegativesRemove(a: { id?: string; term?: string; confir
 export const ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR = tool("ads.negatives.remove",
   "Remove a negative keyword that was added through the portal. ALWAYS two steps: first call without confirm to get a preview and confirm_token, ask the user to confirm, and only on a clear yes call again with confirm: true and the confirm_token.",
   { id: { type: "string", description: "Negative id from ads.negatives." }, term: { type: "string", description: "Or the negative's text." }, ...confirmProps });
+
+// AGENT_MAYA_ADS_INSIGHTS_v712 - read tools for the Ads reports the portal shows (BF-Server
+// v712). Each answer carries ad_rules; Maya's advice must follow them.
+export async function adsStory(a: { days?: number; by?: string; session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ads-story", { days: typeof a?.days === "number" ? a.days : undefined, by: s(a?.by), session_id: s(a?.session_id) });
+}
+export const ADS_STORY_TOOL_DESCRIPTOR = tool("ads.story",
+  "Ad to dollars: Google Ads spend and clicks through to people in the CRM, applications started, submitted, qualified, funded, estimated commission and return on ad spend, by campaign, ad group, ad or keyword. Use for 'are the ads working', 'what did we get for the spend', 'which campaign brings applications'. days defaults to 90.",
+  { days: { type: "number", description: "Look-back window in days (default 90)." }, by: { type: "string", enum: ["campaign", "ad_group", "ad", "keyword"], description: "Group by (default campaign)." } });
+
+export async function adsVisitors(a: { days?: number; filter?: string; session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ads-visitors", { days: typeof a?.days === "number" ? a.days : undefined, filter: s(a?.filter), session_id: s(a?.session_id) });
+}
+export const ADS_VISITORS_TOOL_DESCRIPTOR = tool("ads.visitors",
+  "Website visitors and what each did: landing page, whether they came from an ad (and which campaign/keyword), pages, time on site, and whether they started, submitted or funded an application. Use for 'who came from the ads', 'did anyone from the ads apply', 'recent visitors'. days defaults to 30.",
+  { days: { type: "number", description: "Look-back window in days (default 30)." }, filter: { type: "string", enum: ["all", "ad", "identified", "abandoned", "submitted"], description: "Which visitors (default all)." } });
+
+export async function adsDropoff(a: { days?: number; session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ads-dropoff", { days: typeof a?.days === "number" ? a.days : undefined, session_id: s(a?.session_id) });
+}
+export const ADS_DROPOFF_TOOL_DESCRIPTOR = tool("ads.dropoff",
+  "Where applications stop and why: how many started vs submitted, the step each unfinished application stopped at (and how many came from ads), blocking reasons, the field people left on, and time spent per step. Use for 'why aren't people finishing', 'where do they drop off'. days defaults to 90.",
+  { days: { type: "number", description: "Look-back window in days (default 90)." } });
+
+export async function adsHealth(a: { session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ads-health", { session_id: s(a?.session_id) });
+}
+export const ADS_HEALTH_TOOL_DESCRIPTOR = tool("ads.health",
+  "Google connection health: sign-in, conversion uploads to Google Ads, campaign data, Google Analytics, and whether every application from an ad click reached Google. Use for 'is Google tracking working', 'are conversions being sent', 'why does Google show 0 conversions'.");
+
+export async function adsGa4(a: { days?: number; session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ga4", { days: typeof a?.days === "number" ? a.days : undefined, session_id: s(a?.session_id) });
+}
+export const ADS_GA4_TOOL_DESCRIPTOR = tool("ads.ga4",
+  "Website traffic from Google Analytics (GA4): sessions, users, sources and top pages. Use for 'how much website traffic', 'where does traffic come from'. days defaults to 30.",
+  { days: { type: "number", description: "Look-back window in days (default 30)." } });
+
+export async function adsAudiences(a: { session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/ads-audiences", { session_id: s(a?.session_id) });
+}
+export const ADS_AUDIENCES_TOOL_DESCRIPTOR = tool("ads.audiences",
+  "Google Customer Match lists: the Applicants and Funded clients lists, how many people are on each, and how many applicants have not been sent yet. Staff send applicants themselves from Marketing > Ads > Google > Audiences. Use for 'how big are our audiences', 'who is in the customer match lists'.");

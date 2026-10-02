@@ -96,6 +96,13 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "ads.negatives",
     "ads.negatives.add",
     "ads.negatives.remove",
+    // AGENT_MAYA_ADS_INSIGHTS_v712
+    "ads.story",
+    "ads.visitors",
+    "ads.dropoff",
+    "ads.health",
+    "ads.ga4",
+    "ads.audiences",
   ],
 };
 
