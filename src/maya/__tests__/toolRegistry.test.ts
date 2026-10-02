@@ -180,14 +180,20 @@ vi.mock("../tools/contextAndVisitorTools.js", () => ({
 import { TOOL_REGISTRY, descriptorsForAudience, lookupTool } from "../toolRegistry.js";
 
 describe("AGENT_BLOCK_v5 - toolRegistry", () => {
-  it("registers all sixty-three tools", () => {
+  it("registers all sixty-nine tools", () => { // AGENT_MAYA_ADS_INSIGHTS_v712: +6 Ads report tools
     const names = Object.keys(TOOL_REGISTRY).sort();
     expect(names).toEqual([
+      "ads.audiences",
+      "ads.dropoff",
+      "ads.ga4",
+      "ads.health",
       "ads.keywords",
       "ads.negatives",
       "ads.negatives.add",
       "ads.negatives.remove",
       "ads.performance",
+      "ads.story",
+      "ads.visitors",
       "application.find_mine",
       "application.my_status",
       "application.next_step",

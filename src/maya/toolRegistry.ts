@@ -76,6 +76,9 @@ import {
 // AGENT_MAYA_ADS_v684
 import {
   adsKeywords, ADS_KEYWORDS_TOOL_DESCRIPTOR,
+  // AGENT_MAYA_ADS_INSIGHTS_v712
+  adsStory, ADS_STORY_TOOL_DESCRIPTOR, adsVisitors, ADS_VISITORS_TOOL_DESCRIPTOR, adsDropoff, ADS_DROPOFF_TOOL_DESCRIPTOR,
+  adsHealth, ADS_HEALTH_TOOL_DESCRIPTOR, adsGa4, ADS_GA4_TOOL_DESCRIPTOR, adsAudiences, ADS_AUDIENCES_TOOL_DESCRIPTOR,
   adsNegatives, ADS_NEGATIVES_TOOL_DESCRIPTOR,
   adsNegativesAdd, ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR,
   adsNegativesRemove, ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR,
@@ -156,6 +159,13 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "referrers.overview": { descriptor: REFERRERS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => referrersOverview(a) },
   "todo.status": { descriptor: TODO_STATUS_TOOL_DESCRIPTOR, run: (a) => todoStatus(a) },
   "ads.keywords": { descriptor: ADS_KEYWORDS_TOOL_DESCRIPTOR, run: (a) => adsKeywords(a) },
+  // AGENT_MAYA_ADS_INSIGHTS_v712
+  "ads.story": { descriptor: ADS_STORY_TOOL_DESCRIPTOR, run: (a) => adsStory(a) },
+  "ads.visitors": { descriptor: ADS_VISITORS_TOOL_DESCRIPTOR, run: (a) => adsVisitors(a) },
+  "ads.dropoff": { descriptor: ADS_DROPOFF_TOOL_DESCRIPTOR, run: (a) => adsDropoff(a) },
+  "ads.health": { descriptor: ADS_HEALTH_TOOL_DESCRIPTOR, run: (a) => adsHealth(a) },
+  "ads.ga4": { descriptor: ADS_GA4_TOOL_DESCRIPTOR, run: (a) => adsGa4(a) },
+  "ads.audiences": { descriptor: ADS_AUDIENCES_TOOL_DESCRIPTOR, run: (a) => adsAudiences(a) },
   "ads.negatives": { descriptor: ADS_NEGATIVES_TOOL_DESCRIPTOR, run: (a) => adsNegatives(a) },
   "ads.negatives.add": { descriptor: ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, run: (a) => adsNegativesAdd(a) },
   "ads.negatives.remove": { descriptor: ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR, run: (a) => adsNegativesRemove(a) },
