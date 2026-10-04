@@ -2,7 +2,8 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import { DateTime } from "luxon";
 
 const nativeFetch = globalThis["fetch"];
-const TIMEZONE = "America/Edmonton";
+// AGENT_ALBERTA_TIME_v713 - Alberta is UTC-6 all year since 2026; America/Regina is UTC-6 in every time-zone data version.
+const TIMEZONE = "America/Regina";
 const BUSINESS_START = 9;
 const BUSINESS_END = 17;
 const MEETING_LENGTH_MIN = 30;
