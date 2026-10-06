@@ -7,6 +7,7 @@ import { identifyExpansionMarkets } from "../core/marketExpansionEngine.js";
 import { advancedStrategicDecision } from "../core/strategicEngine.js";
 import { retrainModel } from "../core/selfLearningEngine.js";
 import { pool } from "../integrations/bfServerClient.js";
+import { answerBySql } from "./helpers/answerBySql.js";
 
 vi.mock("../db", () => ({
   pool: {
@@ -21,16 +22,17 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("trains and upserts feature weights from funded records", async () => {
-    (pool.request as Mock)
-      .mockResolvedValueOnce({
+    (pool.request as Mock).mockImplementation(answerBySql([
+      ["FROM maya_training_data", {
         rows: [
           { funded: true, funding_amount: 100000, annual_revenue: 500000, time_in_business: 5 },
           { funded: false, funding_amount: 200000, annual_revenue: 800000, time_in_business: 7 },
           { funded: true, funding_amount: 50000, annual_revenue: 200000, time_in_business: 2 }
         ],
         rowCount: 3
-      })
-      .mockResolvedValueOnce({ rows: [] });
+      }],
+      ["INSERT INTO maya_feature_weights", { rows: [] }],
+    ]));
 
     await retrainModel();
 
@@ -91,9 +93,10 @@ describe("self-optimizing intelligence core", () => {
   });
 
   it("optimizes commission based on funded ticket averages", async () => {
-    (pool.request as Mock)
-      .mockResolvedValueOnce({ rows: [{ avg_ticket: 600000 }] })
-      .mockResolvedValueOnce({ rows: [] });
+    (pool.request as Mock).mockImplementation(answerBySql([
+      ["FROM sessions", { rows: [{ avg_ticket: 600000 }] }],
+      ["INSERT INTO maya_commission_models", { rows: [] }],
+    ]));
 
     const rate = await optimizeCommission("term_loan");
 
