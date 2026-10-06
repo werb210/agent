@@ -23,6 +23,7 @@ import { routeDeal } from "../core/autoRouting.js";
 import { detectStalledDeals } from "../core/churnDetection.js";
 import { optimalFollowupTime } from "../core/followupTiming.js";
 import { forecast90Days } from "../core/capitalForecast.js";
+import { answerBySql } from "./helpers/answerBySql.js";
 
 describe("capital intelligence layer", () => {
   beforeEach(() => {
@@ -73,9 +74,10 @@ describe("capital intelligence layer", () => {
   });
 
   it("routes deal to top broker", async () => {
-    queryMock
-      .mockResolvedValueOnce({ rows: [{ broker_id: "broker-1" }] })
-      .mockResolvedValueOnce({ rows: [] });
+    queryMock.mockImplementation(answerBySql([
+      ["FROM maya_broker_scores", { rows: [{ broker_id: "broker-1" }] }],
+      ["UPDATE sessions", { rows: [] }],
+    ]));
 
     const brokerId = await routeDeal("session-1");
 

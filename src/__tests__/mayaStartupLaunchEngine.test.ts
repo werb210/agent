@@ -4,6 +4,7 @@ import { pool } from "../integrations/bfServerClient.js";
 import { sendStartupNotification } from "../services/mayaStartupNotificationService.js";
 import { launchStartupCampaign } from "../services/mayaStartupCampaignService.js";
 import { logAudit } from "../infrastructure/mayaAudit.js";
+import { answerBySql } from "./helpers/answerBySql.js";
 
 vi.mock("../db", () => ({
   pool: {
@@ -40,15 +41,15 @@ describe("checkStartupProductLaunch", () => {
   });
 
   it("notifies waiting contacts, launches campaign, and records logs", async () => {
-    (pool.query as Mock)
-      .mockResolvedValueOnce({ rows: [{ id: "product-1" }] })
-      .mockResolvedValueOnce({
+    (pool.query as Mock).mockImplementation(answerBySql([
+      ["FROM lender_products", { rows: [{ id: "product-1" }] }],
+      ["FROM crm_contacts", {
         rows: [
           { id: "contact-1", name: "Pat", email: "pat@example.com", phone: "+155555501" },
           { id: "contact-2", name: "Sam", email: "sam@example.com", phone: null }
         ]
-      })
-      .mockResolvedValue({ rows: [] });
+      }],
+    ]));
 
     await checkStartupProductLaunch();
 
