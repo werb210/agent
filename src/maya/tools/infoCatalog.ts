@@ -89,22 +89,23 @@ export const QUALIFICATIONS: ReadonlyArray<QualificationEntry> = [
   {
     key: "time_in_business",
     label: "Time in business",
-    detail: "Most lenders want at least 6 months trading history. Some products (CSBFP, term loans over $500k) prefer 2+ years.",
+    // AGENT_MAYA_SITE_FACTS_v371 - the website's rule.
+    detail: "Canada: at least 6 months in business. United States: SBA loans are available to start-ups; other US products need trading history. Larger requests may need more history.",
   },
   {
     key: "annual_revenue",
     label: "Annual revenue",
-    detail: "Working capital starts around $120k/year. Term loans typically want $250k+. Larger facilities ($1M+) usually need $1M+ in revenue.",
+    detail: "Around $10,000 a month in revenue for most products. Larger requests need more.",
   },
   {
     key: "credit",
     label: "Personal credit",
-    detail: "Most lenders look at the principal's personal credit. Mid-600s is the practical floor; 700+ unlocks better pricing.",
+    detail: "Boreal never pulls your credit at any point - applying has no impact on your credit. A lender checks credit only with your permission, before making an offer.",
   },
   {
     key: "documents",
     label: "Documents we typically need",
-    detail: "Three to six months of business bank statements, last filed tax return, and a void cheque. Larger requests need financial statements and a debt schedule.",
+    detail: "To start: six months of business bank statements, basic details about the company, and roughly what you need and what it is for. Larger requests need more, and Boreal asks for it only when the file needs it.",
   },
   {
     key: "use_of_funds",

@@ -31,8 +31,8 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "prequal.estimate",
     "industry.guidance",
     "apply.doc_preview",
-    "info.lenders",
-    "catalog.summary",
+    // AGENT_MAYA_SITE_FACTS_v371 - info.lenders and catalog.summary removed for visitors: they leaked internal counts
+    // ("114 lenders, 197 products"); the website says 80+ lenders.
     "waitlist.join",
     "book.callback",
     "lender.products",
@@ -56,6 +56,7 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "lender.products",
   ],
   staff: [
+    "pipeline.facts", // AGENT_MAYA_FACTS_v371
     "pipeline.query",
     "contact.find",
     "application.summary",

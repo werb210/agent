@@ -16,6 +16,9 @@ export type DispatchContext = {
   email?: string | null;
   /** AGENT_MAYA_INSIGHTS_v657 - the signed-in staff member (portal), never the viewed contact. */
   staffEmail?: string | null;
+  /** AGENT_MAYA_FACTS_v371 - the signed-in staff member's role and the portal's silo, set by the host. */
+  staffRole?: string | null;
+  silo?: string | null;
 };
 
 // AGENT_RESOLVED_APPLICATION_ID_v431
@@ -107,6 +110,10 @@ function injectContext(
   // lender.products: server strips lender identity unless audience === "staff",
   // so the model never receives lender name/address/phone/contracts for visitor/client.
   // AGENT_MAYA_INSIGHTS_v657 - Team unread is per staff member; the host knows who is asking.
+  // AGENT_MAYA_FACTS_v371 - commission is Admin-only; the role comes from the host, never from the model.
+  if (toolName === "pipeline.facts") {
+    return { ...modelArgs, role: ctx.staffRole ?? undefined, silo: ctx.silo ?? (modelArgs.silo as string | undefined) ?? undefined };
+  }
   if (toolName === "comms.overview") {
     return { ...modelArgs, user_email: ctx.staffEmail ?? undefined };
   }
