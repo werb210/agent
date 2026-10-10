@@ -6,9 +6,8 @@ const reg = readFileSync(fileURLToPath(new URL("../maya/toolRegistry.ts", import
 const aud = readFileSync(fileURLToPath(new URL("../maya/audience.ts", import.meta.url)), "utf-8");
 
 describe("Maya catalog summary tool", () => {
-  it("is registered and granted to all three audiences", () => {
+  it("is registered and granted to client and staff (AGENT_MAYA_SITE_FACTS_v371: not visitors - it leaked internal counts)", () => {
     expect(reg).toContain('"catalog.summary"');
-    // appears once per audience list
-    expect((aud.match(/"catalog\.summary"/g) || []).length).toBeGreaterThanOrEqual(3);
+    expect((aud.match(/"catalog\.summary"/g) || []).length).toBe(2);
   });
 });

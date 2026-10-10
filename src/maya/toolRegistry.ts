@@ -67,6 +67,7 @@ import {
 // AGENT_MAYA_INSIGHTS_v657
 import {
   adsPerformance, ADS_PERFORMANCE_TOOL_DESCRIPTOR,
+  pipelineFacts, PIPELINE_FACTS_TOOL_DESCRIPTOR, // AGENT_MAYA_FACTS_v371
   commsOverview, COMMS_OVERVIEW_TOOL_DESCRIPTOR,
   contactPicture, CONTACT_PICTURE_TOOL_DESCRIPTOR,
   automationsOverview, AUTOMATIONS_OVERVIEW_TOOL_DESCRIPTOR,
@@ -152,6 +153,7 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "info.lenders": { descriptor: INFO_LENDERS_TOOL_DESCRIPTOR, run: () => infoLenders() },
   "waitlist.join": { descriptor: WAITLIST_JOIN_TOOL_DESCRIPTOR, run: (a) => waitlistJoin(a) },
   "application.find_mine": { descriptor: APPLICATION_FIND_MINE_TOOL_DESCRIPTOR, run: (a) => applicationFindMine(a) },
+  "pipeline.facts": { descriptor: PIPELINE_FACTS_TOOL_DESCRIPTOR, run: (a) => pipelineFacts(a) }, // AGENT_MAYA_FACTS_v371
   "ads.performance": { descriptor: ADS_PERFORMANCE_TOOL_DESCRIPTOR, run: (a) => adsPerformance(a) },
   "comms.overview": { descriptor: COMMS_OVERVIEW_TOOL_DESCRIPTOR, run: (a) => commsOverview(a) },
   "contact.picture": { descriptor: CONTACT_PICTURE_TOOL_DESCRIPTOR, run: (a) => contactPicture(a) },
