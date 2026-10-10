@@ -21,10 +21,16 @@ const tool = (name: string, description: string, properties: Record<string, unkn
 });
 const silo = { silo: { type: "string", description: "Active silo (BF/BI/SLF). Defaults to BF." } };
 
+// AGENT_MAYA_FACTS_v371 - one snapshot of the pipeline built with the Dashboard's rules (no drafts; funded = Accepted).
+export async function pipelineFacts(a: { silo?: string; role?: string; session_id?: string }): Promise<Result> {
+  return call("/api/maya/staff/pipeline-facts", { silo: s(a?.silo), role: s(a?.role), session_id: s(a?.session_id) });
+}
+export const PIPELINE_FACTS_TOOL_DESCRIPTOR = tool("pipeline.facts", "The live pipeline, counted exactly like the Dashboard and Pipeline board: active applications (drafts never count), every stage with the applications in it (name, short id, amount, currency, product, days in stage), funded this month and all time (funded = Accepted), newest and oldest active application, pipeline value by currency, largest active application, the lender count and lender names, and commission (Admin only). Call this FIRST for any count, stage, 'who is in', value, largest, newest, oldest, funded, lender-count or commission question.", silo);
+
 export async function adsPerformance(a: { days?: number; session_id?: string }): Promise<Result> {
   return call("/api/maya/staff/ads-performance", { days: n(a?.days), session_id: s(a?.session_id) });
 }
-export const ADS_PERFORMANCE_TOOL_DESCRIPTOR = tool("ads.performance", "Google Ads results: spend, conversions and cost per conversion by campaign (with the previous period for comparison), ad leads, wasted spend (search terms that cost money and never converted), the search terms that did convert, and active negative keywords. Use for 'how did Google Ads do this week', 'what's wasting money', 'which searches convert', 'cost per lead'. days defaults to 7. Read-only: it never adds or removes negatives.", { days: { type: "number", description: "Look-back window in days (default 7, max 90)." } });
+export const ADS_PERFORMANCE_TOOL_DESCRIPTOR = tool("ads.performance", "Google Ads results: spend, conversions and cost per conversion by campaign (with the previous period for comparison), ad leads, wasted spend (search terms that cost money and never converted), the search terms that did convert, and active negative keywords. Use for 'how did Google Ads do this week', 'what's wasting money', 'which searches convert', 'cost per lead'. These are the live Google Ads numbers, the same as Marketing -> Ads: spend, clicks, impressions, cost per click, conversions and cost per conversion per campaign and in total. Budgets are not in this data. days defaults to 30 (the Ads page default). Read-only: it never adds or removes negatives.", { days: { type: "number", description: "Look-back window in days (default 30, max 365)." } });
 
 export async function commsOverview(a: { silo?: string; user_email?: string; session_id?: string }): Promise<Result> {
   return call("/api/maya/staff/comms-overview", { silo: s(a?.silo), user_email: s(a?.user_email), session_id: s(a?.session_id) });

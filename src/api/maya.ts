@@ -82,6 +82,24 @@ export async function sendMessage(userInput: string, authToken?: string): Promis
   }
 }
 
+const SITE_FACTS =
+  // AGENT_MAYA_SITE_FACTS_v371 - the website's own answers. Maya was answering from general lending knowledge
+  // (a "hard inquiry", "same-day funding", $5K-$30M, "114 lenders") and contradicting the site.
+  "BOREAL FACTS (these come from Boreal's website and override anything a tool or your general knowledge says): " +
+  "Boreal never pulls your credit at any point - applying has no impact on your credit; a lender checks credit only with the client's permission, before making an offer. " +
+  "Funding can happen in as little as 3-4 days for clean, complete files on smaller term loans; most files take longer, and SBA files take weeks. Never promise same-day funding. " +
+  "Boreal arranges financing from $10K to $100M+. " +
+  "Boreal works with 80+ lenders. Never give any other lender or product count. " +
+  "Who qualifies: in Canada a business needs at least 6 months in business and about $10,000 a month in revenue; in the United States, SBA loans are available to start-ups. " +
+  "How it works: the client applies once (about five minutes), Boreal's own team reviews the file first, then Boreal takes it to the lenders on its panel that fund businesses like theirs, and the client deals with Boreal, not with twenty lenders. Never tell anyone to check with or contact a lender; Boreal handles the lenders. " +
+  "To start, a client needs six months of business bank statements, basic details about the company, and roughly what they need and what it is for. " +
+  "Fees: it costs nothing to apply; the lender pays Boreal. The one exception is media and production financing with a lender that does not pay Boreal, where the client signs a 2% fee agreement. " +
+  "Start-ups: Boreal does not currently have start-up options in Canada, so a Canadian business under 6 months or under about $10,000 a month in revenue can join the start-up waitlist (waitlist.join); in the United States, SBA loans are open to start-ups. Do not suggest personal loans, grants or equity investors. " +
+  "United States: Boreal arranges SBA 7(a) and 504 loans plus term loans, lines of credit, equipment and working capital through US lenders; link https://boreal.financial/us . " +
+  "Personal guarantees: lenders often ask for one; Boreal's sister company Boreal Insurance (Boreal Risk Management, https://boreal.insure) offers Personal Guarantee Insurance. " +
+  "To talk to a person, tell them to tap the Talk to a Human button. " +
+  "When the visitor says yes to applying, give the Apply link (apply.start_url).";
+
 // ---------- Maya router ----------
 export const mayaRouter = Router();
 
@@ -199,7 +217,12 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     typeof req.body?.contact?.email === "string" ? req.body.contact.email : null;
   // AGENT_MAYA_INSIGHTS_v657 - who is asking, for per-staff reads such as Team unread.
   const staffEmail = audience === "staff" && typeof req.body?.staff?.email === "string" ? req.body.staff.email : null;
-  const ctx = { audience, applicationId, sessionId, phone, email, staffEmail };
+  // AGENT_MAYA_FACTS_v371 - role (commission is Admin-only) and silo come from the host, never from the model.
+  const staffRole = audience === "staff" && typeof req.body?.staff?.role === "string" ? req.body.staff.role : null;
+  const hostSilo =
+    (req.body?.screen_context && typeof req.body.screen_context.silo === "string" && req.body.screen_context.silo.trim()) ||
+    (typeof req.body?.silo === "string" && req.body.silo.trim()) || null;
+  const ctx = { audience, applicationId, sessionId, phone, email, staffEmail, staffRole, silo: audience === "staff" ? (hostSilo || "BF") : null };
 
   const sharedPersona =
     "You are Maya, Boreal Financial's assistant — knowledgeable, warm, and genuinely helpful. You are the expert guide to Boreal's financing: you know the products, the lenders, and how it all works. " +
@@ -207,19 +230,35 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     "When asked about interest rates, give a RANGE across matching products (e.g. 'our term loans generally run between X% and Y%') and explain the actual rate depends on factors like credit, time in business, revenue, and the specific lender — never quote a single guaranteed rate. " +
     "You may describe EVERYTHING about a product — rate ranges, amounts, term lengths, rate type, and what documents are required — but you must NEVER reveal which lender provides it, nor any lender name, address, phone number, or contract details. Boreal is the marketplace; refer to lenders only as 'one of our lending partners'. " +
     "Use apply.start_url to send someone into the application flow. Use escalate.to_human when they ask for a person or you genuinely cannot help. " +
-    "Do not invent products, terms, amounts, or rates. Keep it natural and conversational — never mention tools, audiences, verification tiers, or any internal system.";
+    "Do not invent products, terms, amounts, or rates. Keep it natural and conversational — never mention tools, audiences, verification tiers, or any internal system. " +
+    // AGENT_MAYA_SITE_FACTS_v371
+    "Merchant cash advances are priced with a FACTOR RATE (for example 1.24-1.45), never call it an interest rate. SBA loans are a real Boreal product in the United States; take SBA rates and terms only from the SBA products, and SBA files take weeks, not days. " +
+    "Never end a reply with 'Would you like to proceed?' or a similar stock question; ask a follow-up only when it moves things forward.";
   const audienceLines: Record<string, string> = {
     visitor:
       sharedPersona +
       " You are speaking with someone on Boreal's public website, and you do NOT have a verified identity for them. Answer all general questions — products, rates as ranges, qualifications, how things work — fully and warmly, and encourage them to start an application; reassure them they can begin now and add documents later. " +
       "ACCOUNT PRIVACY (critical): for anything tied to a specific person's account — their application status, documents, what's missing, next steps, offers, amounts, or even whether a phone number matches an existing client — you must NOT look it up or reveal anything, because they are not verified. Instead, warmly direct them to verify: say you can pull that up securely once they confirm it's them, and give them this link to open the secure client app and verify with a quick code: " + CLIENT_APP_URL + " . Never confirm or deny whether their details match a client on file. " +
-      "If they give a name, you may greet them by first name and keep helping with general questions, but still gate every account-specific detail behind verification.",
+      "If they give a name, you may greet them by first name and keep helping with general questions, but still gate every account-specific detail behind verification. " +
+      SITE_FACTS,
     client:
       sharedPersona +
       " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, documents, what's missing, next steps, and offers. Use application.my_status, application.find_mine, docs.checklist, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical; reassure them they can start now and upload documents later — missing documents never block beginning or continuing an application.\n\n" +
-      CLIENT_IDENTITY_PROMPT,
+      CLIENT_IDENTITY_PROMPT +
+      // AGENT_MAYA_CLIENT_v371
+      "\n\nCLIENT RULES: The client sees each application in the app with a short id like #61AE (the shortId in their profile); match it when they use one. " +
+      "Describe stages like this: Received and In Review - our team is reviewing your file; Documents Required - we need documents from you; Additional Steps Required - there are steps for you to finish; Off to Lender - your file is with lenders, we are waiting on their answers; Offer - you have an offer to review. Never say 'under review' at Off to Lender. " +
+      "Documents: answer from that application's own document list (requirements differ by amount, product and country). 'missing' means we still need it from them; 'received' means we have it and our team is reviewing it; 'accepted' means it is done. Never say all documents are complete while any is missing or received. " +
+      "Never say which lenders, or how many lenders, have their file. " +
+      "If something is not in what you have, say so once in a short sentence and offer the Talk to a Human button; do not repeat the stage or the same offer every time. " +
+      SITE_FACTS,
     staff:
       "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
+      // AGENT_MAYA_FACTS_v371
+      "COMPANY: Boreal Financial and Boreal Insurance (Boreal Risk Management) are run by Todd Werboweski, Director of 2630108 Alberta Ltd., 450 Sparling Crt SW, Edmonton, Alberta T6X 1G9. " +
+      "NUMBERS: for ANY count, stage, 'who is in', newest, oldest, largest, pipeline value, funded, lender-count or commission question, call pipeline.facts first - it counts exactly like the Dashboard (drafts never count; funded = the Accepted stage; Hold and Fraud are out of the live numbers). Use application.summary (with a name or short id) for one application's details. " +
+      "Every number you give must come from a tool result in this conversation. If a figure is not in the data (for example impressions you were not given, budgets, remaining budget), say you do not have it. Never estimate or make up a number. " +
+      "Google Ads numbers come from ads.performance, the same live report as Marketing -> Ads; Performance Max was removed and is not part of the account. " +
       "Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
       "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
       "When you take a navigation action, keep the spoken reply short (one line confirming what you opened). " +
@@ -227,7 +266,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       "Never say you can't answer before calling a tool: use ads.performance for Google Ads, spend, wasted money or search terms; ads.keywords for our keywords; ads.negatives for negative keywords and conflicts; ads.negatives.add and ads.negatives.remove to change negatives (always preview, show the user, and only change after they confirm); comms.overview for who is waiting on a reply, missed calls or voicemails; contact.picture for the full picture on a person or company; automations.overview for automations and sequences; referrers.overview for referral partners and commissions; todo.status for what a client still has to do; use marketing.overview for marketing email and SMS campaigns, audiences and opt-ins; daily.briefing for 'what's on today', a briefing, or what to focus on; application.underwriting_summary for what is blocking a deal. If pipeline.query says a question is not supported, offer the closest report it lists. " +
       // AGENT_MAYA_ADS_INSIGHTS_v712
       "For the Ads reports use ads.story (ad spend to applications, funded deals, commission and return), ads.visitors (who came and what they did), ads.dropoff (where applications stop and why), ads.health (whether Google tracking and conversion uploads work), ads.ga4 (website traffic) and ads.audiences (Customer Match lists). Look at the whole picture before advising on ads. " +
-      "Ad rules you must always follow: you only suggest - nothing changes in Google Ads unless a person approves it; budgets and bid strategy are Todd's decision alone, so mention them only as advice for Todd; never suggest advertising in Quebec; never suggest demographic targeting (age, gender, income) because these are credit ads; while Google Ads records no conversions, never suggest pausing a campaign or keyword.",
+      "Ad rules you must always follow: you only suggest - nothing changes in Google Ads unless a person approves it; budgets and bid strategy are Todd's decision alone, so mention them only as advice for Todd; never suggest advertising in Quebec; never suggest demographic targeting (age, gender, income) because these are credit ads; if the report shows zero conversions, never suggest pausing a campaign or keyword.",
   };
 
   const screenContext =
@@ -294,15 +333,27 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
             businessName: (j && j.contact?.companyName) ?? null,
             dateOfBirth: (j && j.contact?.dob) ?? null,
             email: (j && j.contact?.email) ?? null,
+            // AGENT_MAYA_CLIENT_v371 - everything the server returns about each application (business address,
+            // employees, revenue, time in business, debt, use of funds, owner details, documents), not a handful of fields.
             applications: apps.map((a: any) => ({
+              shortId: a?.shortId ?? null,
               name: a?.name ?? null,
-              product: a?.productType ?? null,
+              product: a?.productCategory ?? a?.productType ?? null,
               amount: a?.requestedAmount ?? null,
               stage: a?.stage ?? null,
               industry: a?.industry ?? null,
               yearsInBusiness: a?.yearsInBusiness ?? null,
               annualRevenue: a?.annualRevenue ?? null,
+              startedAt: a?.startedAt ?? null,
+              submittedAt: a?.submittedAt ?? null,
+              business: a?.business ?? null,
+              owner: a?.owner ?? null,
+              financialProfile: a?.financialProfile ?? null,
+              otherOwners: a?.otherOwners ?? null,
+              documents: a?.documents ?? null,
+              signed: a?.signed ?? null,
             })),
+            offers: Array.isArray(j?.offers) ? j.offers.map((o: any) => ({ amount: o?.amount ?? null, term: o?.term ?? null, rateOrFactor: o?.rate ?? null, status: o?.status ?? null, expires: o?.expires ?? null })) : [],
           };
           identityLine =
             "VERIFIED CLIENT PROFILE (this is the signed-in person; answer freely and specifically from these facts and NEVER say you do not have access to their name or business): " +
@@ -444,62 +495,56 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return;
   }
 
-  // Run each tool the model asked for, append the results, then
-  // ask the model for a final reply.
-  messages.push(choice1);
+  // AGENT_MAYA_TOOL_LOOP_v371 - up to four rounds of tool calls, so Maya can look something up and then use the
+  // answer (find an application, then summarise it). It used to stop after one round, so chained questions failed,
+  // and an empty final message came back blank.
   const executedTools: string[] = [];
   const collectedActions: any[] = [];
-  for (const tc of toolCalls) {
-    const rawToolName: string = tc?.function?.name ?? "";
-    const toolName: string = toolNameMap.get(rawToolName) ?? rawToolName;
-    const toolArgs: string = tc?.function?.arguments ?? "";
-    const resultJson = await dispatchTool(toolName, toolArgs, ctx);
-    executedTools.push(toolName);
-    try {
-      const parsed = JSON.parse(resultJson);
-      if (parsed && typeof parsed === "object" && parsed.action && typeof parsed.action === "object") {
-        collectedActions.push(parsed.action);
+  let pending: any = choice1;
+  let finalReply = "";
+  for (let round = 1; round <= 4; round++) {
+    const calls: any[] = Array.isArray(pending?.tool_calls) ? pending.tool_calls : [];
+    if (calls.length === 0) { finalReply = pending?.content?.toString().trim() ?? ""; break; }
+    messages.push(pending);
+    for (const tc of calls) {
+      const rawToolName: string = tc?.function?.name ?? "";
+      const toolName: string = toolNameMap.get(rawToolName) ?? rawToolName;
+      const toolArgs: string = tc?.function?.arguments ?? "";
+      const resultJson = await dispatchTool(toolName, toolArgs, ctx);
+      executedTools.push(toolName);
+      try {
+        const parsed = JSON.parse(resultJson);
+        if (parsed && typeof parsed === "object" && parsed.action && typeof parsed.action === "object") collectedActions.push(parsed.action);
+      } catch {
+        // non-JSON tool result - no action to collect
       }
-    } catch {
-      // non-JSON tool result — no action to collect
+      messages.push({ role: "tool", tool_call_id: tc.id, content: resultJson });
     }
-    messages.push({
-      role: "tool",
-      tool_call_id: tc.id,
-      content: resultJson,
-    });
+    const lastRound = round === 4;
+    let upstreamN: globalThis.Response;
+    try {
+      upstreamN = await callOpenAI({ model, messages, temperature: 0.3, ...(tools.length > 0 && !lastRound ? { tools, tool_choice: "auto" } : {}) });
+    } catch {
+      const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
+      res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round_exception", tools_used: executedTools, toolsOffered: tools.length, executedTools });
+      return;
+    }
+    if (!upstreamN.ok) {
+      const errText = await upstreamN.text().catch(() => "");
+      console.error("[maya] OpenAI error (tool round " + round + ")", upstreamN.status, errText);
+      const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
+      res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round", tools_used: executedTools, toolsOffered: tools.length, executedTools });
+      return;
+    }
+    const dataN = await upstreamN.json();
+    pending = dataN?.choices?.[0]?.message;
+    if (lastRound) finalReply = pending?.content?.toString().trim() ?? "";
   }
-
-  let upstream2: globalThis.Response;
-  try {
-    upstream2 = await callOpenAI({
-      model,
-      messages,
-      temperature: 0.3,
-    });
-  } catch {
-    const reply = await mayaHumanFailover({ message, sessionId, applicationId, phone, email, surface: audience });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2_exception", tools_used: executedTools, toolsOffered: tools.length, executedTools });
-    return;
+  if (!finalReply) {
+    finalReply = audience === "staff"
+      ? "I couldn't put that answer together. Try asking for one thing at a time (for example \"spend last 30 days\" or \"who is in Off to Lender\")."
+      : "Sorry, I couldn't answer that one. Tap Talk to a Human and someone from Boreal will help.";
   }
-  if (!upstream2.ok) {
-    const errText = await upstream2.text().catch(() => "");
-    console.error("[maya] OpenAI error (round 2)", upstream2.status, errText);
-    const reply = await mayaHumanFailover({
-      message,
-      sessionId,
-      applicationId,
-      phone,
-      email,
-      surface: audience,
-    });
-    res.status(200).json({ reply, actions: [], audience, fallback: "human_failover", reason: "openai_round2", tools_used: executedTools, toolsOffered: tools.length, executedTools });
-    return;
-  }
-  const data2 = await upstream2.json();
-  const finalReply =
-    data2?.choices?.[0]?.message?.content?.toString().trim() ||
-    "Thanks — a Boreal advisor will reach out.";
 
   if (sessionId) appendSessionTurn(sessionId, message, finalReply);
   res.status(200).json({
