@@ -84,6 +84,7 @@ import {
   adsNegativesAdd, ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR,
   adsNegativesRemove, ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR,
 } from "./tools/staffAdsTools.js";
+import { CONFIRM_TOOL, PENDING_CONFIRM_TOOL_DESCRIPTOR } from "./pendingActions.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -171,11 +172,18 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "ads.negatives": { descriptor: ADS_NEGATIVES_TOOL_DESCRIPTOR, run: (a) => adsNegatives(a) },
   "ads.negatives.add": { descriptor: ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, run: (a) => adsNegativesAdd(a) },
   "ads.negatives.remove": { descriptor: ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR, run: (a) => adsNegativesRemove(a) },
+  // AGENT_v789_PENDING_ACTIONS - dispatchTool runs this itself, against the session's stored token.
+  [CONFIRM_TOOL]: { descriptor: PENDING_CONFIRM_TOOL_DESCRIPTOR, run: async () => ({ ok: false, error: "dispatch_only" }) },
 };
 
-export function descriptorsForAudience(audience: MayaAudience): ToolDescriptor[] {
+/**
+ * AGENT_v789_PENDING_ACTIONS - pending.confirm is left out unless the caller has checked that a
+ * previewed change from an earlier request is waiting and the latest message approves it.
+ */
+export function descriptorsForAudience(audience: MayaAudience, opts: { includeConfirm?: boolean } = {}): ToolDescriptor[] {
   return Object.entries(TOOL_REGISTRY)
     .filter(([name]) => isToolAllowed(audience, name))
+    .filter(([name]) => name !== CONFIRM_TOOL || opts.includeConfirm === true)
     .map(([, entry]) => entry.descriptor);
 }
 

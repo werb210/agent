@@ -159,27 +159,60 @@ export const MARKETING_OVERVIEW_TOOL_DESCRIPTOR = {
     parameters: { type: "object", properties: { silo: { type: "string", description: "Active silo (BF/BI/SLF)." }, session_id: { type: "string" } }, required: [] },
   },
 };
-export type MarketingSendArgs = { channel: string; tag?: string; subject?: string; html?: string; body?: string; test?: string; confirm?: boolean; silo?: string; session_id?: string };
-export async function marketingSendCampaign(args: MarketingSendArgs): Promise<Result> {
+// AGENT_v789_PENDING_ACTIONS - marketing.send_campaign only PREVIEWS (or sends a single test to the
+// staff member themselves). BF-Server's pending_action_id stays in the agent session; the real
+// send runs through pending.confirm after the staff member's explicit yes.
+export type MarketingSendArgs = { channel: string; tag?: string; subject?: string; html?: string; body?: string; test?: string; silo?: string; session_id?: string; staff_email?: string; staff_phone?: string };
+
+const digits = (v: string): string => v.replace(/\D/g, "").slice(-10);
+
+/** A test send may only go to the signed-in staff member's own email or phone. */
+export function isOwnTestRecipient(test: string, channel: string, staffEmail?: string, staffPhone?: string): boolean {
+  const t = test.trim();
+  if (channel === "sms") return Boolean(staffPhone && digits(t).length === 10 && digits(t) === digits(staffPhone));
+  return Boolean(staffEmail && t.toLowerCase() === staffEmail.trim().toLowerCase());
+}
+
+function campaignPreview(r: Result, payload: Record<string, unknown>): string {
+  const count = n(r.recipients) ?? n(r.recipient_count) ?? n(r.count);
+  const channel = s(payload.channel) === "sms" ? "text message" : "email";
+  const audience = s(payload.tag) ? `everyone tagged "${s(payload.tag)}"` : "the whole opted-in audience";
+  const subject = s(payload.subject) ? ` with the subject "${s(payload.subject)}"` : "";
+  return `Send this ${channel}${subject} to ${audience}${count != null ? ` - ${count} recipient(s)` : ""}.`;
+}
+
+export async function marketingSendCampaign(args: MarketingSendArgs): Promise<Result & { __pending?: unknown }> {
   const channel = s(args?.channel);
   if (!channel) return { ok: false, error: "channel_required" };
-  return call("/api/maya/staff/marketing-send", { channel, tag: s(args?.tag), subject: s(args?.subject), html: s(args?.html), body: s(args?.body), test: s(args?.test), confirm: args?.confirm === true, silo: s(args?.silo), session_id: s(args?.session_id) });
+  if (channel !== "email" && channel !== "sms") return { ok: false, error: "channel_must_be_email_or_sms" };
+  const path = "/api/maya/staff/marketing-send";
+  const payload = { channel, tag: s(args?.tag), subject: s(args?.subject), html: s(args?.html), body: s(args?.body), silo: s(args?.silo), session_id: s(args?.session_id) };
+  const test = s(args?.test);
+  if (test) {
+    if (!isOwnTestRecipient(test, channel, s(args?.staff_email), s(args?.staff_phone))) {
+      return { ok: false, error: "test_recipient_must_be_you", summary: "A test can only go to your own email address or phone number." };
+    }
+    return call(path, { ...payload, test, confirm: false });
+  }
+  const r = await call(path, { ...payload, confirm: false });
+  if (!r || r.ok === false) return { ok: false, error: s(r?.error) ?? "preview_failed" };
+  return {
+    ok: true,
+    __pending: { kind: "marketing.send_campaign", path, payload, token: s(r.pending_action_id) ?? null, tokenField: "pending_action_id", preview: s(r.preview_text) ?? campaignPreview(r, payload) },
+  };
 }
 export const MARKETING_SEND_CAMPAIGN_TOOL_DESCRIPTOR = {
   type: "function" as const,
   function: {
     name: "marketing.send_campaign",
-    description: "Send a marketing email or SMS campaign to a contact segment. SAFETY - this is a two-step confirmed action, never send in one shot: STEP 1 call first WITHOUT confirm (confirm=false) to get a PREVIEW with the exact recipient count, then tell the staff member the count and ask them to confirm. STEP 2 only after they explicitly approve, call again with confirm=true to actually send. To send yourself a single test first, pass 'test' with an email address (email) or phone number (sms); test sends are not gated. channel is 'email' (requires subject + html) or 'sms' (requires body). tag picks a segment from marketing.overview; omit tag to reach the whole opted-in audience.",
+    description: "Preview a marketing email or SMS campaign to a contact segment. This only PREVIEWS: it returns who it would go to and how many people, and sends nothing. Show the preview to the staff member and ask them to reply yes to send it; nothing is sent until they do. To send a single test to the staff member themselves, pass 'test' with THEIR OWN email (email) or phone (sms); any other test recipient is refused. channel is 'email' (requires subject + html) or 'sms' (requires body). tag picks a segment from marketing.overview; omit tag to reach the whole opted-in audience.",
     parameters: { type: "object", properties: {
       channel: { type: "string", description: "'email' or 'sms'." },
       tag: { type: "string", description: "Segment tag from marketing.overview; omit for the whole opted-in audience." },
       subject: { type: "string", description: "Email subject (email only)." },
       html: { type: "string", description: "Email HTML body (email only)." },
       body: { type: "string", description: "SMS message text (sms only)." },
-      test: { type: "string", description: "Optional single test recipient (email/phone); not gated." },
-      confirm: { type: "boolean", description: "Omit/false = preview recipient count only, sends nothing; true = actually send (only after staff approval)." },
-      silo: { type: "string", description: "Active silo (BF/BI/SLF)." },
-      session_id: { type: "string" },
+      test: { type: "string", description: "Optional: the staff member's OWN email or phone, to send them a single test." },
     }, required: ["channel"] },
   },
 };

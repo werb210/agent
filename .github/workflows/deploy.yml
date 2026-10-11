@@ -1,21 +1,27 @@
-# AGENT_DEPLOY_v86b_SELFCONTAINED_STAGING — ship a prebuilt, self-contained
+# AGENT_DEPLOY_v86b_SELFCONTAINED_STAGING - ship a prebuilt, self-contained
 # bundle (dist + production node_modules) to the maya-service-staging slot so
 # the container never depends on a remote Oryx build. Swap to go live.
 # Requires App setting SCM_DO_BUILD_DURING_DEPLOYMENT=false and GitHub secret
 # AZURE_WEBAPP_PUBLISH_PROFILE_STAGING.
+# AGENT_v789_DEPLOY_AFTER_CI - deploys only after the CI workflow finished with
+# success for a push to main, and deploys exactly the commit CI tested.
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 jobs:
   build_and_deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-node@v5
         with:

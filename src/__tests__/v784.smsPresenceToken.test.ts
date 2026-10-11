@@ -93,12 +93,5 @@ describe("service token shape (v784)", () => {
     expect("phone" in claims).toBe(false);
   });
 
-  it("is the only signer in the agent", async () => {
-    const { readFileSync } = await import("node:fs");
-    for (const f of ["src/integrations/bfServerClient.ts", "src/api/maya.ts", "src/tools/read.ts", "src/lib/api.ts", "src/utils/apiClient.ts", "src/ai/toolExecutor.ts"]) {
-      const src = readFileSync(f, "utf8");
-      expect(src, f).not.toContain("jwt.sign(");
-      expect(src, f).toContain("serviceToken.js");
-    }
-  });
+  // AGENT_v789: every outbound call's token is checked in src/__tests__/serviceToken.v789.test.ts.
 });

@@ -104,6 +104,8 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "ads.health",
     "ads.ga4",
     "ads.audiences",
+    // AGENT_v789_PENDING_ACTIONS - offered only on a later request whose message is an explicit approval.
+    "pending.confirm",
   ],
 };
 

@@ -1,6 +1,5 @@
 // AGENT_MAYA_ADS_INSIGHTS_v712
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 const callBFServer = vi.fn();
 vi.mock("../../integrations/bfServerClient.js", () => ({ callBFServer: (...args: unknown[]) => callBFServer(...args) }));
@@ -38,12 +37,5 @@ describe("v712 Maya Ads report tools", () => {
     expect(callBFServer.mock.lastCall?.[0]).toBe("/api/maya/staff/ads-audiences");
   });
 
-  it("the staff instructions carry Boreal's ad rules", () => {
-    const src = readFileSync("src/api/maya.ts", "utf8");
-    expect(src).toContain("you only suggest");
-    expect(src).toContain("budgets and bid strategy are Todd's decision alone");
-    expect(src).toContain("never suggest advertising in Quebec");
-    expect(src).toContain("never suggest demographic targeting");
-    expect(src).toContain("never suggest pausing a campaign or keyword");
-  });
+  // AGENT_v789: the ad rules are checked on the live staff prompt in src/api/__tests__/mayaRoute.v789.test.ts.
 });

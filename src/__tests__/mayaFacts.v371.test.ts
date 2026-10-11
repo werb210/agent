@@ -13,7 +13,6 @@ vi.mock("../integrations/bfServerClient.js", async (orig) => {
 });
 import express from "express";
 import type { AddressInfo } from "node:net";
-import { readFileSync } from "node:fs";
 import http from "node:http";
 import jwt from "jsonwebtoken";
 
@@ -21,6 +20,7 @@ process.env.OPENAI_API_KEY = "test-key";
 process.env.JWT_SECRET = "test-secret-at-least-10";
 const { mayaRouter } = await import("../api/maya.js");
 const { TOOLS_BY_AUDIENCE } = await import("../maya/audience.js");
+const { infoQualifications } = await import("../maya/tools/info.js");
 
 const realFetch = globalThis.fetch;
 const openaiBodies: any[] = [];
@@ -131,8 +131,9 @@ describe("client Maya", () => {
 });
 
 describe("qualifications match the website", () => {
-  it("no longer quotes credit floors or $120k revenue minimums", () => {
-    const cat = readFileSync("src/maya/tools/infoCatalog.ts", "utf8");
+  it("no longer quotes credit floors or $120k revenue minimums", async () => {
+    // AGENT_v789: checked on what info.qualifications actually answers, not on the source text.
+    const cat = JSON.stringify(await infoQualifications({}));
     expect(cat).not.toContain("Mid-600s");
     expect(cat).toContain("Boreal never pulls your credit");
     expect(cat).toContain("Canada: at least 6 months in business");

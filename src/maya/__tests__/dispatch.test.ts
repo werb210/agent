@@ -74,7 +74,8 @@ describe("AGENT_BLOCK_v5 — dispatchTool", () => {
       '{"question":"oldest active application"}',
       { audience: "staff" },
     );
-    expect(pipelineMock).toHaveBeenCalledWith({ question: "oldest active application" });
+    // AGENT_v789_STAFF_SCOPE - silo and role are added from the verified context.
+    expect(pipelineMock).toHaveBeenCalledWith({ question: "oldest active application", silo: "BF", role: undefined });
     const parsed = JSON.parse(result);
     expect(parsed.ok).toBe(true);
   });

@@ -6,20 +6,22 @@
 
 // MAYA_BFSERVER_JWT_v53 — JWT-based service token for BF-Server.
 // AGENT_v784_SERVICE_TOKEN - one signer for every call (src/lib/serviceToken.ts).
-import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
+import { signServiceToken, logBFServerAuthFailure, serviceTokenSecret } from "../lib/serviceToken.js";
+import { currentStaffScope } from "../lib/staffScope.js";
 
-const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+// AGENT_v789_TIMEOUTS - a BF-Server call never holds a Maya request open for long.
+const BF_SERVER_TIMEOUT_MS = 8_000;
 
 function getBaseUrl(): string {
   const url = process.env.SERVER_URL || process.env.BASE_URL;
-  if (!url && !isTest) {
+  if (!url) {
     throw new Error("SERVER_URL is not configured");
   }
-  return url ?? "http://localhost:8080";
+  return url;
 }
 
 function getAgentToken(): string {
-  const secret = process.env.JWT_SECRET;
+  const secret = serviceTokenSecret();
   // MAYA_STAFF_SERVICE_JWT_FIX_v1 — BF-Server's staff Maya endpoints
   // (src/routes/mayaStaff.ts -> verifyMayaService) require a SERVICE token
   // shaped { kind: "service", source: "agent" | "maya-service" }. A role/user
@@ -43,7 +45,7 @@ function getAgentToken(): string {
   // Mint whenever JWT_SECRET is available; the explicit token is only a fallback.
   const explicit = process.env.AGENT_API_TOKEN;
   if (!secret) return explicit && explicit !== "test_token" ? explicit : "";
-  return signServiceToken(secret);
+  return signServiceToken();
 }
 
 /**
@@ -57,11 +59,6 @@ export async function callBFServer<T>(
     body?: unknown;
   } | Record<string, unknown> = {}
 ): Promise<T> {
-  if (isTest) {
-    // In test mode return a safe empty default rather than crashing
-    return undefined as unknown as T;
-  }
-
   const baseUrl = getBaseUrl();
   const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
   const token = getAgentToken();
@@ -74,11 +71,18 @@ export async function callBFServer<T>(
   const requestMethod = hasExplicitOptions
     ? (options as { method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE" }).method ?? "GET"
     : "POST";
-  const requestBody = hasExplicitOptions
+  let requestBody = hasExplicitOptions
     ? (options as { body?: unknown }).body
     : Object.keys(options).length > 0
       ? options
       : undefined;
+
+  // AGENT_v789_STAFF_SCOPE - inside a staff tool, silo and role are the verified ones.
+  const scope = currentStaffScope();
+  if (scope && path.startsWith("/api/maya/") && requestMethod !== "GET") {
+    const base = requestBody && typeof requestBody === "object" && !Array.isArray(requestBody) ? (requestBody as Record<string, unknown>) : {};
+    requestBody = { ...base, silo: scope.silo, role: scope.role ?? undefined };
+  }
 
   const res = await fetch(url, {
     method: requestMethod,
@@ -89,6 +93,7 @@ export async function callBFServer<T>(
     ...(requestBody !== undefined
       ? { body: JSON.stringify(requestBody) }
       : {}),
+    signal: AbortSignal.timeout(BF_SERVER_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -121,47 +126,10 @@ export async function fetchApplicationStatus(applicationId: string) {
   });
 }
 
-export async function fetchPipeline() {
-  return callBFServer<{ items: any[] }>("/api/pipeline", { method: "GET" });
-}
-
-export async function fetchCrmContacts() {
-  return callBFServer<any[]>("/api/crm/contacts", { method: "GET" });
-}
-
-export async function logCrmEvent(payload: {
-  contactId: string;
-  eventType: string;
-  payload?: unknown;
-}) {
-  return callBFServer("/api/crm/events", { method: "POST", body: payload });
-}
-
-export async function logCall(payload: {
-  sessionId?: string;
-  callSid?: string;
-  contactId?: string;
-  applicationId?: string;
-}) {
-  return callBFServer("/api/calls/log", { method: "POST", body: payload });
-}
-
-export async function logCallTranscript(payload: {
-  callSid: string;
-  transcript: string;
-  summary?: string;
-  score?: number;
-}) {
-  return callBFServer("/api/calls/transcript", { method: "POST", body: payload });
-}
-
-export async function fetchLenderProducts() {
-  return callBFServer<any[]>("/api/client/lender-products", { method: "GET" });
-}
-
 // ─── Pool shim for legacy test compatibility ────────────────────────────────
 // This shim is ONLY used in test mode via vitest mocking.
 // It must never make real calls in production.
+const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
 
 type QueryResult<T = any> = { rows: T[]; rowCount?: number };
 

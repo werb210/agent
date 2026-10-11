@@ -67,7 +67,7 @@ async function fetchHealth(status: ReturnType<typeof validateEnv>, path = "/heal
 }
 
 describe("startup env hardening", () => {
-  it("does not throw in production when AGENT_SHARED_SECRET is missing", () => {
+  it("does not throw or warn in production when AGENT_SHARED_SECRET is missing (AGENT_v789_ENV)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(() =>
@@ -82,7 +82,7 @@ describe("startup env hardening", () => {
         TWILIO_PHONE_NUMBER: "+15555555555",
       } as any),
     ).not.toThrow();
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("AGENT_SHARED_SECRET is not set"));
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining("AGENT_SHARED_SECRET"));
     warnSpy.mockRestore();
   });
 

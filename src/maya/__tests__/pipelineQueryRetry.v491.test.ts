@@ -1,7 +1,5 @@
 // AGENT_BLOCK_v491_MAYA_TRIES_BEFORE_DECLINING
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 const { callBFServer } = vi.hoisted(() => ({ callBFServer: vi.fn() }));
 vi.mock("../../integrations/bfServerClient.js", () => ({ callBFServer }));
@@ -40,9 +38,5 @@ describe("v491 pipeline.query tries before declining", () => {
     expect(r.summary).toContain("Reports I can run: oldest active application; approvals this week; apps missing bank statements");
   });
 
-  it("staff prompt tells Maya to use the marketing and briefing tools", () => {
-    const src = readFileSync(resolve(__dirname, "../../api/maya.ts"), "utf8");
-    expect(src).toContain("use marketing.overview for marketing");
-    expect(src).toContain("daily.briefing for 'what's on today'");
-  });
+  // AGENT_v789: the staff prompt is checked on the live request in src/api/__tests__/mayaRoute.v789.test.ts.
 });

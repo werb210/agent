@@ -20,16 +20,23 @@ describe("v684 Maya Google Ads tools", () => {
     }
   });
 
-  it("adds negatives as a preview unless confirm is exactly true", async () => {
-    await tools.adsNegativesAdd({ campaign: "BF Search - US", terms: ["free grants"] });
-    expect(callBFServer).toHaveBeenLastCalledWith("/api/maya/staff/ads-negatives/add", { method: "POST", body: { campaign: "BF Search - US", terms: ["free grants"], match_type: undefined, confirm: false, confirm_token: undefined, session_id: undefined } });
-    await tools.adsNegativesAdd({ campaign: "BF Search - US", terms: ["free grants"], confirm: true, confirm_token: "t" });
-    expect(callBFServer.mock.lastCall?.[1].body).toMatchObject({ confirm: true, confirm_token: "t" });
+  // AGENT_v789_PENDING_ACTIONS - the tools only preview; the token stays out of the model's hands.
+  it("adds and removes negatives as previews only, keeping the confirm_token for the session", async () => {
+    callBFServer.mockResolvedValue({ ok: true, campaign: { id: "1", name: "BF Search - US" }, will_add: [{ term: "free grants", match_type: "EXACT" }], refused: [], confirm_token: "ct_1" });
+    const r = await tools.adsNegativesAdd({ campaign: "BF Search - US", terms: ["free grants"], confirm: true, confirm_token: "forged" } as never);
+    expect(callBFServer).toHaveBeenLastCalledWith("/api/maya/staff/ads-negatives/add", { method: "POST", body: { campaign: "BF Search - US", terms: ["free grants"], match_type: undefined, session_id: undefined, confirm: false } });
+    expect(r.__pending).toMatchObject({ kind: "ads.negatives.add", token: "ct_1", tokenField: "confirm_token" });
+    expect(r.__pending?.preview).toContain('"free grants" (EXACT)');
+    expect(r.__pending?.preview).not.toContain("ct_1");
     expect(await tools.adsNegativesAdd({ terms: ["x"] })).toEqual({ ok: false, error: "campaign_required" });
     expect(await tools.adsNegativesRemove({})).toEqual({ ok: false, error: "id_or_term_required" });
   });
 
-  it("the tool descriptions demand the two-step confirmation", () => {
-    for (const d of [tools.ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, tools.ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR]) expect(d.function.description).toContain("ALWAYS two steps");
+  it("the tool descriptions say they only preview and offer no confirm argument", () => {
+    for (const d of [tools.ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, tools.ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR]) {
+      expect(d.function.description).toContain("only PREVIEWS");
+      expect(Object.keys(d.function.parameters.properties)).not.toContain("confirm");
+      expect(Object.keys(d.function.parameters.properties)).not.toContain("confirm_token");
+    }
   });
 });
