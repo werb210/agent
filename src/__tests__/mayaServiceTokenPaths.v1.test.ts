@@ -1,7 +1,5 @@
-// MAYA_SERVICE_JWT_ALL_MAYA_v1 - the agent must mint a { kind:"service" } JWT
-// for every /api/maya/ BF-Server endpoint (all are verifyMayaService-gated or
-// token-agnostic). The original check only matched /api/maya/staff/, so
-// catalog-summary and other non-staff Maya endpoints 401'd.
+// MAYA_SERVICE_JWT_ALL_MAYA_v1 - the agent must present a { kind:"service" } JWT
+// to every BF-Server endpoint. v784: one signer (src/lib/serviceToken.ts) for every path.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -12,18 +10,13 @@ const src = readFileSync(
 );
 
 describe("Maya service-token path gating", () => {
-  it("mints a service token for any /api/maya/ path", () => {
+  it("mints the shared service token for every path", () => {
     expect(src).toContain("MAYA_SERVICE_JWT_ALL_MAYA_v1");
-    expect(src).toContain('path.includes("/api/maya/")');
-    expect(src).toContain('kind: "service", source: "agent"');
+    expect(src).toContain("signServiceToken(secret)");
+    expect(src).not.toContain("jwt.sign(");
   });
 
   it("no longer restricts the service token to only /api/maya/staff/", () => {
-    // The broadened predicate must be the one guarding the service-token mint,
-    // not the narrow staff-only one.
-    const mintIdx = src.indexOf('path.includes("/api/maya/")');
-    const staffOnlyIdx = src.indexOf('path && path.includes("/api/maya/staff/") && secret');
-    expect(mintIdx).toBeGreaterThan(-1);
-    expect(staffOnlyIdx).toBe(-1);
+    expect(src).not.toContain('path && path.includes("/api/maya/staff/") && secret');
   });
 });

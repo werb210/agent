@@ -18,6 +18,8 @@ export type DispatchContext = {
   staffEmail?: string | null;
   /** AGENT_MAYA_FACTS_v371 - the signed-in staff member's role and the portal's silo, set by the host. */
   staffRole?: string | null;
+  /** AGENT_v784_MAYA_CONTEXT - the signed-in staff member's id from the verified context token. */
+  staffId?: string | null;
   silo?: string | null;
 };
 
@@ -70,10 +72,13 @@ function injectContext(
     // If we have neither, STRIP the model's id rather than pass a guess: the tool
     // can fall back to the phone, and a wrong id silently returns the wrong
     // application (or ok:false, which is what production was doing).
+    // v784 - a model-supplied phone is never used; only the verified one.
+    const { phone: _modelPhone, ...noModelPhone } = modelArgs;
+    const verified = typeof ctx.phone === "string" && ctx.phone.trim() ? { phone: ctx.phone } : {};
     const trusted = ctx.applicationId || getResolvedApplicationId(String(ctx.sessionId ?? ""));
-    if (trusted) return { ...modelArgs, application_id: trusted };
-    const { application_id: _discarded, ...withoutGuess } = modelArgs;
-    return withoutGuess;
+    if (trusted) return { ...noModelPhone, ...verified, application_id: trusted };
+    const { application_id: _discarded, ...withoutGuess } = noModelPhone;
+    return { ...withoutGuess, ...verified };
   }
   // AGENT_MAYA_CLIENT_IDENTITY_v1 - phone-keyed client tools must receive the
   // authenticated phone the host decoded from the client's bearer token.
@@ -94,12 +99,14 @@ function injectContext(
     // model-supplied "" beat the host's real phone and find_mine answered
     // phone_required to a signed-in client. The host's value is authoritative:
     // it came from the bearer token. Prefer it whenever we have one.
+    // AGENT_v784_MAYA_CONTEXT - the phone is ONLY the verified one from the signed
+    // context token. A phone the model supplies is dropped, never used for lookup.
     const blank = (v: unknown) => typeof v !== "string" || v.trim() === "";
     const pick = (fromModel: unknown, fromHost: string | null | undefined) =>
       (!blank(fromHost) ? fromHost : (!blank(fromModel) ? (fromModel as string) : undefined));
     return {
       ...modelArgs,
-      phone: pick(modelArgs.phone, ctx.phone),
+      phone: !blank(ctx.phone) ? (ctx.phone as string) : undefined,
       application_id: pick(modelArgs.application_id, ctx.applicationId),
       session_id: pick(modelArgs.session_id, ctx.sessionId),
     };
@@ -113,6 +120,11 @@ function injectContext(
   // AGENT_MAYA_FACTS_v371 - commission is Admin-only; the role comes from the host, never from the model.
   if (toolName === "pipeline.facts") {
     return { ...modelArgs, role: ctx.staffRole ?? undefined, silo: ctx.silo ?? (modelArgs.silo as string | undefined) ?? undefined };
+  }
+  // AGENT_v784_SMS_DRAFT_ONLY - drop any approved flag the model sends; the draft is owned by the verified staff member.
+  if (toolName === "comm.send_sms") {
+    const { approved: _ignored, staff_user_id: _notTrusted, ...rest } = modelArgs;
+    return { ...rest, staff_user_id: ctx.staffId ?? undefined };
   }
   if (toolName === "comms.overview") {
     return { ...modelArgs, user_email: ctx.staffEmail ?? undefined };

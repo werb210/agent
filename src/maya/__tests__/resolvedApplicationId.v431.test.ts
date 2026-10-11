@@ -34,7 +34,7 @@ describe("v431 app-scoped tools use a real application id", () => {
   });
 
   it("strips a model-invented id when nothing trusted is available", () => {
-    expect(src).toContain("const { application_id: _discarded, ...withoutGuess } = modelArgs");
+    expect(src).toContain("const { application_id: _discarded, ...withoutGuess } = noModelPhone");
   });
 
   it("captures the id straight after find_mine runs", () => {

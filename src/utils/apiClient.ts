@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
 type ApiOptions = RequestInit & { headers?: Record<string, string> };
 
 type ApiEnvelope = {
@@ -8,16 +8,7 @@ type ApiEnvelope = {
 };
 
 function getServiceToken(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET not configured");
-  }
-
-  return jwt.sign(
-    { id: "agent-service", phone: "agent", role: "Staff" },
-    secret,
-    { expiresIn: "1h" }
-  );
+  return signServiceToken();
 }
 
 function resolveBaseUrl(): string {
@@ -68,6 +59,7 @@ export async function apiRequest(path: string, options: ApiOptions = {}) {
   const ok = typeof res.ok === "boolean" ? res.ok : isSuccessStatus(status);
 
   if (!ok) {
+    if (typeof status === "number") logBFServerAuthFailure(path, status);
     throw new Error(`API ERROR ${status ?? "UNKNOWN"}`);
   }
 

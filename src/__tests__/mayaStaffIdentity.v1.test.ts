@@ -7,7 +7,9 @@ const src = readFileSync(fileURLToPath(new URL("../api/maya.ts", import.meta.url
 describe("Maya staff identity injection", () => {
   it("injects a staff identity line for the staff audience", () => {
     expect(src).toContain("AGENT_MAYA_STAFF_IDENTITY_v1");
-    expect(src).toContain('audience === "staff" && req.body?.staff');
+    // v784 - staff identity comes from the signed X-Maya-Context, never body.staff.
+    expect(src).toContain('audience === "staff" && mctx.staff');
+    expect(src).not.toContain("req.body?.staff");
     expect(src).toContain("SIGNED-IN STAFF MEMBER");
   });
 });

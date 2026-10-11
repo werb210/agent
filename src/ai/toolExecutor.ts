@@ -15,7 +15,7 @@ import { validateToolCall } from "../core/validateTool.js";
 import { executeTool as executeMayaTool } from "../core/toolExecutor.js";
 import { emitter } from "../realtime/emitter.js";
 import { EVENTS } from "../realtime/events.js";
-import jwt from "jsonwebtoken";
+import { signServiceToken } from "../lib/serviceToken.js";
 
 export type ToolExecutionCall = {
   callId: string;
@@ -122,19 +122,8 @@ function getAgentAuthToken(now: () => number = Date.now): string {
     if (cachedToken && nowMs < cachedToken.expiresAtMs - RENEW_BEFORE_MS) {
       return cachedToken.value;
     }
-    const value = jwt.sign(
-      {
-        id: "agent-service",
-        phone: "agent",
-        role: "Staff",
-        // Maya held full Staff authority with nothing marking her apart from a
-        // human on the same role. Audit rows could not tell them apart.
-        principal: "service",
-        service: "maya-agent"
-      },
-      secret,
-      { expiresIn: "1h" }
-    );
+    // AGENT_v784_SERVICE_TOKEN - the shared service token (principal "service").
+    const value = signServiceToken(secret);
     cachedToken = { value, expiresAtMs: nowMs + TOKEN_TTL_MS };
     return value;
   }

@@ -7,7 +7,7 @@ import { createApp } from "../app.js";
 function postJson(url: URL, payload: unknown): Promise<{ status: number; body: any }> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(payload ?? {});
-    const req = httpRequest({ hostname: url.hostname, port: url.port, path: url.pathname, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, (res) => {
+    const req = httpRequest({ hostname: url.hostname, port: url.port, path: url.pathname, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), Origin: "https://boreal.financial" } }, (res) => {
       let raw = "";
       res.on("data", (c) => { raw += c; });
       res.on("end", () => resolve({ status: res.statusCode ?? 0, body: raw ? JSON.parse(raw) : {} }));

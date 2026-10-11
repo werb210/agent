@@ -3,7 +3,7 @@ import { logDecision } from "../complianceLogger.js";
 import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function runOutboundCampaign(campaignId: string) {
-  const contactsResponse = await callBFServer<any>("/api/crm/contacts");
+  const contactsResponse = await callBFServer<any>("/api/crm/contacts", { method: "GET" });
   const contacts = Array.isArray(contactsResponse)
     ? contactsResponse
     : Array.isArray(contactsResponse?.contacts)

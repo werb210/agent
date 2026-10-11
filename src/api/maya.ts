@@ -1,21 +1,16 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { getSessionHistory, appendSessionTurn } from "../maya/sessionHistory.js";
 import { endpoints } from "../contracts/endpoints.js";
 import { apiCall } from "../lib/api.js";
+import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
+import { mayaContextFromRequest } from "../maya/context.js";
 
 export const mayaEnabled = true;
 
-function getServiceToken(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET not configured");
-  return jwt.sign({ id: "agent-service", phone: "agent", role: "Staff" }, secret, { expiresIn: "1h" });
-}
-
 async function bfServer(path: string, init: RequestInit = {}) {
   const base = process.env.SERVER_URL || "https://server.boreal.financial";
-  const token = getServiceToken();
-  return fetch(`${base}${path}`, {
+  const token = signServiceToken();
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -23,6 +18,8 @@ async function bfServer(path: string, init: RequestInit = {}) {
       ...((init.headers as Record<string, string>) || {}),
     },
   });
+  logBFServerAuthFailure(path, res.status);
+  return res;
 }
 
 async function postToBFServer(path: string, payload: unknown) {
@@ -178,11 +175,14 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return;
   }
 
-  const { parseAudience, MAYA_AUDIENCE_HEADER, CLIENT_IDENTITY_PROMPT } = await import("../maya/audience.js");
+  const { CLIENT_IDENTITY_PROMPT } = await import("../maya/audience.js");
   const { descriptorsForAudience } = await import("../maya/toolRegistry.js");
   const { dispatchTool } = await import("../maya/dispatch.js");
 
-  const audience = parseAudience(req.header(MAYA_AUDIENCE_HEADER));
+  // AGENT_v784_MAYA_CONTEXT - identity comes only from the signed X-Maya-Context header.
+  // X-Maya-Audience, body.phone and body.staff are ignored.
+  const mctx = mayaContextFromRequest(req);
+  const audience = mctx.audience;
   const rawTools = descriptorsForAudience(audience);
   // v82: OpenAI requires tool function names to match ^[a-zA-Z0-9_-]+$.
   // Maya's names use dots (e.g. "lead.capture"), which 400 the request. Send
@@ -209,20 +209,16 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
         ? req.body.sessionId
         : null;
   // AGENT_BLOCK_v328_MAYA_FAILSAFE_v1
-  const phone =
-    typeof req.body?.phone === "string" ? req.body.phone :
-    typeof req.body?.contact?.phone === "string" ? req.body.contact.phone : null;
+  const phone = mctx.phone;
   const email =
     typeof req.body?.email === "string" ? req.body.email :
     typeof req.body?.contact?.email === "string" ? req.body.contact.email : null;
   // AGENT_MAYA_INSIGHTS_v657 - who is asking, for per-staff reads such as Team unread.
-  const staffEmail = audience === "staff" && typeof req.body?.staff?.email === "string" ? req.body.staff.email : null;
-  // AGENT_MAYA_FACTS_v371 - role (commission is Admin-only) and silo come from the host, never from the model.
-  const staffRole = audience === "staff" && typeof req.body?.staff?.role === "string" ? req.body.staff.role : null;
-  const hostSilo =
-    (req.body?.screen_context && typeof req.body.screen_context.silo === "string" && req.body.screen_context.silo.trim()) ||
-    (typeof req.body?.silo === "string" && req.body.silo.trim()) || null;
-  const ctx = { audience, applicationId, sessionId, phone, email, staffEmail, staffRole, silo: audience === "staff" ? (hostSilo || "BF") : null };
+  const staffEmail = mctx.staff?.email ?? null;
+  // AGENT_MAYA_FACTS_v371 - role (commission is Admin-only) and silo come from the signed context, never from the model.
+  const staffRole = mctx.staff?.role ?? null;
+  const staffId = mctx.staff?.id ?? null;
+  const ctx = { audience, applicationId, sessionId, phone, email, staffEmail, staffRole, staffId, silo: audience === "staff" ? (mctx.silo || "BF") : null };
 
   const sharedPersona =
     "You are Maya, Boreal Financial's assistant — knowledgeable, warm, and genuinely helpful. You are the expert guide to Boreal's financing: you know the products, the lenders, and how it all works. " +
@@ -260,6 +256,8 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       "Every number you give must come from a tool result in this conversation. If a figure is not in the data (for example impressions you were not given, budgets, remaining budget), say you do not have it. Never estimate or make up a number. " +
       "Google Ads numbers come from ads.performance, the same live report as Marketing -> Ads; Performance Max was removed and is not part of the account. " +
       "Use pipeline.query for natural-language questions about applications, contacts, and stages; contact.find to resolve a person; application.summary to summarize a deal; and comm.draft_email to draft an email for staff approval (never sent automatically). " +
+      // AGENT_v784_SMS_DRAFT_ONLY
+      "comm.send_sms only creates a draft; it never sends. After calling it, tell the staff member the draft is ready and that they must press Send in the Maya panel; never say a text was sent. " +
       "For navigation/command requests, use application.open_newest (e.g. 'open the newest application') or ui.navigate to open a specific contact, company, application, or section the staff member names or is currently viewing. Use maya.audit to review recent Maya activity. " +
       "When you take a navigation action, keep the spoken reply short (one line confirming what you opened). " +
       // AGENT_BLOCK_v491_MAYA_TRIES_BEFORE_DECLINING
@@ -289,10 +287,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     (typeof req.body?.surface === "string" && req.body.surface.trim()) ||
     SURFACE_BY_AUDIENCE[audience] ||
     "an unknown surface";
-  const ctxSilo =
-    (screenContext && typeof screenContext.silo === "string" && screenContext.silo.trim()) ||
-    (typeof req.body?.silo === "string" && req.body.silo.trim()) ||
-    (audience === "staff" ? "BF" : "");
+  const ctxSilo = ctx.silo ?? "";
   const whoWhereLine =
     audience === "staff"
       ? `You are speaking with a Boreal staff member on ${ctxSurface}${ctxSilo ? ` in the ${ctxSilo} silo` : ""}. Keep your answers scoped to that silo's data and never expose one silo's records in another.`
@@ -369,11 +364,10 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   // AGENT_MAYA_STAFF_IDENTITY_v1 - the portal forwards the signed-in staff member's identity
   // (name/email/role). Inject it so Maya knows exactly who it is assisting, answers "who am I"
   // directly instead of refusing, and remembers it has full staff-tool access.
-  if (audience === "staff" && req.body?.staff && typeof req.body.staff === "object") {
-    const st = req.body.staff as { name?: unknown; email?: unknown; role?: unknown };
-    const stName = typeof st.name === "string" ? st.name : null;
-    const stEmail = typeof st.email === "string" ? st.email : null;
-    const stRole = typeof st.role === "string" ? st.role : null;
+  if (audience === "staff" && mctx.staff) {
+    const stName = mctx.staff.name;
+    const stEmail = mctx.staff.email;
+    const stRole = mctx.staff.role;
     if (stName || stEmail || stRole) {
       identityLine =
         "SIGNED-IN STAFF MEMBER (you are assisting this Boreal staff user and you know exactly who they are - answer 'who am I' directly with their name and role, and NEVER say you cannot access staff information): " +

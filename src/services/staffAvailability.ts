@@ -7,6 +7,8 @@
 // endpoint over HTTP, filters to status='available', and returns the
 // list of user IDs + their twilio identity (used by some downstream
 // callers to know if the staffer is on a webRTC seat).
+// AGENT_v784_PRESENCE_GET - callBFServer defaults to POST with no options, which
+// BF-Server answered 400, so Maya always said nobody was available. Explicit GET.
 import { callBFServer } from "../integrations/bfServerClient.js";
 
 export type AvailableStaffMember = {
@@ -37,7 +39,7 @@ function normalizeRows(res: PresenceResponse): PresenceRow[] {
 
 export async function getAvailableStaff(): Promise<AvailableStaffMember[]> {
   try {
-    const res = await callBFServer<PresenceResponse>("/api/telephony/presence");
+    const res = await callBFServer<PresenceResponse>("/api/telephony/presence", { method: "GET" });
     const rows = normalizeRows(res);
     return rows
       .filter((r) => r.status === "available")
@@ -45,7 +47,9 @@ export async function getAvailableStaff(): Promise<AvailableStaffMember[]> {
         userId: r.user_id,
         twilioIdentity: r.twilio_identity,
       }));
-  } catch {
+  } catch (err) {
+    // AGENT_v784_PRESENCE_GET - log instead of silently reporting nobody available.
+    console.error(JSON.stringify({ msg: "staff_presence_failed", err: err instanceof Error ? err.message : String(err) }));
     // Network or auth failure → treat as nobody available so the
     // caller falls back to after-hours mode. Never throw upstream.
     return [];

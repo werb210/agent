@@ -1,7 +1,7 @@
 import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function getAvailableStaff() {
-  const pipelineResponse = await callBFServer<any>("/api/staff/pipeline");
+  const pipelineResponse = await callBFServer<any>("/api/staff/pipeline", { method: "GET" });
   const staffList = Array.isArray(pipelineResponse)
     ? pipelineResponse
     : Array.isArray(pipelineResponse?.staff)

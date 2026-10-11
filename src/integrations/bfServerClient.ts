@@ -5,7 +5,8 @@
  */
 
 // MAYA_BFSERVER_JWT_v53 — JWT-based service token for BF-Server.
-import jwt from "jsonwebtoken";
+// AGENT_v784_SERVICE_TOKEN - one signer for every call (src/lib/serviceToken.ts).
+import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
 
 const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
 
@@ -17,7 +18,7 @@ function getBaseUrl(): string {
   return url ?? "http://localhost:8080";
 }
 
-function getAgentToken(path?: string): string {
+function getAgentToken(): string {
   const secret = process.env.JWT_SECRET;
   // MAYA_STAFF_SERVICE_JWT_FIX_v1 — BF-Server's staff Maya endpoints
   // (src/routes/mayaStaff.ts -> verifyMayaService) require a SERVICE token
@@ -32,9 +33,6 @@ function getAgentToken(path?: string): string {
   // non-staff verifyMayaService endpoints (catalog-summary, knowledge-search,
   // maya-persona) got a role token and 401'd (e.g. "how many lenders" failed).
   // Mint the service token for any /api/maya/ path.
-  if (path && path.includes("/api/maya/") && secret) {
-    return jwt.sign({ kind: "service", source: "agent" }, secret, { expiresIn: "1h" });
-  }
   // MAYA_BFSERVER_JWT_v53 — Honor a pre-minted explicit token first (test
   // harness, manual override). Otherwise sign a real JWT using JWT_SECRET so
   // BF-Server's auth middleware verifies and hydrates capabilities from role.
@@ -45,11 +43,7 @@ function getAgentToken(path?: string): string {
   // Mint whenever JWT_SECRET is available; the explicit token is only a fallback.
   const explicit = process.env.AGENT_API_TOKEN;
   if (!secret) return explicit && explicit !== "test_token" ? explicit : "";
-  return jwt.sign(
-    { id: "agent-service", phone: "agent", role: "Staff" },
-    secret,
-    { expiresIn: "1h" },
-  );
+  return signServiceToken(secret);
 }
 
 /**
@@ -70,7 +64,7 @@ export async function callBFServer<T>(
 
   const baseUrl = getBaseUrl();
   const url = path.startsWith("http") ? path : `${baseUrl}${path}`;
-  const token = getAgentToken(path);
+  const token = getAgentToken();
 
   const hasExplicitOptions =
     typeof options === "object" &&
@@ -98,6 +92,7 @@ export async function callBFServer<T>(
   });
 
   if (!res.ok) {
+    logBFServerAuthFailure(path, res.status);
     throw new Error(`BF-Server error ${res.status} for ${path}`);
   }
 
@@ -127,11 +122,11 @@ export async function fetchApplicationStatus(applicationId: string) {
 }
 
 export async function fetchPipeline() {
-  return callBFServer<{ items: any[] }>("/api/pipeline");
+  return callBFServer<{ items: any[] }>("/api/pipeline", { method: "GET" });
 }
 
 export async function fetchCrmContacts() {
-  return callBFServer<any[]>("/api/crm/contacts");
+  return callBFServer<any[]>("/api/crm/contacts", { method: "GET" });
 }
 
 export async function logCrmEvent(payload: {
@@ -161,7 +156,7 @@ export async function logCallTranscript(payload: {
 }
 
 export async function fetchLenderProducts() {
-  return callBFServer<any[]>("/api/client/lender-products");
+  return callBFServer<any[]>("/api/client/lender-products", { method: "GET" });
 }
 
 // ─── Pool shim for legacy test compatibility ────────────────────────────────
