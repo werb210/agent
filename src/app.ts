@@ -5,6 +5,9 @@ import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types.js
 import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv.js";
 import voiceRouter from "./routes/voice.js";
 import { mayaRouter } from "./api/maya.js";
+import { rateLimit } from "express-rate-limit";
+import { MAYA_CONTEXT_HEADER, verifyMayaContext } from "./maya/context.js";
+import { isValidServiceToken } from "./lib/serviceToken.js";
 
 // AGENT_BLOCK_v20_BOOT_CONFIG_AUDIT_v1
 // Maya graceful-degrades to SMS handoff when any of these are missing
@@ -56,6 +59,19 @@ function resolveAllowedOrigins(env: NodeJS.ProcessEnv = process.env): { allowed:
   return { allowed: new Set<string>(), allowAny: true, usingDefaults: false };
 }
 
+// AGENT_v784_MAYA_RATE_LIMIT - Maya routes are /api/maya/* and /maya/*.
+function isMayaPath(path: string): boolean {
+  return path.startsWith("/api/maya/") || path.startsWith("/maya/");
+}
+
+/** A request is trusted when it carries a valid X-Maya-Context or service token. */
+function hasTrustedCredential(req: Request): boolean {
+  if (verifyMayaContext(req.header(MAYA_CONTEXT_HEADER)).verified) return true;
+  const auth = req.header("authorization") ?? "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  return isValidServiceToken(bearer);
+}
+
 function checkTwilio(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_PHONE_NUMBER);
 }
@@ -102,6 +118,8 @@ export function createApp(options: AppDeps = {}) {
     );
   }
 
+  // AGENT_v784_MAYA_RATE_LIMIT - one proxy hop (Azure front end) so req.ip is the caller.
+  app.set("trust proxy", 1);
   app.use(express.json());
 
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -131,7 +149,7 @@ export function createApp(options: AppDeps = {}) {
     }
 
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-request-id");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-request-id, x-maya-context");
 
     res.on("finish", () => {
       console.log(
@@ -150,6 +168,26 @@ export function createApp(options: AppDeps = {}) {
 
   app.options(/.*/, (_req: Request, res: Response) => {
     res.status(204).end();
+  });
+
+  // AGENT_v784_MAYA_RATE_LIMIT - 30 requests/min per IP on Maya routes; trusted
+  // callers (valid X-Maya-Context or service token) are not limited. A Maya
+  // request with no Origin header must carry one of those credentials.
+  const mayaLimiter = rateLimit({
+    windowMs: 60_000,
+    limit: 30,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    skip: (req) => hasTrustedCredential(req),
+    message: { status: "error", error: "rate_limited" },
+  });
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!isMayaPath(req.path)) return next();
+    if (!req.header("origin") && !hasTrustedCredential(req)) {
+      res.status(401).json({ status: "error", error: "unauthorized" });
+      return;
+    }
+    return mayaLimiter(req, res, next);
   });
 
   app.get("/health", async (req: Request, res: Response) => {

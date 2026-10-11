@@ -6,7 +6,7 @@ export async function handleMarketingMode(body: MayaRequest): Promise<MayaRespon
 
   if (query.includes("lead") || query.includes("crm")) {
     try {
-      const contacts = await callBFServer<any[]>("/api/crm/contacts");
+      const contacts = await callBFServer<any[]>("/api/crm/contacts", { method: "GET" });
       const count = Array.isArray(contacts) ? contacts.length : 0;
       return {
         reply: `There are currently ${count} contacts in the CRM. Would you like to know about recent leads or campaign performance?`,

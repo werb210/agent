@@ -2,7 +2,7 @@ import { triggerOutboundCall } from "../twilioService.js";
 import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function autoOutboundHighValueLeads() {
-  const contactResponse = await callBFServer<any>("/api/crm/contacts");
+  const contactResponse = await callBFServer<any>("/api/crm/contacts", { method: "GET" });
   const contacts = Array.isArray(contactResponse)
     ? contactResponse
     : Array.isArray(contactResponse?.contacts)

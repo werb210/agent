@@ -28,15 +28,13 @@ describe("agent service token", () => {
     });
   });
 
-  it("marks the token as a service principal", () => {
-    const token = jwt.sign(
-      { id: "agent-service", phone: "agent", role: "Staff", principal: "service", service: "maya-agent" },
-      "a-real-secret-value",
-      { expiresIn: "1h" },
-    );
+  it("marks the token as a service principal", async () => {
+    // v784 - the executor signs with the shared service token.
+    const { signServiceToken } = await import("../../lib/serviceToken.js");
+    const token = signServiceToken("a-real-secret-value");
     const claims = decode(token);
     expect(claims.principal).toBe("service");
-    expect(claims.service).toBe("maya-agent");
+    expect(claims.service).toBe("agent");
     expect(claims.role).toBe("Staff");
   });
 

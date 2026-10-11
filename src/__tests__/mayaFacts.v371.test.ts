@@ -15,6 +15,7 @@ import express from "express";
 import type { AddressInfo } from "node:net";
 import { readFileSync } from "node:fs";
 import http from "node:http";
+import jwt from "jsonwebtoken";
 
 process.env.OPENAI_API_KEY = "test-key";
 process.env.JWT_SECRET = "test-secret-at-least-10";
@@ -47,9 +48,14 @@ beforeAll(async () => {
 afterAll(() => { globalThis.fetch = realFetch; server?.close(); });
 
 // node:http rather than fetch: the shared test setup fakes a browser window, which breaks fetch reads of a local server.
+// v784 - identity travels in a signed X-Maya-Context, not the audience header or body.
 const ask = (body: any, audience: string): Promise<any> => new Promise((resolve, reject) => {
   const data = JSON.stringify(body);
-  const req = http.request(base + "/api/maya/message", { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data), "x-maya-audience": audience } }, (res) => {
+  const claims: any = { kind: "maya_context", audience };
+  if (audience === "staff") claims.staff = { id: "staff-1", ...(body.staff ?? {}) };
+  if (audience === "client" && body.phone) claims.phone = body.phone;
+  const context = jwt.sign(claims, process.env.JWT_SECRET as string, { algorithm: "HS256", expiresIn: "5m" });
+  const req = http.request(base + "/api/maya/message", { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data), "x-maya-context": context } }, (res) => {
     let t = ""; res.setEncoding("utf8"); res.on("data", (c) => { t += c; }); res.on("end", () => { try { resolve(JSON.parse(t || "{}")); } catch (e) { reject(e); } });
   });
   req.on("error", reject); req.end(data);

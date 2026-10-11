@@ -1,7 +1,7 @@
 import { callBFServer } from "../../integrations/bfServerClient.js";
 
 export async function exportTrainingDataset() {
-  const contacts = await callBFServer<any>("/api/crm/contacts");
+  const contacts = await callBFServer<any>("/api/crm/contacts", { method: "GET" });
   if (Array.isArray(contacts)) {
     return contacts;
   }

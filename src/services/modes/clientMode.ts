@@ -32,6 +32,7 @@ export async function handleClientMode(body: MayaRequest): Promise<MayaResponse>
   try {
     const application = await callBFServer<ApplicationRecord>(
       `/api/applications/status?applicationId=${encodeURIComponent(body.sessionId)}`,
+      { method: "GET" },
     );
 
     if (!application?.id) {

@@ -1,9 +1,7 @@
-import jwt from "jsonwebtoken";
+import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
 
 function token() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET not configured");
-  return jwt.sign({ id: "agent-service", phone: "agent", role: "Staff" }, secret, { expiresIn: "1h" });
+  return signServiceToken();
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -11,6 +9,7 @@ async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     headers: { Authorization: `Bearer ${token()}`, "Content-Type": "application/json" },
   });
+  if (!res.ok) logBFServerAuthFailure(path, res.status);
   if (!res.ok) throw new Error(`BF-Server GET ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }

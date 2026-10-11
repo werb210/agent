@@ -18,6 +18,7 @@ function postJson(url: URL, payload: unknown): Promise<JsonResponse> {
         headers: {
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
+          Origin: "https://boreal.financial",
         },
       },
       (res) => {

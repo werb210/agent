@@ -16,7 +16,7 @@ type DealRecord = {
 export async function handleStaffMode(body: MayaRequest): Promise<MayaResponse> {
   if (!body.contextId) {
     try {
-      const pipeline = await callBFServer<DealRecord[]>("/api/staff/pipeline");
+      const pipeline = await callBFServer<DealRecord[]>("/api/staff/pipeline", { method: "GET" });
       const count = Array.isArray(pipeline) ? pipeline.length : 0;
       return {
         reply: `You have ${count} active application${count !== 1 ? "s" : ""} in the pipeline. Which deal would you like to know about?`,
@@ -35,6 +35,7 @@ export async function handleStaffMode(body: MayaRequest): Promise<MayaResponse> 
   try {
     const deal = await callBFServer<DealRecord>(
       `/api/applications/status?applicationId=${encodeURIComponent(body.contextId)}`,
+      { method: "GET" },
     );
 
     if (!deal?.id) {

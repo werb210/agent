@@ -1,16 +1,7 @@
-import jwt from "jsonwebtoken";
+import { signServiceToken, logBFServerAuthFailure } from "./serviceToken.js";
 
 function getServiceToken(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET not configured");
-  }
-
-  return jwt.sign(
-    { id: "agent-service", phone: "agent", role: "Staff" },
-    secret,
-    { expiresIn: "1h" }
-  );
+  return signServiceToken();
 }
 
 /**
@@ -73,6 +64,7 @@ export async function apiCall(path: string, options: RequestInit = {}) {
   const ok = typeof res.ok === "boolean" ? res.ok : res.status >= 200 && res.status < 300;
 
   if (!ok) {
+    logBFServerAuthFailure(path, res.status);
     if (typeof json === "object" && json !== null && "error" in json) {
       throw new Error(String((json as { error?: unknown }).error || `API ERROR ${res.status}`));
     }

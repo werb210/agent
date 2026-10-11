@@ -40,7 +40,7 @@ export async function processExcel(filePath: string, campaignName: string) {
     rows.push(record);
   }
 
-  const contactsResponse = await callBFServer<any>("/api/crm/contacts");
+  const contactsResponse = await callBFServer<any>("/api/crm/contacts", { method: "GET" });
   const existingContacts = Array.isArray(contactsResponse)
     ? contactsResponse
     : Array.isArray(contactsResponse?.contacts)
