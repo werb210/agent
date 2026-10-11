@@ -19,6 +19,8 @@ export type EscalateToHumanArgs = {
   email?: string;
   application_id?: string;
   contact_id?: string;
+  /** AGENT_v789_HANDOFF_IDENTITY - details a visitor typed; unverified, for a person to read. */
+  provided_contact?: { name: string | null; phone: string | null; email: string | null } | null;
 };
 
 export type EscalateToHumanResult = {
@@ -41,6 +43,11 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
   const email = typeof args?.email === "string" ? args.email : null;
   const applicationId = typeof args?.application_id === "string" ? args.application_id : null;
   const contactId = typeof args?.contact_id === "string" ? args.contact_id : null;
+  // AGENT_v789_HANDOFF_IDENTITY - phone, contact_id and application_id above are injected by
+  // dispatchTool from the verified X-Maya-Context only (the model cannot set them). What a
+  // visitor typed goes separately as providedContact, which BF-Server must not match on.
+  const pc = args?.provided_contact && typeof args.provided_contact === "object" ? args.provided_contact : null;
+  const providedContact = pc && (pc.name || pc.phone || pc.email) ? { name: pc.name ?? null, phone: pc.phone ?? null, email: pc.email ?? null } : null;
 
   const available = await getAvailableStaff();
   const recipients = available.length > 0 ? "available" : "fallback";
@@ -60,9 +67,11 @@ export async function escalateToHuman(args: EscalateToHumanArgs): Promise<Escala
           email,
           applicationId,
           contactId,
+          providedContact,
         },
       },
     );
+    if (res && typeof res === "object" && (res as { ok?: unknown }).ok === false) throw new Error("handoff_refused");
     const attempted = Array.isArray(res?.fanout?.attempted) ? res.fanout!.attempted!.length : 0;
     const delivered = Array.isArray(res?.fanout?.delivered) ? res.fanout!.delivered!.length : 0;
     return {
@@ -91,7 +100,7 @@ export const ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR = {
   function: {
     name: "escalate.to_human",
     description:
-      "Hand the conversation off to a human. Use when the visitor says 'talk to a person', 'I want to speak with someone', clicks Talk to a Human, or you cannot answer their question. Returns mode='live' if staff are available right now, or mode='after_hours' if the message went to the on-call fallback.",
+      "Hand the conversation off to a human. Use when the visitor says 'talk to a person', 'I want to speak with someone', clicks Talk to a Human, or you cannot answer their question. On the website, first ask for their name and a phone number or email and record them with visitor.identify, so someone can follow up. Only tell them someone will follow up when this returns ok=true. Returns mode='live' if staff are available right now, or mode='after_hours' if the message went to the on-call fallback.",
     parameters: {
       type: "object",
       properties: {
@@ -109,23 +118,8 @@ export const ESCALATE_TO_HUMAN_TOOL_DESCRIPTOR = {
           enum: ["BF", "BI", "SLF"],
           description: "Which silo this handoff belongs to. Default BF.",
         },
-        // AGENT_BLOCK_v328_ESCALATE_PHONE_PASSTHROUGH_v1
-        phone: {
-          type: "string",
-          description: "Visitor phone in E.164 if known (from visitor.identify). Server uses last-10-digits to match an existing contact so the handoff routes correctly in the Messages tab.",
-        },
-        email: {
-          type: "string",
-          description: "Visitor email if known.",
-        },
-        application_id: {
-          type: "string",
-          description: "Application UUID if the visitor is in a client session.",
-        },
-        contact_id: {
-          type: "string",
-          description: "CRM contact UUID if already known.",
-        },
+        // AGENT_v789_HANDOFF_IDENTITY - no phone, email, application_id or contact_id here:
+        // they come from the verified session, never from the model.
       },
       required: ["summary"],
     },

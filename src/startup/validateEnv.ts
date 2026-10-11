@@ -46,13 +46,8 @@ export function validateEnv(env: NodeJS.ProcessEnv = process.env): EnvValidation
       }
     }
 
-    if (!env.AGENT_SHARED_SECRET) {
-      console.warn(
-        "[WARN] AGENT_SHARED_SECRET is not set. " +
-          "Authenticated agent→server calls will fail. " +
-          "Set this in Azure App Service → Configuration to match BF-Server JWT_SECRET.",
-      );
-    }
+    // AGENT_v789_ENV - AGENT_SHARED_SECRET is not used: service tokens are signed with
+    // AGENT_SERVICE_JWT_SECRET or JWT_SECRET (src/lib/serviceToken.ts), so no warning for it.
   }
 
   const missingRequired = REQUIRED_ENV_VARS.filter((key) => !env[key]);

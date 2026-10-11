@@ -1,15 +1,13 @@
 import { vi } from "vitest"
+import { createBfServerFake } from "../bfServerFake.js"
 
 // JEST COMPAT
 ;(globalThis as any).jest = vi
 
-// FETCH MOCK DEFAULT
-globalThis.fetch = vi.fn(async () => ({
-  ok: true,
-  status: 200,
-  json: async () => ({ ok: true, approval_probability: 0.5 }),
-  text: async () => "",
-})) as any
+// AGENT_v789_CONTRACT_FIXTURES - the default fetch only knows the real BF-Server paths
+// (test/fixtures/bfServer.v789.ts) and fails on anything else.
+process.env.SERVER_URL = process.env.SERVER_URL || "https://bf-server.test"
+globalThis.fetch = createBfServerFake().fetch
 
 // STORAGE MOCK (fix AUTH BLOCK)
 class MemoryStorage {

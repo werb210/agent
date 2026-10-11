@@ -58,7 +58,7 @@ const STAFF = { id: "u-1", name: "Todd", email: "todd@example.com", role: "Admin
 
 describe("Maya identity (v784)", () => {
   it("a header-only staff claim gets public tools only", async () => {
-    const r = await post("/api/maya/message", { message: "pipeline?", staff: STAFF }, { ...ORIGIN, "x-maya-audience": "staff", "x-forwarded-for": "10.0.0.1" });
+    const r = await post("/api/maya/message", { message: "pipeline?", staff: STAFF }, { ...ORIGIN, "x-maya-audience": "staff", "x-forwarded-for": "10.0.0.1", "x-maya-context": ctxToken({ audience: "visitor", sub: "v-1" }) });
     expect(r.status).toBe(200);
     expect(r.body.audience).toBe("visitor");
     expect(toolNames()).toContain("lead_capture");
@@ -83,12 +83,15 @@ describe("Maya identity (v784)", () => {
     expect(bfUrls.some((u) => u.includes("/applications-by-phone"))).toBe(true);
   });
 
-  it("a context signed with the wrong secret is public", async () => {
+  it("a context signed with the wrong secret is public, and /api/maya/* refuses it (AGENT_v789)", async () => {
     const forged = ctxToken({ audience: "staff", staff: STAFF }, "not-the-real-secret");
     expect(verifyMayaContext(forged).audience).toBe("visitor");
+    expect(verifyMayaContext(forged).verified).toBe(false);
+    openaiBodies.length = 0;
     const r = await post("/api/maya/message", { message: "pipeline?" }, { ...ORIGIN, "x-maya-context": forged, "x-forwarded-for": "10.0.0.2" });
-    expect(r.body.audience).toBe("visitor");
-    expect(toolNames()).not.toContain("pipeline_facts");
+    expect(r.status).toBe(401);
+    expect(r.body.error).toBe("maya_context_required");
+    expect(openaiBodies.length).toBe(0);
   });
 
   it("rejects a context token of the wrong kind", () => {
@@ -110,8 +113,13 @@ describe("Maya rate limit and origin (v784)", () => {
     const ip = { "x-forwarded-for": "10.7.7.7" };
     const ctx = ctxToken({ audience: "visitor" });
     for (let i = 0; i < 35; i++) expect((await post("/maya/escalate", { reason: "x" }, { ...ip, "x-maya-context": ctx })).status).toBe(200);
-    const svc = { Authorization: "Bearer " + signServiceToken() };
+    // A service token BF-Server mints for the agent (not one the agent minted for BF-Server).
+    const svc = { Authorization: "Bearer " + jwt.sign({ kind: "service", source: "bf-server" }, SECRET, { algorithm: "HS256", expiresIn: "5m" }) };
     for (let i = 0; i < 35; i++) expect((await post("/maya/escalate", { reason: "x" }, { ...ip, ...svc })).status).toBe(200);
+  });
+
+  it("refuses the agent's own outbound service token replayed back at it (AGENT_v789)", async () => {
+    expect((await post("/maya/escalate", { reason: "x" }, { "x-forwarded-for": "10.7.7.6", Authorization: "Bearer " + signServiceToken() })).status).toBe(401);
   });
 
   it("401s a Maya request with no Origin and no credential", async () => {

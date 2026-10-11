@@ -97,12 +97,9 @@ export const DOCS_CHECKLIST_TOOL_DESCRIPTOR = {
     parameters: {
       type: "object",
       properties: {
-        application_id: {
-          type: "string",
-          description: "The BF application UUID. The host environment supplies this from the authenticated session.",
-        },
+        // AGENT_v789_IDENTITY - application_id is injected from the verified session, never asked of the model.
       },
-      required: ["application_id"],
+      required: [],
     },
   },
 };

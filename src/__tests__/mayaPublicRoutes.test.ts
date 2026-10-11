@@ -3,6 +3,7 @@ import { request as httpRequest } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp } from "../app.js";
+import { visitorContext } from "../../test/mayaContext.js";
 
 type JsonResponse = { status: number; body: any };
 
@@ -19,6 +20,8 @@ function postJson(url: URL, payload: unknown): Promise<JsonResponse> {
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
           Origin: "https://boreal.financial",
+          // AGENT_v789_MAYA_CONTEXT_REQUIRED - BF-Server signs a context for every caller.
+          "x-maya-context": visitorContext(),
         },
       },
       (res) => {

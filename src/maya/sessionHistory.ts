@@ -1,8 +1,10 @@
 // AGENT_BLOCK_v83_MAYA_SESSION_MEMORY_v1
+// AGENT_v789_SESSION_KEY - callers pass sessionKey(audience, subject, sessionId), never a raw session id.
 type Role = "user" | "assistant";
 export interface HistoryMessage { role: Role; content: string; }
 interface SessionEntry { messages: HistoryMessage[]; updatedAt: number; }
-const MAX_MESSAGES = 12;
+// AGENT_v789_LIMITS - the model sees at most the last 20 history entries.
+export const MAX_HISTORY_MESSAGES = 20;
 const TTL_MS = 30 * 60 * 1000;
 const MAX_SESSIONS = 5000;
 const store = new Map<string, SessionEntry>();
@@ -14,22 +16,22 @@ function evictIfNeeded(now: number): void {
   const ordered = [...store.entries()].sort((a, b) => a[1].updatedAt - b[1].updatedAt);
   for (const [k] of ordered) { if (store.size <= MAX_SESSIONS) break; store.delete(k); }
 }
-export function getSessionHistory(sessionId: string): HistoryMessage[] {
-  if (!sessionId) return [];
-  const e = store.get(sessionId);
+export function getSessionHistory(key: string): HistoryMessage[] {
+  if (!key) return [];
+  const e = store.get(key);
   if (!e) return [];
-  if (isExpired(e, Date.now())) { store.delete(sessionId); return []; }
-  return e.messages.slice();
+  if (isExpired(e, Date.now())) { store.delete(key); return []; }
+  return e.messages.slice(-MAX_HISTORY_MESSAGES);
 }
-export function appendSessionTurn(sessionId: string, userMessage: string, assistantReply: string): void {
-  if (!sessionId) return;
+export function appendSessionTurn(key: string, userMessage: string, assistantReply: string): void {
+  if (!key) return;
   const now = Date.now();
-  const e = store.get(sessionId) ?? { messages: [], updatedAt: now };
+  const e = store.get(key) ?? { messages: [], updatedAt: now };
   if (userMessage && userMessage.trim()) e.messages.push({ role: "user", content: userMessage });
   if (assistantReply && assistantReply.trim()) e.messages.push({ role: "assistant", content: assistantReply });
-  if (e.messages.length > MAX_MESSAGES) e.messages = e.messages.slice(e.messages.length - MAX_MESSAGES);
+  if (e.messages.length > MAX_HISTORY_MESSAGES) e.messages = e.messages.slice(e.messages.length - MAX_HISTORY_MESSAGES);
   e.updatedAt = now;
-  store.set(sessionId, e);
+  store.set(key, e);
   evictIfNeeded(now);
 }
 export function _clearAllSessions(): void { store.clear(); }

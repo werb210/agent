@@ -73,9 +73,10 @@ describe("AGENT_BLOCK_v3 — application.my_status", () => {
     expect(r.summary).toContain("application_status_failed");
   });
 
-  it("descriptor advertises name and required arg", () => {
+  it("descriptor advertises its name and asks the model for no application id (AGENT_v789_IDENTITY)", () => {
     expect(APPLICATION_STATUS_TOOL_DESCRIPTOR.function.name).toBe("application.my_status");
-    expect(APPLICATION_STATUS_TOOL_DESCRIPTOR.function.parameters.required).toEqual(["application_id"]);
+    expect(APPLICATION_STATUS_TOOL_DESCRIPTOR.function.parameters.required).toEqual([]);
+    expect(Object.keys(APPLICATION_STATUS_TOOL_DESCRIPTOR.function.parameters.properties)).not.toContain("application_id");
   });
 });
 
@@ -112,9 +113,10 @@ describe("AGENT_BLOCK_v3 — docs.checklist", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("descriptor advertises name and required arg", () => {
+  it("descriptor advertises its name and asks the model for no application id (AGENT_v789_IDENTITY)", () => {
     expect(DOCS_CHECKLIST_TOOL_DESCRIPTOR.function.name).toBe("docs.checklist");
-    expect(DOCS_CHECKLIST_TOOL_DESCRIPTOR.function.parameters.required).toEqual(["application_id"]);
+    expect(DOCS_CHECKLIST_TOOL_DESCRIPTOR.function.parameters.required).toEqual([]);
+    expect(Object.keys(DOCS_CHECKLIST_TOOL_DESCRIPTOR.function.parameters.properties)).not.toContain("application_id");
   });
 });
 
@@ -140,8 +142,9 @@ describe("AGENT_BLOCK_v3 — pgi.completion_link", () => {
     expect(r.summary).toContain("No PGI completion flow");
   });
 
-  it("descriptor advertises name and required arg", () => {
+  it("descriptor advertises its name and asks the model for no application id (AGENT_v789_IDENTITY)", () => {
     expect(PGI_COMPLETION_LINK_TOOL_DESCRIPTOR.function.name).toBe("pgi.completion_link");
-    expect(PGI_COMPLETION_LINK_TOOL_DESCRIPTOR.function.parameters.required).toEqual(["application_id"]);
+    expect(PGI_COMPLETION_LINK_TOOL_DESCRIPTOR.function.parameters.required).toEqual([]);
+    expect(Object.keys(PGI_COMPLETION_LINK_TOOL_DESCRIPTOR.function.parameters.properties)).not.toContain("application_id");
   });
 });

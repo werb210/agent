@@ -3,7 +3,6 @@ import { randomUUID } from "crypto";
 import { createDependencies } from "./dependencies/index.js";
 import type { AdapterStatus, RuntimeDependencies } from "./dependencies/types.js";
 import { validateEnv, type EnvValidationStatus } from "./startup/validateEnv.js";
-import voiceRouter from "./routes/voice.js";
 import { mayaRouter } from "./api/maya.js";
 import { rateLimit } from "express-rate-limit";
 import { MAYA_CONTEXT_HEADER, verifyMayaContext } from "./maya/context.js";
@@ -12,13 +11,14 @@ import { isValidServiceToken } from "./lib/serviceToken.js";
 // AGENT_BLOCK_v20_BOOT_CONFIG_AUDIT_v1
 // Maya graceful-degrades to SMS handoff when any of these are missing
 // or wrong. Health endpoint should fail (not pass) if these are absent.
+// AGENT_v789_ENV - MAYA_HANDOFF_TO is no longer read anywhere (handoffs route through
+// BF-Server), so it is not required.
 export const REQUIRED_ENV = [
   "OPENAI_API_KEY",
   "SERVER_URL",
   "JWT_SECRET",
   "TWILIO_ACCOUNT_SID",
   "TWILIO_AUTH_TOKEN",
-  "MAYA_HANDOFF_TO",
 ] as const;
 
 const healthCache = new Map<string, number>();
@@ -62,6 +62,13 @@ function resolveAllowedOrigins(env: NodeJS.ProcessEnv = process.env): { allowed:
 // AGENT_v784_MAYA_RATE_LIMIT - Maya routes are /api/maya/* and /maya/*.
 function isMayaPath(path: string): boolean {
   return path.startsWith("/api/maya/") || path.startsWith("/maya/");
+}
+
+// AGENT_v789_MAYA_CONTEXT_REQUIRED - /api/maya/* is only ever called by BF-Server's proxy,
+// which signs an X-Maya-Context for every caller (visitor, client or staff). A request
+// without a valid one is a direct call and gets 401.
+function isMayaApiPath(path: string): boolean {
+  return path === "/api/maya" || path.startsWith("/api/maya/");
 }
 
 /** A request is trusted when it carries a valid X-Maya-Context or service token. */
@@ -183,6 +190,10 @@ export function createApp(options: AppDeps = {}) {
   });
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (!isMayaPath(req.path)) return next();
+    if (isMayaApiPath(req.path) && !verifyMayaContext(req.header(MAYA_CONTEXT_HEADER)).verified) {
+      res.status(401).json({ status: "error", error: "maya_context_required" });
+      return;
+    }
     if (!req.header("origin") && !hasTrustedCredential(req)) {
       res.status(401).json({ status: "error", error: "unauthorized" });
       return;
@@ -288,7 +299,6 @@ export function createApp(options: AppDeps = {}) {
     res.status(200).json({ status: "ok" });
   });
 
-  app.use("/voice", voiceRouter);
   app.use(mayaRouter);
 
   app.use((error: unknown, req: Request, res: Response, _next: NextFunction) => {

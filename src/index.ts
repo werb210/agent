@@ -67,16 +67,8 @@ export function validateProductionEnv(env: NodeJS.ProcessEnv = process.env): voi
     );
   }
 
-  // AGENT_SHARED_SECRET is required for authenticated agent→server calls.
-  // Warn loudly rather than crashing so the agent starts in degraded mode and
-  // the portal health badge surfaces the problem instead of a dead service.
-  if (!env.AGENT_SHARED_SECRET) {
-    console.warn(
-      "[WARN] AGENT_SHARED_SECRET is not set. " +
-        "Authenticated agent→server calls will fail. " +
-        "Set this in Azure App Service → Configuration to match BF-Server JWT_SECRET.",
-    );
-  }
+  // AGENT_v789_ENV - AGENT_SHARED_SECRET is not used by anything; service tokens are signed
+  // with AGENT_SERVICE_JWT_SECRET (or JWT_SECRET), so it is not warned about.
 }
 
 const isMainEntry = (() => {

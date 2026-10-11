@@ -121,7 +121,7 @@ export const DOCS_REJECTIONS_TOOL_DESCRIPTOR = {
     name: "docs.rejections",
     description:
       "List any documents on the applicant's application that staff have rejected, with the reason and how to fix them. Use when the applicant asks 'was anything rejected', 'why was my document declined', 'what do I need to re-upload'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." } }, required: ["application_id"] },
+    parameters: { type: "object", properties: {}, required: [] }, // AGENT_v789_IDENTITY - the application comes from the verified session.
   },
 };
 
@@ -136,20 +136,29 @@ export async function offerExplain(args: OfferExplainArgs) {
   if (!applicationId) return { ok: false, summary: "application_id is required." };
   const r = await loadApp(applicationId);
   if (!r) return { ok: false, summary: "Application not found." };
+  // AGENT_v789_OFFERS - BF-Server v789 application-summary carries offers[] (product_category,
+  // amount, rate, rate_type, term_months, status, expires_at). Lender names never reach a client.
   const raw = Array.isArray(r.offers) ? r.offers : Array.isArray(r.lender_matches) ? r.lender_matches : [];
-  const offers = raw.map((o: any) => ({
-    lender: s(o?.lenderName) ?? s(o?.lender_name) ?? s(o?.lender) ?? null,
-    product: s(o?.productName) ?? s(o?.product_name) ?? s(o?.product) ?? null,
-    amount: num(o?.amount) ?? num(o?.approved_amount) ?? null,
-    rate: s(o?.rate) ?? (num(o?.rate) != null ? String(num(o?.rate)) : null),
-    term: s(o?.term) ?? null,
-  }));
+  const offers = raw.filter((o: any) => o && typeof o === "object").map((o: any) => {
+    const months = num(o?.term_months);
+    return {
+      product: s(o?.product_category) ?? s(o?.productName) ?? s(o?.product_name) ?? s(o?.product) ?? null,
+      amount: num(o?.amount) ?? num(o?.approved_amount) ?? null,
+      rate: s(o?.rate) ?? (num(o?.rate) != null ? String(num(o?.rate)) : null),
+      rate_type: s(o?.rate_type),
+      term: s(o?.term) ?? (months != null ? `${months} months` : null),
+      status: s(o?.status),
+      expires_at: s(o?.expires_at),
+    };
+  });
   if (!offers.length) {
     return { ok: true, application_id: applicationId, offers: [], summary: "You don't have any lender offers yet. I'll let you know here as soon as one comes through." };
   }
+  type Offer = (typeof offers)[number];
+  const rateText = (o: Offer) => (o.rate ? ` at ${o.rate}${o.rate_type === "factor" ? " (factor rate)" : o.rate_type ? ` ${o.rate_type}` : ""}` : "");
   const summary = `You have ${offers.length} offer(s): ${offers
-    .map((o: { lender: string | null; amount: number | null; rate: string | null; term: string | null }) => `${o.lender ?? "a lender"}${o.amount ? ` for $${o.amount.toLocaleString()}` : ""}${o.rate ? ` at ${o.rate}` : ""}${o.term ? `, ${o.term}` : ""}`)
-    .join("; ")}. I can walk through what each one means — accepting is always your decision.`;
+    .map((o: Offer, i: number) => `offer ${i + 1}${o.product ? ` (${o.product})` : ""}${o.amount ? ` for $${o.amount.toLocaleString("en-US")}` : ""}${rateText(o)}${o.term ? `, ${o.term}` : ""}${o.expires_at ? `, expires ${o.expires_at.slice(0, 10)}` : ""}`)
+    .join("; ")}. I can walk through what each one means - accepting is always your decision.`;
   return { ok: true, application_id: applicationId, offers, summary };
 }
 export const OFFER_EXPLAIN_TOOL_DESCRIPTOR = {
@@ -157,8 +166,8 @@ export const OFFER_EXPLAIN_TOOL_DESCRIPTOR = {
   function: {
     name: "offer.explain",
     description:
-      "Summarize and explain in plain language the lender offer(s)/term sheet(s) on the applicant's application — lender, amount, rate, term — and help them compare. Read-only; never accepts or declines an offer. Use when the applicant asks 'what are my offers', 'explain this offer', 'which one is better'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." } }, required: ["application_id"] },
+      "Summarize and explain in plain language the offer(s)/term sheet(s) on the applicant's application - product, amount, rate, term, expiry - and help them compare. Read-only; never accepts or declines an offer. Use when the applicant asks 'what are my offers', 'explain this offer', 'which one is better'.",
+    parameters: { type: "object", properties: {}, required: [] }, // AGENT_v789_IDENTITY - the application comes from the verified session.
   },
 };
 
@@ -185,7 +194,7 @@ export const APPLICATION_NEXT_STEP_TOOL_DESCRIPTOR = {
     name: "application.next_step",
     description:
       "Tell the applicant the single most important next thing they need to do on their application (re-upload a rejected doc, upload a missing doc, sign, or wait). Use when they ask 'what's next', 'what do I need to do now', 'what's the next step'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." } }, required: ["application_id"] },
+    parameters: { type: "object", properties: {}, required: [] }, // AGENT_v789_IDENTITY - the application comes from the verified session.
   },
 };
 
@@ -209,7 +218,7 @@ export const SIGNATURE_STATUS_TOOL_DESCRIPTOR = {
     name: "signature.status",
     description:
       "Report whether the applicant's e-signature (SignNow) step is done or still pending. Read-only — does not resend the signing link. Use when they ask 'did I sign', 'is my signature done', 'do I still need to sign'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." } }, required: ["application_id"] },
+    parameters: { type: "object", properties: {}, required: [] }, // AGENT_v789_IDENTITY - the application comes from the verified session.
   },
 };
 
@@ -237,7 +246,7 @@ export const APPLICATION_TIMELINE_ESTIMATE_TOOL_DESCRIPTOR = {
     name: "application.timeline_estimate",
     description:
       "Give the applicant a general estimate of how long the next phase of their application takes, based on their current stage. Always framed as a non-binding estimate. Use when they ask 'how long until I hear back', 'when will I get a decision', 'how much longer'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." }, stage: { type: "string", description: "Optional current stage if already known." } }, required: [] },
+    parameters: { type: "object", properties: { stage: { type: "string", description: "Optional current stage if already known." } }, required: [] }, // AGENT_v789_IDENTITY
   },
 };
 
@@ -262,6 +271,6 @@ export const APPLICATION_RESUME_LINK_TOOL_DESCRIPTOR = {
     name: "application.resume_link",
     description:
       "Show the applicant how to resume their saved application (returns the continuation link if the server provides one, otherwise tells them to sign back in). Read-only — does not text or email the link. Use when they ask 'how do I get back to my application', 'where did I leave off', 'send me my resume link'.",
-    parameters: { type: "object", properties: { application_id: { type: "string", description: "The BF application UUID, supplied by the authenticated session." } }, required: ["application_id"] },
+    parameters: { type: "object", properties: {}, required: [] }, // AGENT_v789_IDENTITY - the application comes from the verified session.
   },
 };

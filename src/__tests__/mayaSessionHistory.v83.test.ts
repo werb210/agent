@@ -16,10 +16,11 @@ describe("maya session history (v83)", () => {
     expect(getSessionHistory("a").some((m) => m.content.includes("Alice"))).toBe(true);
     expect(getSessionHistory("a").some((m) => m.content.includes("Bob"))).toBe(false);
   });
-  it("caps length", () => {
-    for (let i = 0; i < 20; i++) appendSessionTurn("c", `u${i}`, `a${i}`);
-    expect(getSessionHistory("c").length).toBeLessThanOrEqual(12);
-    expect(getSessionHistory("c").some((m) => m.content === "a19")).toBe(true);
+  it("caps length at the last 20 entries (AGENT_v789_LIMITS)", () => {
+    for (let i = 0; i < 30; i++) appendSessionTurn("c", `u${i}`, `a${i}`);
+    expect(getSessionHistory("c").length).toBe(20);
+    expect(getSessionHistory("c")[0].content).toBe("u20");
+    expect(getSessionHistory("c").at(-1)?.content).toBe("a29");
   });
   it("ignores empty sessionId", () => { appendSessionTurn("", "x", "y"); expect(getSessionHistory("")).toEqual([]); });
 });

@@ -1,6 +1,6 @@
 // MAYA_CLIENT_BOOK_CALLBACK — log a callback request via the escalate sink.
 import { callBFServer } from "../../integrations/bfServerClient.js";
-export type BookCallbackArgs = { preferred_time?: string; reason?: string; phone?: string; email?: string; application_id?: string; session_id?: string };
+export type BookCallbackArgs = { preferred_time?: string; reason?: string; phone?: string; email?: string; application_id?: string; session_id?: string; provided_contact?: { name: string | null; phone: string | null; email: string | null } | null };
 export type BookCallbackResult = { ok: boolean; persisted?: boolean; error?: string };
 export async function bookCallback(args: BookCallbackArgs): Promise<BookCallbackResult> {
   const time = typeof args?.preferred_time === "string" ? args.preferred_time.trim() : "";
@@ -15,9 +15,11 @@ export async function bookCallback(args: BookCallbackArgs): Promise<BookCallback
         contact: { phone: typeof args?.phone === "string" ? args.phone : null, email: typeof args?.email === "string" ? args.email : null },
         application_id: typeof args?.application_id === "string" ? args.application_id : null,
         sessionId: typeof args?.session_id === "string" ? args.session_id : null,
+        providedContact: args?.provided_contact ?? null,
         surface: "client",
       },
     });
+    if (r && typeof r === "object" && r.ok === false) return { ok: false, error: "book_callback_refused" };
     return { ok: true, persisted: Boolean(r?.persisted ?? r?.ok) };
   } catch { return { ok: false, error: "book_callback_failed" }; }
 }
@@ -32,10 +34,7 @@ export const BOOK_CALLBACK_TOOL_DESCRIPTOR = {
       properties: {
         preferred_time: { type: "string", description: "When they'd like the call, e.g. 'tomorrow afternoon'." },
         reason: { type: "string", description: "Short reason/topic for the callback." },
-        phone: { type: "string" },
-        email: { type: "string" },
-        application_id: { type: "string" },
-        session_id: { type: "string" },
+        // AGENT_v789_HANDOFF_IDENTITY - phone, email, application and session come from the verified session.
       },
       required: [],
     },
