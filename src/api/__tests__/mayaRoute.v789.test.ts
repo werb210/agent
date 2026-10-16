@@ -72,8 +72,9 @@ describe("[157] request limits", () => {
     delete process.env.MAYA_866_LINE;
   });
 
-  it("stops one session at 100,000 tokens a day without affecting another", async () => {
-    const openai = openaiScript([{ role: "assistant", content: "ok" }], { total_tokens: 100_000 });
+  // MAYA_v817 - the per-session budget is MAYA_SESSION_DAILY_TOKEN_BUDGET (default 2,000,000).
+  it("stops one session at its daily token budget without affecting another", async () => {
+    const openai = openaiScript([{ role: "assistant", content: "ok" }], { total_tokens: 2_000_000 });
     globalThis.fetch = createBfServerFake({ openai }).fetch;
     const ctx = { "x-maya-context": mayaContext(VISITOR) };
     await post(maya.base, "/api/maya/message", { message: "hi", session_id: "big" }, ctx);

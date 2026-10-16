@@ -4,9 +4,10 @@ import { getSessionHistory, appendSessionTurn } from "../maya/sessionHistory.js"
 import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
 import { mayaContextFromRequest } from "../maya/context.js";
 import { sessionKey } from "../maya/sessionKey.js";
-import { checkBudget, recordUsage, tokensUsed } from "../maya/tokenBudget.js";
+import { checkBudget, recordUsage, tokensUsed, sessionTokensUsed } from "../maya/tokenBudget.js";
 import { confirmAvailable } from "../maya/pendingActions.js";
-import { applyGuardrails } from "../maya/guardrails.js";
+import { applyGuardrails, scrubPrivateNumbers } from "../maya/guardrails.js";
+import { CLIENT_STAGE_GUIDE, CLIENT_CHECKLIST_RULES, clientStageLabel } from "../maya/clientKnowledge.js"; // MAYA_v817 - stages and the to-do list rules
 import {
   canFollowUp, claimHandoff, contactFromText, finishHandoff, getProvidedContact, rememberProvidedContact, type ProvidedContact,
 } from "../maya/handoff.js";
@@ -27,12 +28,38 @@ export const MAYA_LIMITS = {
 } as const;
 
 // AGENT_v789_TOKEN_BUDGET - the fallback when a daily budget is spent, and the outage replies, offer the 866 line.
-function phoneLine(): string {
-  const n = process.env.MAYA_866_LINE?.trim();
-  return n ? `call Boreal's toll-free line at ${n}` : "call Boreal's toll-free 866 line";
+// MAYA_v817 - the line always carries the number (MAYA_866_LINE was unset in Azure, so clients were told to call
+// "the 866 line" with no number), defaulting to Boreal's toll-free 1-866-631-8939.
+export const DEFAULT_866_LINE = "1-866-631-8939";
+export function boreal866Line(): string {
+  const n = scrubPrivateNumbers(process.env.MAYA_866_LINE?.trim() ?? "");
+  return n || DEFAULT_866_LINE;
 }
-export function budgetFallbackReply(): string {
-  return `Sorry - I can't take more questions right now. For help, tap Talk to a Human or ${phoneLine()}, and someone from Boreal will be glad to help.`;
+function phoneLine(): string {
+  return `call Boreal's toll-free line at ${boreal866Line()}`;
+}
+
+// MAYA_v817 - where the person is chatting decides how they reach a person. "Talk to a Human" exists only on the
+// website widget and the client app's floating Maya widget; the client portal's chat has "Send to my advisor" and
+// the advisor tab instead, and the staff portal has neither. A reply never names a button the screen does not have.
+export type HelpSurface = "website" | "client_widget" | "client_portal_chat" | "staff" | "unknown";
+export function helpSurface(audience: string, screenContext: Record<string, unknown> | null): HelpSurface {
+  if (audience === "staff") return "staff";
+  if (audience === "visitor") return "website";
+  const page = typeof screenContext?.page === "string" ? screenContext.page : "";
+  if (/client portal chat/i.test(page)) return "client_portal_chat";
+  if (/^(application wizard|client landing page|client app page)/i.test(page)) return "client_widget";
+  return "unknown";
+}
+/** How to reach a person on this surface, as an instruction ("tap ..."), or null when the screen has no such control. */
+export function humanHelp(surface: HelpSurface): string | null {
+  if (surface === "website" || surface === "client_widget") return "tap Talk to a Human";
+  if (surface === "client_portal_chat") return "tap \"Send to my advisor\" under my answer, or choose your advisor at the top of this chat";
+  return null;
+}
+export function budgetFallbackReply(surface: HelpSurface = "unknown"): string {
+  const help = humanHelp(surface);
+  return `Sorry - I can't take more questions right now. For help, ${help ? `${help}, or ` : ""}${phoneLine()}, and someone from Boreal will be glad to help.`;
 }
 
 async function bfServer(path: string, init: RequestInit = {}, timeoutMs = 8_000) {
@@ -71,6 +98,8 @@ function safeHandler(handler: (req: Request, res: Response) => Promise<void>) {
   };
 }
 
+// MAYA_v817 - swapped out on surfaces that have no Talk to a Human button.
+const TALK_TO_HUMAN_FACT = "To talk to a person, tell them to tap the Talk to a Human button. ";
 const SITE_FACTS =
   // AGENT_MAYA_SITE_FACTS_v371 - the website's own answers. Maya was answering from general lending knowledge
   // (a "hard inquiry", "same-day funding", $5K-$30M, "114 lenders") and contradicting the site.
@@ -86,7 +115,7 @@ const SITE_FACTS =
   "Start-ups: Boreal does not currently have start-up options in Canada, so a Canadian business under 6 months or under about $10,000 a month in revenue can join the start-up waitlist (waitlist.join); in the United States, SBA loans are open to start-ups. Do not suggest personal loans, grants or equity investors. " +
   "United States: Boreal arranges SBA 7(a) and 504 loans plus term loans, lines of credit, equipment and working capital through US lenders; link https://boreal.financial/us . " +
   "Personal guarantees: lenders often ask for one; Boreal's sister company Boreal Insurance (Boreal Risk Management, https://boreal.insure) offers Personal Guarantee Insurance. " +
-  "To talk to a person, tell them to tap the Talk to a Human button. " +
+  TALK_TO_HUMAN_FACT +
   "When the visitor says yes to applying, give the Apply link (apply.start_url).";
 
 // ---------- Maya router ----------
@@ -103,7 +132,8 @@ export const FAILOVER_REPLIES = {
   askForContact: "I'm having trouble answering right now. If you share your name and a phone number or email, I'll pass your message to the Boreal team so someone can follow up.",
   notified: "I'm having trouble answering right now, so I've passed your message to the Boreal team and someone will follow up with you.",
   alreadyNotified: "I'm having trouble answering right now, but the Boreal team already has your message from a few minutes ago and someone will follow up with you.",
-  failed: () => `I'm having trouble answering right now and couldn't reach the team either. Please tap Talk to a Human, try again in a few minutes, or ${phoneLine()}.`,
+  // MAYA_v817 - names a button only where the surface has one.
+  failed: (surface: HelpSurface = "unknown") => { const help = humanHelp(surface); return `I'm having trouble answering right now and couldn't reach the team either. Please ${help ? `${help}, ` : ""}try again in a few minutes, or ${phoneLine()}.`; },
   staff: "Maya is having trouble reaching the model right now. Please try again in a minute.",
 };
 
@@ -118,6 +148,7 @@ async function mayaHumanFailover(args: {
   contactId: string | null;
   bodyContact: ProvidedContact;
   surface: string;
+  helpSurface?: HelpSurface; // MAYA_v817
 }): Promise<string> {
   if (args.audience === "staff") return FAILOVER_REPLIES.staff;
   const storeKey = args.key || args.rateKey;
@@ -134,7 +165,7 @@ async function mayaHumanFailover(args: {
     if (!canFollowUp(provided)) return FAILOVER_REPLIES.askForContact;
   }
   const claim = claimHandoff(storeKey);
-  if (!claim.allowed) return claim.previousOk ? FAILOVER_REPLIES.alreadyNotified : FAILOVER_REPLIES.failed();
+  if (!claim.allowed) return claim.previousOk ? FAILOVER_REPLIES.alreadyNotified : FAILOVER_REPLIES.failed(args.helpSurface);
   let ok = false;
   try {
     const r = (await postToBFServer("/api/maya/escalate", {
@@ -152,7 +183,7 @@ async function mayaHumanFailover(args: {
     console.warn("[maya] failover persist failed", err);
   }
   finishHandoff(storeKey, ok);
-  return ok ? FAILOVER_REPLIES.notified : FAILOVER_REPLIES.failed();
+  return ok ? FAILOVER_REPLIES.notified : FAILOVER_REPLIES.failed(args.helpSurface);
 }
 
 const capText = (v: unknown, max: number): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -201,6 +232,12 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       reply = "I'm Maya, the Boreal Financial assistant. I can answer general questions about our lending products, or hand you off to a human advisor.";
     } else {
       reply = "Good question — that one's best handled by a person. Tap Talk to a Human below and a Boreal advisor will text you back shortly.";
+    }
+    // MAYA_v817 - these canned lines name Talk to a Human; on a screen without that button, point to the advisor or the 866 line.
+    const nkScreen = req.body?.screen_context && typeof req.body.screen_context === "object" && !Array.isArray(req.body.screen_context) ? (req.body.screen_context as Record<string, unknown>) : null;
+    const nkHelp = humanHelp(helpSurface(mayaContextFromRequest(req).audience, nkScreen));
+    if (nkHelp !== "tap Talk to a Human") {
+      reply = `I'm Maya, the Boreal Financial assistant, and I can't answer questions just now. ${nkHelp ? nkHelp.charAt(0).toUpperCase() + nkHelp.slice(1) + ", or " : "Please "}${phoneLine()} and someone from Boreal will help.`;
     }
     res.status(200).json({ reply, actions: [], audience: "visitor", fallback: "no_openai_key", toolsOffered: 0, executedTools: [] });
     return;
@@ -264,7 +301,13 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     email: capText(req.body?.email ?? req.body?.contact?.email, 200) || null,
   };
   if (audience === "visitor" && (bodyContact.name || bodyContact.phone || bodyContact.email)) rememberProvidedContact(rateKey, bodyContact);
-  const failover = () => mayaHumanFailover({ message, audience, sessionId, key, rateKey, applicationId, phone, contactId: mctx.contactId, bodyContact, surface: audience });
+  const screenContext =
+    req.body?.screen_context && typeof req.body.screen_context === "object" && !Array.isArray(req.body.screen_context)
+      ? (req.body.screen_context as Record<string, unknown>)
+      : null;
+  // MAYA_v817 - which "reach a person" control this screen actually has.
+  const surfaceKind = helpSurface(audience, screenContext);
+  const failover = () => mayaHumanFailover({ message, audience, sessionId, key, rateKey, applicationId, phone, contactId: mctx.contactId, bodyContact, surface: audience, helpSurface: surfaceKind });
   // AGENT_MAYA_INSIGHTS_v657 - who is asking, for per-staff reads such as Team unread.
   const staffEmail = mctx.staff?.email ?? null;
   // AGENT_MAYA_FACTS_v371 - role (commission is Admin-only) and silo come from the signed context, never from the model.
@@ -286,6 +329,16 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     // AGENT_MAYA_SITE_FACTS_v371
     "Merchant cash advances are priced with a FACTOR RATE (for example 1.24-1.45), never call it an interest rate. SBA loans are a real Boreal product in the United States; take SBA rates and terms only from the SBA products, and SBA files take weeks, not days. " +
     "Never end a reply with 'Would you like to proceed?' or a similar stock question; ask a follow-up only when it moves things forward.";
+  // MAYA_v817 - how a client reaches a person on this screen; no button is named that the screen does not have.
+  const clientHumanOffer =
+    surfaceKind === "client_portal_chat"
+      ? "offer to pass it to their advisor (they can tap \"Send to my advisor\" under your answer)"
+      : surfaceKind === "client_widget"
+        ? "offer the Talk to a Human button"
+        : `offer to pass it to their advisor, or give Boreal's toll-free line ${boreal866Line()}`;
+  const clientSiteFacts = surfaceKind === "client_widget"
+    ? SITE_FACTS
+    : SITE_FACTS.replace(TALK_TO_HUMAN_FACT, `To talk to a person, ${clientHumanOffer}. `);
   const audienceLines: Record<string, string> = {
     visitor:
       sharedPersona +
@@ -295,15 +348,18 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       SITE_FACTS,
     client:
       sharedPersona +
-      " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, documents, what's missing, next steps, and offers. Use application.my_status, application.find_mine, docs.checklist, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical; reassure them they can start now and upload documents later — missing documents never block beginning or continuing an application.\n\n" +
+      // MAYA_v817 - application.checklist (forms + documents) is the source for anything left to do.
+      " You are inside the secure client app with a verified, signed-in client. You may freely discuss their own application status, forms, documents, what's missing, next steps, and offers. Use application.checklist, application.my_status, application.find_mine, docs.checklist, forms.field_help, application.next_step, signature.status, and pgi.completion_link as needed. Be supportive and practical.\n\n" +
       CLIENT_IDENTITY_PROMPT +
       // AGENT_MAYA_CLIENT_v371
       "\n\nCLIENT RULES: The client sees each application in the app with a short id like #61AE (the shortId in their profile); match it when they use one. " +
-      "Describe stages like this: Received and In Review - our team is reviewing your file; Documents Required - we need documents from you; Additional Steps Required - there are steps for you to finish; Off to Lender - your file is with lenders, we are waiting on their answers; Offer - you have an offer to review. Never say 'under review' at Off to Lender. " +
-      "Documents: answer from that application's own document list (requirements differ by amount, product and country). 'missing' means we still need it from them; 'received' means we have it and our team is reviewing it; 'accepted' means it is done. Never say all documents are complete while any is missing or received. " +
+      // MAYA_v817 - the real stage list and labels, and the to-do list rules (forms, counts, never a false "all set").
+      CLIENT_STAGE_GUIDE + " " +
+      CLIENT_CHECKLIST_RULES + " " +
+      "Documents: 'missing' means we still need it from them; 'received' means we have it and our team is reviewing it; 'accepted' means it is done. " +
       "Never say which lenders, or how many lenders, have their file. " +
-      "If something is not in what you have, say so once in a short sentence and offer the Talk to a Human button; do not repeat the stage or the same offer every time. " +
-      SITE_FACTS,
+      `If something is not in what you have, say so once in a short sentence and ${clientHumanOffer}; do not repeat the stage or the same offer every time. ` +
+      clientSiteFacts,
     staff:
       "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
       // AGENT_MAYA_FACTS_v371
@@ -322,11 +378,6 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
       "For the Ads reports use ads.story (ad spend to applications, funded deals, commission and return), ads.visitors (who came and what they did), ads.dropoff (where applications stop and why), ads.health (whether Google tracking and conversion uploads work), ads.ga4 (website traffic) and ads.audiences (Customer Match lists). Look at the whole picture before advising on ads. " +
       "Ad rules you must always follow: you only suggest - nothing changes in Google Ads unless a person approves it; budgets and bid strategy are Todd's decision alone, so mention them only as advice for Todd; never suggest advertising in Quebec; never suggest demographic targeting (age, gender, income) because these are credit ads; if the report shows zero conversions, never suggest pausing a campaign or keyword.",
   };
-
-  const screenContext =
-    req.body?.screen_context && typeof req.body.screen_context === "object" && !Array.isArray(req.body.screen_context)
-      ? (req.body.screen_context as Record<string, unknown>)
-      : null;
 
   // MAYA_FOUNDATION_SURFACE_SILO_v1 — Maya must always know WHO it is talking
   // to (audience), on WHICH surface (website / client app / staff portal), and
@@ -393,7 +444,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
               name: a?.name ?? null,
               product: a?.productCategory ?? a?.productType ?? null,
               amount: a?.requestedAmount ?? null,
-              stage: a?.stage ?? null,
+              stage: clientStageLabel(a?.stage), // MAYA_v817 - the label the client sees in the app
               industry: a?.industry ?? null,
               yearsInBusiness: a?.yearsInBusiness ?? null,
               annualRevenue: a?.annualRevenue ?? null,
@@ -474,7 +525,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     if (persona) parts.push(persona);
     if (tone) parts.push(`Tone: ${tone}.`);
     if (knowledge) parts.push(`Relevant Boreal knowledge (use it to answer accurately; do not contradict it):\n${knowledge}`);
-    mayaAugment = parts.join("\n\n");
+    mayaAugment = scrubPrivateNumbers(parts.join("\n\n")); // MAYA_v817 - trained knowledge never carries the private cell to the model
   } catch {
     // best-effort augmentation; ignore failures
   }
@@ -510,10 +561,11 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   // AGENT_v789_TOKEN_BUDGET - every completion is counted against the global and session budgets.
   const readCompletion = async (upstream: globalThis.Response, body: unknown) => {
     const data = await upstream.json();
-    recordUsage(key || rateKey, tokensUsed(data, body));
+    recordUsage(key || rateKey, tokensUsed(data, body), Date.now(), sessionTokensUsed(data, body)); // MAYA_v817 - cached prompt tokens weigh less per session
     return data;
   };
-  const finish = (reply: string) => (audience === "staff" ? reply : applyGuardrails(reply));
+  // MAYA_v817 - the owner's private cell never leaves Maya, whatever the model or the trained knowledge says.
+  const finish = (reply: string) => scrubPrivateNumbers(audience === "staff" ? reply : applyGuardrails(reply));
 
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
@@ -524,7 +576,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return true;
   };
   if (budgetExhausted()) {
-    res.status(200).json({ reply: budgetFallbackReply(), actions: [], audience, fallback: "token_budget", toolsOffered: 0, executedTools: [] });
+    res.status(200).json({ reply: budgetFallbackReply(surfaceKind), actions: [], audience, fallback: "token_budget", toolsOffered: 0, executedTools: [] });
     return;
   }
 
@@ -618,11 +670,11 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     pending = dataN?.choices?.[0]?.message;
     if (!allowTools) { finalReply = pending?.content?.toString().trim() ?? ""; break; }
   }
-  if (!finalReply && stopReason === "token_budget") finalReply = budgetFallbackReply();
+  if (!finalReply && stopReason === "token_budget") finalReply = budgetFallbackReply(surfaceKind);
   if (!finalReply) {
     finalReply = audience === "staff"
       ? "I couldn't put that answer together. Try asking for one thing at a time (for example \"spend last 30 days\" or \"who is in Off to Lender\")."
-      : "Sorry, I couldn't answer that one. Tap Talk to a Human and someone from Boreal will help.";
+      : (() => { const help = humanHelp(surfaceKind); return `Sorry, I couldn't answer that one. ${help ? help.charAt(0).toUpperCase() + help.slice(1) + " or " : "Please "}${phoneLine()} and someone from Boreal will help.`; })(); // MAYA_v817
   }
   finalReply = finish(finalReply);
 

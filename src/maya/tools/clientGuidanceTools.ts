@@ -5,6 +5,7 @@
 // degrades to a best-effort message rather than throwing. The guidance tools
 // (field help, document explainer, timeline) are static and need no server.
 import { fetchApplicationStatus } from "../../integrations/bfServerClient.js";
+import { applicationChecklist } from "./clientChecklistTools.js"; // MAYA_v817 - next step comes from the portal's to-do list (forms too)
 
 function s(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -171,10 +172,22 @@ export const OFFER_EXPLAIN_TOOL_DESCRIPTOR = {
   },
 };
 
-export type NextStepArgs = { application_id?: string };
+export type NextStepArgs = { application_id?: string; phone?: string; session_id?: string };
 export async function applicationNextStep(args: NextStepArgs) {
   const applicationId = s(args?.application_id);
   if (!applicationId) return { ok: false, summary: "application_id is required." };
+  // MAYA_v817 - the portal's own to-do list first: it has the forms. Answering from documents alone told a
+  // client with three forms left "You're all set on your end".
+  if (s(args?.phone)) {
+    const c: any = await applicationChecklist({ application_id: applicationId, phone: args.phone, session_id: args.session_id });
+    if (c?.ok === true && typeof c.outstanding_count === "number") {
+      const items: Array<{ label: string }> = Array.isArray(c.outstanding) ? c.outstanding : [];
+      const next = c.outstanding_count > 0
+        ? `Finish the ${c.outstanding_count} item(s) still in your to-do list (${c.progress ?? ""}): ${items.map((i) => i.label).join(", ")}.`
+        : String(c.what_happens_next || "Nothing is outstanding from you right now. Your advisor will let you know what comes next.");
+      return { ok: true, application_id: applicationId, stage: c.stage ?? null, outstanding_count: c.outstanding_count, outstanding: items, next_step: next, summary: next };
+    }
+  }
   const r = await loadApp(applicationId);
   if (!r) return { ok: false, summary: "Application not found." };
   const docs = Array.isArray(r.documents) ? r.documents : [];
@@ -185,7 +198,8 @@ export async function applicationNextStep(args: NextStepArgs) {
   if (rejected.length) next = `Re-upload ${rejected.length} document(s) that were sent back: ${rejected.map(docType).join(", ")}.`;
   else if (missing.length) next = `Upload your remaining document(s): ${missing.map(docType).join(", ")}. You can do this any time — it won't block the rest of your application.`;
   else if (r.signature_status != null && !sigDone) next = "Sign your application — your e-signature is the last step.";
-  else next = "You're all set on your end. The team is reviewing — I'll keep you posted on status here.";
+  // MAYA_v817 - documents alone cannot say the client is done (forms are not in this payload).
+  else next = "No documents are outstanding. I couldn't check your forms just now - the to-do list on your Home screen shows anything still left.";
   return { ok: true, application_id: applicationId, stage: stageOf(r), next_step: next, summary: next };
 }
 export const APPLICATION_NEXT_STEP_TOOL_DESCRIPTOR = {

@@ -194,6 +194,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "ads.performance",
       "ads.story",
       "ads.visitors",
+      "application.checklist", // MAYA_v817
       "application.find_mine",
       "application.my_status",
       "application.next_step",
@@ -230,6 +231,7 @@ describe("AGENT_BLOCK_v5 - toolRegistry", () => {
       "docs.rejections",
       "docs.request_draft",
       "escalate.to_human",
+      "forms.field_help", // MAYA_v817
       "industry.guidance",
       "info.lenders",
       "info.products",

@@ -36,3 +36,19 @@ export function applyGuardrails(reply: string): string {
 }
 
 export const GUARDRAIL_SAFE_REPLY = SAFE_REPLY;
+
+// MAYA_v817 - numbers listed in MAYA_PRIVATE_NUMBERS (comma-separated; e.g. a staff member's private cell) must
+// never appear in anything Maya says, whatever the model, the trained knowledge or another env var contains. Any
+// spelling of one becomes Boreal's toll-free line. The numbers live only in the setting, never in code.
+function privateNumberPatterns(env: NodeJS.ProcessEnv = process.env): RegExp[] {
+  return String(env.MAYA_PRIVATE_NUMBERS ?? "")
+    .split(",")
+    .map((n) => n.replace(/\D/g, "").slice(-10))
+    .filter((d) => d.length === 10)
+    .map((d) => new RegExp(`(?:\\+?\\s*1[\\s.-]*)?\\(?\\s*${d.slice(0, 3)}\\s*\\)?[\\s.-]*${d.slice(3, 6)}[\\s.-]*${d.slice(6)}\\b`, "g"));
+}
+export const PUBLIC_TOLL_FREE = "1-866-631-8939";
+export function scrubPrivateNumbers(text: string): string {
+  if (typeof text !== "string" || !text) return text;
+  return privateNumberPatterns().reduce((t, re) => t.replace(re, PUBLIC_TOLL_FREE), text);
+}

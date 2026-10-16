@@ -50,6 +50,27 @@ export const APPLICATIONS_BY_PHONE = {
   latestDocs: [],
 };
 
+// MAYA_v817 - the live-test file: every document done, three forms left, stage "Additional Steps".
+export const CLIENT_CHECKLIST = {
+  ok: true,
+  stage: "Additional Steps",
+  stage_raw: "Additional Steps Required",
+  progress: "11 of 14 done",
+  done_count: 11,
+  total_count: 14,
+  outstanding_count: 3,
+  outstanding_documents: 0,
+  outstanding_forms: 3,
+  outstanding: [
+    { label: "Debt Stack", type: "form", status: "outstanding" },
+    { label: "Personal Net Worth", type: "form", status: "outstanding" },
+    { label: "Professional Advisors", type: "form", status: "outstanding" },
+  ],
+  completed: [{ label: "Bank Statements", type: "document", status: "done" }],
+  what_happens_next: "Lenders need a few more items before your file moves on: 3 forms.",
+  summary: "Stage \"Additional Steps\". 11 of 14 done; 3 outstanding (3 forms): Debt Stack, Personal Net Worth, Professional Advisors.",
+};
+
 export const BF_SERVER_FIXTURES: Record<string, unknown> = {
   "/api/telephony/presence": { status: "ok", data: [{ user_id: "u_1", status: "available", twilio_identity: "staff_u_1" }] },
   "/api/communications/maya-handoff": { status: "ok", fanout: { attempted: ["+17805550100", "+17805550101"], delivered: ["+17805550100"] } },
@@ -59,6 +80,8 @@ export const BF_SERVER_FIXTURES: Record<string, unknown> = {
   "/api/maya/maya-persona": { ok: true, persona: "", tone: "" },
   "/api/maya/catalog-summary": { ok: true, lenders: 84, products: 197, by_category: { TERM: 41, LOC: 33, EQUIPMENT: 28 } },
   "/api/maya/staff/application-summary": APPLICATION_SUMMARY,
+  // MAYA_v817 - BF-Server routes/mayaClientChecklist.ts: the client portal's "What you need to do" list.
+  "/api/maya/client-checklist": CLIENT_CHECKLIST,
   "/api/maya/staff/applications-by-phone": APPLICATIONS_BY_PHONE,
   "/api/maya/staff/application-newest": { ok: true, application: { id: APP_ID, name: "Northwind Trucking Ltd." } },
   "/api/maya/staff/audit-recent": { ok: true, entries: [{ tool: "pipeline.facts", ok: true, at: "2026-10-11T15:00:00.000Z", summary: "12 live deals" }] },

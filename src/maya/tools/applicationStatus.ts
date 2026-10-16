@@ -25,6 +25,7 @@ export type ApplicationStatusResult = {
     bi_public_id?: string | null;
   };
   summary?: string;
+  note?: string; // MAYA_v817
 };
 
 function s(v: unknown): string | null {
@@ -72,6 +73,8 @@ export async function applicationStatus(args: ApplicationStatusArgs): Promise<Ap
     const summary = pgiAvailable
       ? `You're at "${stage ?? "in progress"}". Documents: ${docs.complete}/${docs.total}. Your PGI application is ready — complete it at the link to add the remaining underwriting details.`
       : `You're at "${stage ?? "in progress"}". Documents: ${docs.complete}/${docs.total}.`;
+    // MAYA_v817 - this payload has no forms and the raw stage name; the portal's list and label come from application.checklist.
+    const note = "Documents only, and the internal stage name. For what is left to do (forms and documents), the counts and the stage label the client sees, use application.checklist.";
     return {
       ok: true,
       application_id: applicationId,
@@ -87,6 +90,7 @@ export async function applicationStatus(args: ApplicationStatusArgs): Promise<Ap
         bi_public_id: biPublicId,
       },
       summary,
+      note,
     };
   } catch (e: any) {
     return { ok: false, summary: `application_status_failed: ${e?.message ?? "unknown"}` };

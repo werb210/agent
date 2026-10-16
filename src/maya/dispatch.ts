@@ -93,6 +93,7 @@ const CONTACT_CAPTURE_TOOLS = new Set(["visitor.identify", "lead.capture", "wait
 // Client tools that read one application: they get the request's application id (or the one
 // find_mine resolved for this verified client), never one from the model.
 const CLIENT_APP_TOOLS = new Set([
+  "application.checklist", // MAYA_v817 - gets the request's / resolved application id and the verified phone (BF-Server checks ownership)
   "application.my_status",
   "docs.checklist",
   "pgi.completion_link",
