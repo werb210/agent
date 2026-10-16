@@ -38,6 +38,9 @@ export const TOOLS_BY_AUDIENCE: Readonly<Record<MayaAudience, ReadonlyArray<stri
     "lender.products",
   ],
   client: [
+    // MAYA_v817 - the to-do list exactly as the client portal shows it (forms AND documents), and form field help.
+    "application.checklist",
+    "forms.field_help",
     "application.my_status",
     "docs.checklist",
     "pgi.completion_link",

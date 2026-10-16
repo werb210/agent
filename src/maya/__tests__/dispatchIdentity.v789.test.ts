@@ -25,13 +25,16 @@ const MODEL_IDS = { application_id: "someone-elses-app", applicationId: "x", con
 
 describe("[154] client and public audiences never take ids or a phone from the model", () => {
   it("client app tools use only the request's application id and the verified phone", async () => {
-    for (const tool of ["application.my_status", "docs.checklist", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.resume_link", "pgi.completion_link"]) {
+    // MAYA_v817 - application.checklist and next_step read the portal's to-do list (/api/maya/client-checklist) with the verified phone.
+    const TODO_LIST = new Set(["application.checklist", "application.next_step"]);
+    for (const tool of ["application.checklist", "application.my_status", "docs.checklist", "docs.rejections", "offer.explain", "application.next_step", "signature.status", "application.resume_link", "pgi.completion_link"]) {
       calls.length = 0;
       await dispatchTool(tool, MODEL_IDS, client());
       const sent = JSON.stringify(calls);
       expect(sent, tool).not.toContain("someone-elses-app");
       expect(sent, tool).not.toContain("+19999999999");
-      expect(bodyOf("/api/maya/staff/application-summary")?.application_id, tool).toBe("req-app-1");
+      if (TODO_LIST.has(tool)) expect(bodyOf("/api/maya/client-checklist"), tool).toMatchObject({ application_id: "req-app-1", phone: "+15875550100" });
+      else expect(bodyOf("/api/maya/staff/application-summary")?.application_id, tool).toBe("req-app-1");
     }
   });
 

@@ -68,7 +68,7 @@ export async function docsChecklist(args: DocsChecklistArgs): Promise<DocsCheckl
     const cat = categorize(r.documents);
     const summary = cat.missing.length
       ? `${cat.missing.length} document(s) still needed: ${cat.missing.map((m) => m.document_type).join(", ")}.`
-      : `All ${cat.complete.length} document(s) on file.`;
+      : `All ${cat.complete.length} document(s) on file. Documents only - forms are separate; use application.checklist before saying nothing is left.`; // MAYA_v817 - uploaded documents are not the whole to-do list
     return {
       ok: true,
       application_id: applicationId,

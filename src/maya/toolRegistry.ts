@@ -85,6 +85,8 @@ import {
   adsNegativesRemove, ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR,
 } from "./tools/staffAdsTools.js";
 import { CONFIRM_TOOL, PENDING_CONFIRM_TOOL_DESCRIPTOR } from "./pendingActions.js";
+// MAYA_v817 - the client portal's own to-do list (forms + documents) and form field help.
+import { applicationChecklist, APPLICATION_CHECKLIST_TOOL_DESCRIPTOR, formsFieldHelp, FORMS_FIELD_HELP_TOOL_DESCRIPTOR } from "./tools/clientChecklistTools.js";
 
 export type ToolDescriptor = {
   type: "function";
@@ -172,6 +174,8 @@ export const TOOL_REGISTRY: Readonly<Record<string, ToolEntry>> = {
   "ads.negatives": { descriptor: ADS_NEGATIVES_TOOL_DESCRIPTOR, run: (a) => adsNegatives(a) },
   "ads.negatives.add": { descriptor: ADS_NEGATIVES_ADD_TOOL_DESCRIPTOR, run: (a) => adsNegativesAdd(a) },
   "ads.negatives.remove": { descriptor: ADS_NEGATIVES_REMOVE_TOOL_DESCRIPTOR, run: (a) => adsNegativesRemove(a) },
+  "application.checklist": { descriptor: APPLICATION_CHECKLIST_TOOL_DESCRIPTOR, run: (a) => applicationChecklist(a) }, // MAYA_v817 - forms + documents as the portal shows them
+  "forms.field_help": { descriptor: FORMS_FIELD_HELP_TOOL_DESCRIPTOR, run: (a) => formsFieldHelp(a) }, // MAYA_v817 - explain the three client forms' fields
   // AGENT_v789_PENDING_ACTIONS - dispatchTool runs this itself, against the session's stored token.
   [CONFIRM_TOOL]: { descriptor: PENDING_CONFIRM_TOOL_DESCRIPTOR, run: async () => ({ ok: false, error: "dispatch_only" }) },
 };

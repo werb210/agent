@@ -42,7 +42,8 @@ const ARGS: Record<string, Record<string, unknown>> = {
   "capital.readiness_check": { monthly_revenue: 50000, months_in_business: 24 },
 };
 // Tools whose answer is built in the agent (no BF-Server call).
-const LOCAL_TOOLS = new Set(["info.products", "info.qualifications", "apply.start_url", "info.lenders", "capital.readiness_check", "prequal.estimate", "industry.guidance", "apply.doc_preview", "apply.field_help", "docs.explain", "ui.navigate"]);
+// MAYA_v817 - forms.field_help answers from the agent (no BF-Server call).
+const LOCAL_TOOLS = new Set(["forms.field_help", "info.products", "info.qualifications", "apply.start_url", "info.lenders", "capital.readiness_check", "prequal.estimate", "industry.guidance", "apply.doc_preview", "apply.field_help", "docs.explain", "ui.navigate"]);
 
 const audienceOf = (tool: string): MayaAudience => (["client", "staff", "visitor"] as const).find((a) => TOOLS_BY_AUDIENCE[a].includes(tool))!;
 
