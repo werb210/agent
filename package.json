@@ -22,10 +22,10 @@
     "@types/pdfkit": "^0.17.6",
     "@types/readline-sync": "^1.4.8",
     "@types/validator": "^13.15.10",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.1.3",
+    "@azure/msal-node": "^7.1.1",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "bullmq": "^5.74.1",
     "exceljs": "^4.4.0",
@@ -44,7 +44,7 @@
     "twilio": "^5.13.1",
     "typescript": "^6.0.3",
     "validator": "^13.15.35",
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   },
   "overrides": {
     "proxy-addr": "^2.0.8",
@@ -52,13 +52,15 @@
     "axios": "^1.20.0",
     "form-data": "^4.0.6",
     "tmp": "^0.2.7",
-    "body-parser": "^2.3.0",
+    "body-parser": "^2.4.0",
     "uuid": "^11.1.1",
     "brace-expansion@<2": "1.1.21",
     "brace-expansion@>=2 <3": "2.1.7",
-    "vite": "~8.0.16",
+    "vite": "^8.3.5",
     "postcss": "8.5.28",
     "nanoid": "3.3.19",
-    "source-map-js": "1.2.2"
-  }
+    "source-map-js": "1.2.2",
+    "follow-redirects": "^1.16.1"
+  },
+  "x-v859": "AGENT_v859_DEP_SECURITY"
 }
