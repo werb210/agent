@@ -8,6 +8,7 @@
 // AGENT_v784_SERVICE_TOKEN - one signer for every call (src/lib/serviceToken.ts).
 import { signServiceToken, logBFServerAuthFailure, serviceTokenSecret } from "../lib/serviceToken.js";
 import { currentStaffScope } from "../lib/staffScope.js";
+import { MAYA_CONTEXT_HEADER } from "../maya/context.js";
 
 // AGENT_v789_TIMEOUTS - a BF-Server call never holds a Maya request open for long.
 const BF_SERVER_TIMEOUT_MS = 8_000;
@@ -79,16 +80,20 @@ export async function callBFServer<T>(
 
   // AGENT_v789_STAFF_SCOPE - inside a staff tool, silo and role are the verified ones.
   const scope = currentStaffScope();
-  if (scope && path.startsWith("/api/maya/") && requestMethod !== "GET") {
+  // AGENT_v868_ACTING_STAFF - plus who is acting: their id in the body and BF-Server's own signed context in a header.
+  const staffCall = Boolean(scope && path.startsWith("/api/maya/"));
+  if (scope && staffCall && requestMethod !== "GET") {
     const base = requestBody && typeof requestBody === "object" && !Array.isArray(requestBody) ? (requestBody as Record<string, unknown>) : {};
-    requestBody = { ...base, silo: scope.silo, role: scope.role ?? undefined };
+    requestBody = { ...base, silo: scope.silo, role: scope.role ?? undefined, staff_user_id: scope.staffUserId ?? undefined };
   }
+  const contextHeader: Record<string, string> = staffCall && scope?.context ? { [MAYA_CONTEXT_HEADER]: scope.context } : {};
 
   const res = await fetch(url, {
     method: requestMethod,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...contextHeader,
     },
     ...(requestBody !== undefined
       ? { body: JSON.stringify(requestBody) }

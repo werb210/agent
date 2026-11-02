@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { randomUUID } from "node:crypto";
 import { getSessionHistory, appendSessionTurn } from "../maya/sessionHistory.js";
 import { signServiceToken, logBFServerAuthFailure } from "../lib/serviceToken.js";
-import { mayaContextFromRequest } from "../maya/context.js";
+import { mayaContextFromRequest, MAYA_CONTEXT_HEADER } from "../maya/context.js";
 import { sessionKey } from "../maya/sessionKey.js";
 import { checkBudget, recordUsage, tokensUsed, sessionTokensUsed } from "../maya/tokenBudget.js";
 import { confirmAvailable } from "../maya/pendingActions.js";
@@ -316,6 +316,8 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
   const ctx = {
     audience, applicationId, sessionId, subject: mctx.subject, phone, email: null, contactId: mctx.contactId,
     staffEmail, staffPhone: mctx.staff?.phone ?? null, staffRole, staffId, silo: audience === "staff" ? (mctx.silo || "BF") : null,
+    // AGENT_v868_ACTING_STAFF - the verified staff token itself, handed back to BF-Server on staff calls.
+    mayaContext: audience === "staff" && mctx.verified ? (req.header(MAYA_CONTEXT_HEADER) ?? null) : null,
     requestId, latestUserMessage: message, rateKey,
   };
 
