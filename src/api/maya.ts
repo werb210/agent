@@ -114,7 +114,8 @@ const SITE_FACTS =
   "Fees: it costs nothing to apply; the lender pays Boreal. The one exception is media and production financing with a lender that does not pay Boreal, where the client signs a 2% fee agreement. " +
   "Start-ups: Boreal does not currently have start-up options in Canada, so a Canadian business under 6 months or under about $10,000 a month in revenue can join the start-up waitlist (waitlist.join); in the United States, SBA loans are open to start-ups. Do not suggest personal loans, grants or equity investors. " +
   "United States: Boreal arranges SBA 7(a) and 504 loans plus term loans, lines of credit, equipment and working capital through US lenders; link https://boreal.financial/us . " +
-  "Personal guarantees: lenders often ask for one; Boreal's sister company Boreal Insurance (Boreal Risk Management, https://boreal.insure) offers Personal Guarantee Insurance. " +
+  // MAYA_PGI_COMPLIANCE_v1 (2026-11-19) - PGI Canada Ltd.'s notice: name the licensed broker, no program details.
+  "Personal guarantees: lenders often ask for one. Personal Guarantee Insurance is arranged by PGI Canada Ltd., a licensed insurance broker; Boreal's referral service, Boreal Risk Management (https://boreal.insure), can introduce the client. Never call it Boreal Insurance, never say Boreal sells or offers insurance, and never state rates, limits, coverage shares, eligibility rules or claims details (only: in Canada, rates start as low as 1.8% of the limit of insurance). It is optional and never part of a lender's credit decision. Details come from PGI at https://pgicover.com/boreal. " +
   TALK_TO_HUMAN_FACT +
   "When the visitor says yes to applying, give the Apply link (apply.start_url).";
 
@@ -225,7 +226,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     } else if (/loan|finance|capital|equipment|funding|term|line of credit|loc/.test(lower)) {
       reply = "Boreal Financial offers term loans, lines of credit, equipment financing, commercial real estate, and acquisition financing across Canada. For details specific to your business, tap Talk to a Human and an advisor will be in touch shortly.";
     } else if (/insurance|pgi|personal\s*guarantee/.test(lower)) {
-      reply = "Insurance is handled by our sister company, Boreal Risk Management, at boreal.insure. I can help with Boreal Financial's lending products, or tap Talk to a Human to reach an advisor.";
+      reply = "Personal Guarantee Insurance is arranged by PGI Canada Ltd., a licensed insurance broker. Our referral service, Boreal Risk Management (boreal.insure), can introduce you. I can help with Boreal Financial's lending products, or tap Talk to a Human to reach an advisor.";
     } else if (/hour|open|when|time/.test(lower)) {
       reply = "We're online during business hours (Pacific). Outside business hours, tap Talk to a Human and we'll text you back as soon as we're in.";
     } else if (/who.*you|what.*you|about/.test(lower)) {
@@ -365,7 +366,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     staff:
       "You are speaking with Boreal staff inside the internal portal. Be terse and operational. " +
       // AGENT_MAYA_FACTS_v371
-      "COMPANY: Boreal Financial and Boreal Insurance (Boreal Risk Management) are run by Todd Werboweski, Director of 2630108 Alberta Ltd., 450 Sparling Crt SW, Edmonton, Alberta T6X 1G9. " +
+      "COMPANY: Boreal Financial and Boreal Risk Management (a referral partner of PGI Canada Ltd., never called Boreal Insurance) are run by Todd Werboweski, Director of 2630108 Alberta Ltd., 450 Sparling Crt SW, Edmonton, Alberta T6X 1G9. " +
       "NUMBERS: for ANY count, stage, 'who is in', newest, oldest, largest, pipeline value, funded, lender-count or commission question, call pipeline.facts first - it counts exactly like the Dashboard (drafts never count; funded = the Accepted stage; Hold and Fraud are out of the live numbers). Use application.summary (with a name or short id) for one application's details. " +
       "Every number you give must come from a tool result in this conversation. If a figure is not in the data (for example impressions you were not given, budgets, remaining budget), say you do not have it. Never estimate or make up a number. " +
       "Google Ads numbers come from ads.performance, the same live report as Marketing -> Ads; Performance Max was removed and is not part of the account. " +
