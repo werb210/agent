@@ -213,7 +213,8 @@ describe("prompt and reply behaviour", () => {
     globalThis.fetch = createBfServerFake().fetch;
     const r = await post(maya.base, "/api/maya/message", { message: "do you do personal guarantee insurance?" }, { "x-maya-context": mayaContext(VISITOR) });
     expect(r.body.fallback).toBe("no_openai_key");
-    expect(r.body.reply).toContain("Boreal Risk Management, at boreal.insure");
+    expect(r.body.reply).toContain("Boreal Risk Management (boreal.insure)");
+    expect(r.body.reply).toContain("PGI Canada Ltd."); // MAYA_PGI_COMPLIANCE_v1
     expect(r.body.reply).not.toContain("coverage that protects business owners");
   });
 
