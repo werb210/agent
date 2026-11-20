@@ -52,3 +52,14 @@ export function scrubPrivateNumbers(text: string): string {
   if (typeof text !== "string" || !text) return text;
   return privateNumberPatterns().reduce((t, re) => t.replace(re, PUBLIC_TOLL_FREE), text);
 }
+
+// MAYA_NEUTRAL_PGI_LINK_v1 (2026-11-20) - Boreal never sells insurance, so a link to the PGI application must not
+// read like "Boreal ... Insurance". Whatever the model wrote, a markdown link to boreal.insure gets neutral text,
+// and the old brand name becomes Boreal Risk Management.
+export function neutralPgiLinks(text: string): string {
+  if (typeof text !== "string" || !text) return text;
+  return text
+    .replace(/\[([^\]]*)\]\((https?:\/\/(?:www\.)?boreal\.insure[^)\s]*)\)/gi, (_m, _label, url: string) =>
+      `[${/\/applications\/new/i.test(url) ? "Apply here" : "Boreal Risk Management"}](${url})`)
+    .replace(/\bBoreal Insurance\b/g, "Boreal Risk Management");
+}
