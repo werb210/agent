@@ -6,7 +6,7 @@ import { mayaContextFromRequest, MAYA_CONTEXT_HEADER } from "../maya/context.js"
 import { sessionKey } from "../maya/sessionKey.js";
 import { checkBudget, recordUsage, tokensUsed, sessionTokensUsed } from "../maya/tokenBudget.js";
 import { confirmAvailable } from "../maya/pendingActions.js";
-import { applyGuardrails, scrubPrivateNumbers } from "../maya/guardrails.js";
+import { applyGuardrails, neutralPgiLinks, scrubPrivateNumbers } from "../maya/guardrails.js";
 import { CLIENT_STAGE_GUIDE, CLIENT_CHECKLIST_RULES, clientStageLabel } from "../maya/clientKnowledge.js"; // MAYA_v817 - stages and the to-do list rules
 import {
   canFollowUp, claimHandoff, contactFromText, finishHandoff, getProvidedContact, rememberProvidedContact, type ProvidedContact,
@@ -115,7 +115,7 @@ const SITE_FACTS =
   "Start-ups: Boreal does not currently have start-up options in Canada, so a Canadian business under 6 months or under about $10,000 a month in revenue can join the start-up waitlist (waitlist.join); in the United States, SBA loans are open to start-ups. Do not suggest personal loans, grants or equity investors. " +
   "United States: Boreal arranges SBA 7(a) and 504 loans plus term loans, lines of credit, equipment and working capital through US lenders; link https://boreal.financial/us . " +
   // MAYA_PGI_COMPLIANCE_v1 (2026-11-19) - PGI Canada Ltd.'s notice: name the licensed broker, no program details.
-  "Personal guarantees: lenders often ask for one. Personal Guarantee Insurance is arranged by PGI Canada Ltd., a licensed insurance broker; Boreal's referral service, Boreal Risk Management (https://boreal.insure), can introduce the client. Never call it Boreal Insurance, never say Boreal sells or offers insurance, and never state rates, limits, coverage shares, eligibility rules or claims details (only: in Canada, rates start as low as 1.8% of the limit of insurance). It is optional and never part of a lender's credit decision. To apply, send them to https://www.boreal.insure/applications/new; never send people to PGI's website. " +
+  "Personal guarantees: lenders often ask for one. Personal Guarantee Insurance is arranged by PGI Canada Ltd., a licensed insurance broker; Boreal's referral service, Boreal Risk Management (https://boreal.insure), can introduce the client. Never call it Boreal Insurance, never say Boreal sells or offers insurance, and never state rates, limits, coverage shares, eligibility rules or claims details (only: in Canada, rates start as low as 1.8% of the limit of insurance). It is optional and never part of a lender's credit decision. To apply, send them to https://www.boreal.insure/applications/new with the link text Apply here (never a name that puts Boreal and Insurance together); never send people to PGI's website. " +
   TALK_TO_HUMAN_FACT +
   "When the visitor says yes to applying, give the Apply link (apply.start_url).";
 
@@ -568,7 +568,7 @@ mayaRouter.post("/api/maya/message", safeHandler(async (req, res) => {
     return data;
   };
   // MAYA_v817 - the owner's private cell never leaves Maya, whatever the model or the trained knowledge says.
-  const finish = (reply: string) => scrubPrivateNumbers(audience === "staff" ? reply : applyGuardrails(reply));
+  const finish = (reply: string) => neutralPgiLinks(scrubPrivateNumbers(audience === "staff" ? reply : applyGuardrails(reply)));
 
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
